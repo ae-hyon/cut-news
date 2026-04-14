@@ -1,0 +1,275 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1776169262063,
+  "projectRoot": "/Users/song-ahyeon/Desktop/dev/cut-news",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {},
+  "hotPaths": [
+    {
+      "path": ".python-version",
+      "accessCount": 1,
+      "lastAccessed": 1776169885535,
+      "type": "file"
+    },
+    {
+      "path": "pyproject.toml",
+      "accessCount": 1,
+      "lastAccessed": 1776169886171,
+      "type": "file"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "accessCount": 1,
+      "lastAccessed": 1776169886815,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1776169887457,
+      "type": "file"
+    },
+    {
+      "path": "Makefile",
+      "accessCount": 1,
+      "lastAccessed": 1776169902209,
+      "type": "file"
+    },
+    {
+      "path": "apps/frontend/package.json",
+      "accessCount": 1,
+      "lastAccessed": 1776169953438,
+      "type": "file"
+    },
+    {
+      "path": "apps/frontend/tsconfig.json",
+      "accessCount": 1,
+      "lastAccessed": 1776169954006,
+      "type": "file"
+    },
+    {
+      "path": "apps/frontend/next.config.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776169954560,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/pyproject.toml",
+      "accessCount": 1,
+      "lastAccessed": 1776169954894,
+      "type": "file"
+    },
+    {
+      "path": "apps/frontend/src/app/layout.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1776169955103,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/src/crawler/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169955455,
+      "type": "file"
+    },
+    {
+      "path": "apps/frontend/src/app/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1776169955659,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/src/crawler/main.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169956011,
+      "type": "file"
+    },
+    {
+      "path": "apps/frontend/src/app/globals.css",
+      "accessCount": 1,
+      "lastAccessed": 1776169956206,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/src/crawler/core/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169956573,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/src/crawler/core/config.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169957145,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/src/crawler/api/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169957719,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/src/crawler/api/router.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169958294,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/src/crawler/scrapers/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169958872,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/src/crawler/parsers/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169959467,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/src/crawler/tasks/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169960045,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/tests/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169960622,
+      "type": "file"
+    },
+    {
+      "path": "apps/crawler/tests/conftest.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169961184,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/pyproject.toml",
+      "accessCount": 1,
+      "lastAccessed": 1776169961342,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169961901,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/main.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169962473,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/core/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169963046,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/core/config.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169963622,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/api/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169964197,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/api/v1/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169964761,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/api/v1/router.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169965347,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/api/v1/endpoints/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169965920,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/api/v1/endpoints/health.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169966524,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/models/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169967117,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/schemas/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169967710,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/src/backend/services/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169968294,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/tests/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169968881,
+      "type": "file"
+    },
+    {
+      "path": "apps/backend/tests/conftest.py",
+      "accessCount": 1,
+      "lastAccessed": 1776169969472,
+      "type": "file"
+    },
+    {
+      "path": "scripts/setup.sh",
+      "accessCount": 1,
+      "lastAccessed": 1776170205019,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1776170205632,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

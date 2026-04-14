@@ -1,0 +1,9 @@
+[project]
+name = "cut-news"
+version = "0.1.0"
+description = "Cut News - News aggregation and analysis platform"
+readme = "README.md"
+requires-python = ">=3.12"
+
+[tool.uv]
+workspace = { members = ["apps/backend", "apps/crawler"] }
