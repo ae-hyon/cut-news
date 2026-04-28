@@ -60,6 +60,9 @@ make install-frontend
 
 1. `apps/crawler`
    - 다른 팀원이 작업한 crawler가 기사 원문을 수집합니다.
+   - 기본 smoke는 seed URL을 실제 HTTP로 긁는 `make crawler-collect NEWS_SOURCE=seeded`를 사용합니다.
+   - Naver Search API credential이 있으면 `make crawler-collect NEWS_SOURCE=naver-search NEWS_QUERY=사회 NEWS_COUNT=20`로 최신 검색 결과를 수집합니다.
+   - 수집 결과는 `apps/crawler/output/latest.json`에 저장됩니다.
    - crawler 결과 JSON은 `make crawler-export-raw NEWS_INPUT=apps/crawler/output/latest.json`로 summarizer raw 계약에 맞게 변환합니다.
    - backend/summarizer와 직접 맞물리는 저장 포맷은 `apps/crawler/src/crawler/pipeline.py`의 `save_raw_articles()`가 보장합니다.
    - 출력: `apps/summarizer/data/raw/001.txt` 형태
@@ -71,8 +74,8 @@ make install-frontend
    - 운영 중 갱신은 `make import-articles`가 같은 summarizer data를 insert/update 합니다.
    - summarizer 데이터가 없으면 기존 fallback seed를 사용합니다.
 4. 전체 E2E
-   - `make pipeline-news NEWS_INPUT=apps/crawler/output/latest.json`
-   - crawler JSON export → summarizer step2~5 → backend import/upsert 순서로 실행됩니다.
+   - `make pipeline-news NEWS_SOURCE=seeded` 또는 `make pipeline-news NEWS_SOURCE=naver-search NEWS_QUERY=사회 NEWS_COUNT=20`
+   - crawler 수집 → crawler JSON export → summarizer step2~5 → backend import/upsert 순서로 실행됩니다.
 5. `apps/test-frontend`
    - `/v1/users/{user_id}/feed`, detail, scrap, archive API를 통해 backend가 만든 실제 뉴스 데이터를 보여줍니다.
 
