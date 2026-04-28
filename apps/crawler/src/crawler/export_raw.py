@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -63,14 +64,24 @@ def load_articles_from_json(path: Path) -> list[CrawledArticle]:
     return articles
 
 
+def export_articles_to_raw(input_path: Path, output_dir: Path, *, clear: bool = False) -> list[Path]:
+    if clear and output_dir.exists():
+        for child in output_dir.iterdir():
+            if child.is_file() and child.suffix == '.txt':
+                child.unlink()
+            elif child.is_dir():
+                shutil.rmtree(child)
+    return save_raw_articles(load_articles_from_json(input_path), output_dir)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description='Export crawler JSON output to summarizer data/raw/*.txt')
     parser.add_argument('--input', required=True, type=Path, help='crawler output JSON file')
     parser.add_argument('--output-dir', required=True, type=Path, help='summarizer raw output directory')
+    parser.add_argument('--clear', action='store_true', help='remove stale raw files before writing new ones')
     args = parser.parse_args()
 
-    articles = load_articles_from_json(args.input)
-    paths = save_raw_articles(articles, args.output_dir)
+    paths = export_articles_to_raw(args.input, args.output_dir, clear=args.clear)
     print(f'exported {len(paths)} articles to {args.output_dir}')
 
 

@@ -4,8 +4,11 @@
 .PHONY: format format-backend format-crawler
 .PHONY: type-check type-check-backend type-check-crawler type-check-frontend
 .PHONY: test test-backend test-crawler test-summarizer test-test-frontend build-test-frontend
-.PHONY: crawler-export-raw pipeline-summarizer import-articles pipeline-news clean
+.PHONY: crawler-collect crawler-export-raw pipeline-summarizer import-articles pipeline-news clean
 
+NEWS_SOURCE ?= seeded
+NEWS_QUERY ?= 사회
+NEWS_COUNT ?= 20
 NEWS_INPUT ?= apps/crawler/output/latest.json
 NEWS_RAW_DIR ?= apps/summarizer/data/raw
 
@@ -33,9 +36,10 @@ help:
 	@echo "  make build-test-frontend - Build API test frontend"
 	@echo ""
 	@echo "Pipeline:"
+	@echo "  make crawler-collect NEWS_SOURCE=seeded|naver-search NEWS_QUERY=사회 NEWS_COUNT=20 - Collect real news into apps/crawler/output/latest.json"
 	@echo "  make pipeline-summarizer - Run summarizer pipeline over data/raw"
 	@echo "  make import-articles    - Import summarizer data into backend DB"
-	@echo "  make pipeline-news NEWS_INPUT=apps/crawler/output/latest.json - Export crawler JSON, summarize, import"
+	@echo "  make pipeline-news NEWS_QUERY=사회 NEWS_COUNT=20 - Collect crawler data, summarize, import"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean             - Clean build artifacts"
@@ -120,8 +124,11 @@ test-test-frontend:
 build-test-frontend:
 	npm --prefix apps/test-frontend run build
 
+crawler-collect:
+	cd apps/crawler && PYTHONPATH=src python3.11 -m crawler.collect_naver --source $(NEWS_SOURCE) --query "$(NEWS_QUERY)" --count $(NEWS_COUNT) --output-dir output
+
 crawler-export-raw:
-	cd apps/crawler && PYTHONPATH=src python3.11 -m crawler.export_raw --input ../../$(NEWS_INPUT) --output-dir ../../$(NEWS_RAW_DIR)
+	cd apps/crawler && PYTHONPATH=src python3.11 -m crawler.export_raw --input ../../$(NEWS_INPUT) --output-dir ../../$(NEWS_RAW_DIR) --clear
 
 pipeline-summarizer:
 	cd apps/summarizer && python3.11 run_pipeline.py --from 2
@@ -129,7 +136,7 @@ pipeline-summarizer:
 import-articles:
 	cd apps/backend && PYTHONPATH=. python3.11 -m app.scripts.import_articles_from_summarizer
 
-pipeline-news: crawler-export-raw pipeline-summarizer import-articles
+pipeline-news: crawler-collect crawler-export-raw pipeline-summarizer import-articles
 
 # Cleanup
 clean:

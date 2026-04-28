@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from crawler.export_raw import load_articles_from_json
+from crawler.export_raw import export_articles_to_raw, load_articles_from_json
 from crawler.pipeline import save_raw_articles
 
 
@@ -57,3 +57,30 @@ def test_exported_legacy_crawler_output_can_be_saved_as_summarizer_raw(tmp_path:
     assert paths == [raw_dir / '001.txt']
     assert '제목: 영문 키 기반 crawler 결과' in paths[0].read_text(encoding='utf-8')
     assert 'URL: https://news.example.com/economy/1' in paths[0].read_text(encoding='utf-8')
+
+
+def test_export_articles_to_raw_clears_stale_raw_files_before_writing_latest_dataset(tmp_path: Path):
+    input_path = tmp_path / 'articles.json'
+    raw_dir = tmp_path / 'raw'
+    raw_dir.mkdir()
+    stale_path = raw_dir / '999.txt'
+    stale_path.write_text('stale', encoding='utf-8')
+    input_path.write_text(
+        json.dumps(
+            [
+                {
+                    'title': '새 기사',
+                    'url': 'https://news.example.com/new/1',
+                    'content': '새 기사 본문입니다.',
+                }
+            ],
+            ensure_ascii=False,
+        ),
+        encoding='utf-8',
+    )
+
+    paths = export_articles_to_raw(input_path, raw_dir, clear=True)
+
+    assert paths == [raw_dir / '001.txt']
+    assert not stale_path.exists()
+    assert '제목: 새 기사' in paths[0].read_text(encoding='utf-8')
