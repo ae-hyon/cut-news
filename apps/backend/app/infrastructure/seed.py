@@ -3,6 +3,8 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.application.services.article_ingest_service import load_summarized_articles
+from app.common.config import settings
 from app.infrastructure.models import (
     ArticleModel,
     CategoryModel,
@@ -158,7 +160,10 @@ def seed_database(session: Session) -> None:
 
     has_articles = session.scalar(select(ArticleModel.id)) is not None
     if not has_articles:
-        for article in ARTICLE_SEED:
+        article_seed = [row.model_dump() for row in load_summarized_articles(settings.news_summarizer_dir / 'data')]
+        if not article_seed:
+            article_seed = ARTICLE_SEED
+        for article in article_seed:
             session.add(ArticleModel(**article))
 
     has_demo_user = session.scalar(select(UserPreferenceModel.user_id).where(UserPreferenceModel.user_id == 'demo-user')) is not None
