@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "codex-channels-local": {
+      "command": "node",
+      "args": [
+        "/Users/reddit/Project/school/web-programming/news_summurizer/.hermit/codex-channels-runtime/node_modules/@cafitac/codex-channels/dist/index.js",
+        "bridge-stdio",
+        "--quiet",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "4317",
+        "--state-file",
+        "/Users/reddit/Project/school/web-programming/news_summurizer/.codex-channels/state.json"
+      ],
+      "env": {
+        "CODEX_CHANNELS_HOST": "127.0.0.1",
+        "CODEX_CHANNELS_PORT": "4317",
+        "CODEX_CHANNELS_STATE_FILE": "/Users/reddit/Project/school/web-programming/news_summurizer/.codex-channels/state.json"
+      }
+    }
+  }
+}

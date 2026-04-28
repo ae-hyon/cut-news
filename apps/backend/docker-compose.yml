@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: annoyingcap-postgres
+    environment:
+      POSTGRES_DB: annoyingcap
+      POSTGRES_USER: annoyingcap
+      POSTGRES_PASSWORD: annoyingcap
+    ports:
+      - "54329:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U annoyingcap -d annoyingcap"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  postgres_data:

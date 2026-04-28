@@ -1,0 +1,31 @@
+from __future__ import annotations
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from app.domain.entities import UserPreference
+from app.domain.enums import PreferenceMode
+from app.infrastructure.database import Base
+from app.infrastructure.repositories import SqlAlchemyUserPreferenceRepository
+
+
+def test_save_new_user_preference_persists_mode_before_flush():
+    engine = create_engine('sqlite+pysqlite:///:memory:', future=True)
+    Base.metadata.create_all(engine)
+    session_local = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
+    with session_local() as db:
+        repository = SqlAlchemyUserPreferenceRepository(db)
+        saved = repository.save(
+            UserPreference(
+                user_id='new-user',
+                mode=PreferenceMode.WIDE,
+                primary_categories=['economy', 'politics', 'tech'],
+                subcategories=[],
+                onboarding_completed=False,
+            )
+        )
+
+    assert saved.user_id == 'new-user'
+    assert saved.mode == PreferenceMode.WIDE
+    assert saved.onboarding_completed is False

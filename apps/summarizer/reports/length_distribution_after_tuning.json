@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "h34": {
+      "count": 50,
+      "min": 29,
+      "max": 34,
+      "avg": 32.88,
+      "median": 33.0,
+      "within_2": 47,
+      "within_4": 49,
+      "exact_target": 18
+    },
+    "h58": {
+      "count": 50,
+      "min": 51,
+      "max": 58,
+      "avg": 55.62,
+      "median": 55.5,
+      "within_2": 25,
+      "within_4": 47,
+      "exact_target": 9
+    },
+    "h89": {
+      "count": 50,
+      "min": 78,
+      "max": 89,
+      "avg": 84.74,
+      "median": 84.5,
+      "within_2": 15,
+      "within_4": 25,
+      "exact_target": 2
+    }
+  },
+  "violations_count": 0,
+  "violating_items": []
+}
