@@ -10,8 +10,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -78,3 +78,20 @@ dist/
 # Testing
 coverage/
 .nyc_output/
+
+# Local databases / runtime state
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+
+# Local agent/tool state
+.agent-learner/
+.claude/
+.omx/
+.hermit/
+.cafibot/
+.agents/
+.codex-channels/
