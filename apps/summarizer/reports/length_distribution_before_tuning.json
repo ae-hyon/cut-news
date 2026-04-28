@@ -1,0 +1,32 @@
+{
+  "h34": {
+    "count": 50,
+    "min": 28,
+    "max": 34,
+    "avg": 31.06,
+    "median": 31.0,
+    "within_2": 16,
+    "within_4": 40,
+    "exact_target": 7
+  },
+  "h58": {
+    "count": 50,
+    "min": 45,
+    "max": 58,
+    "avg": 52.74,
+    "median": 52.5,
+    "within_2": 7,
+    "within_4": 23,
+    "exact_target": 1
+  },
+  "h89": {
+    "count": 50,
+    "min": 65,
+    "max": 89,
+    "avg": 80.98,
+    "median": 80.5,
+    "within_2": 5,
+    "within_4": 14,
+    "exact_target": 2
+  }
+}

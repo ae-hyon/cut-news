@@ -1,0 +1,16 @@
+{
+  "name": "codex-channels",
+  "version": "0.3.9",
+  "description": "Local-first interaction runtime for Codex-first workflows.",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "codex-channels",
+    "shortDescription": "Local-first interaction runtime for Codex",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "article_id": "001",
+    "primary_category": "정치",
+    "subcategory": "청와대"
+  },
+  {
+    "article_id": "002",
+    "primary_category": "경제",
+    "subcategory": "금융"
+  },
+  {
+    "article_id": "003",
+    "primary_category": "사회",
+    "subcategory": "사건사고"
+  }
+]

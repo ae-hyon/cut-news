@@ -1,0 +1,31 @@
+:root {
+  color-scheme: dark;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  background: #050505;
+  color: #ffffff;
+  --page-bg: #050505;
+  --phone-bg: #000000;
+  --browser-bar: #1f1f1f;
+  --browser-pill: #343434;
+  --orange: #ff7a1a;
+  --orange-2: #f06f16;
+  --chip: #3b3b3b;
+  --chip-active: #ff7a1a;
+  --card-cream: #f2eadc;
+  --card-peach: #f3b58b;
+  --card-orange: #f47a1f;
+  --card-gray: #dedbd5;
+  --text-dark: #111111;
+  --text-muted: #a6a6a6;
+}
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+body {
+  min-width: 320px;
+  background: #111;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+button, a { font: inherit; }
+button { cursor: pointer; touch-action: manipulation; }
+button:disabled { opacity: .48; cursor: not-allowed; }

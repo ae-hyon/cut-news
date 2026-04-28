@@ -1,0 +1,359 @@
+{
+  "total": 50,
+  "clean": 50,
+  "suspicious": 0,
+  "clean_rate": "100.0%",
+  "suspicious_items": [],
+  "items": [
+    {
+      "id": "001",
+      "title": "서영교 \"배상윤 회장, '대북송금은 李와 전혀 무관' 재확인\"",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "002",
+      "title": "李대통령, 고광헌 방미심위 초대 위원장 임명안 재가",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "003",
+      "title": "한화에어로, NATO 대사단 초청…유럽 방산 협력 비전 공유",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "004",
+      "title": "'현금 살포 의혹' 김관영 전북지사, 11일 선관위 출석 조사",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "005",
+      "title": "정부, 특사 파견한 이란에 7억원규모 인도적 지원 결정",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "006",
+      "title": "민주당 장성군수 경선 중단…ARS 대리투표 정황(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "007",
+      "title": "포천 미군 사격장 안에서 산불…내일 진화 재개",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "008",
+      "title": "NATO 주재 30개국 대사단 외교부 방문…방산 협력 논의",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "009",
+      "title": "與, '전북 경선 패배' 안호영 재심 신청 기각…이원택 후보 확정(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 95
+    },
+    {
+      "id": "010",
+      "title": "박상용, 증인선서 또 거부…\"감옥갈까 봐 특검시켜 공소취소\"(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "011",
+      "title": "쌍방울 측 \"리호남 만나 돈줬다\"…국정원 측 증인 \"진실 아냐\"(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "012",
+      "title": "민형배 전남광주시장 출마에 막오른 광주광산을 보궐 선거",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "013",
+      "title": "초대 전남광주특별시장 여야 후보군 윤곽",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "014",
+      "title": "화성 용주사 찾은 추미애 \"혁신가로서 더 담대해지게 결의 다져\"",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "015",
+      "title": "與광역단체장 경선서 현직 5명 '전멸'…靑 출신도 '꽃가마' 없어",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "016",
+      "title": "노량진 라클라체자이드파인 1순위 청약 경쟁률 26.9대 1",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "017",
+      "title": "중동 불안에…에틸렌·프로필렌 등 석화제품 '매점매석 금지'(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "018",
+      "title": "중동 불안에 에틸렌·프로필렌 등 석화제품 '매점매석 금지'",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "019",
+      "title": "피플바이오, 10억원 유상증자…김민수에 제3자배정",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "020",
+      "title": "[동정] 해수부장관, 인천어시장 찾아 수산물 수급 동향 점검",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "021",
+      "title": "강훈식, 중동 방문 마치고 귀국…공급망 위기 해법 주목",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 95
+    },
+    {
+      "id": "022",
+      "title": "중동 불안에 국민연금 해외투자 환헤지 비율 확대 조정(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "023",
+      "title": "[연합뉴스 이 시각 헤드라인] - 18:00",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "024",
+      "title": "이란의 사우디 공습에 현대건설 현지 사무실 일부 파손",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "025",
+      "title": "중동사태에 동물병원 소모품 수급난…정부·지자체 총력 대응(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "026",
+      "title": "[현장] \"위험물질 표시도 없어\"…화재 고위험 공장 점검해보니",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "027",
+      "title": "종전 협상 기대감에 국고채 금리↓…3년물 연 3.339%(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "028",
+      "title": "현대건설, 압구정5구역 '도촬 논란' 경쟁사에 법적대응",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "029",
+      "title": "[인사] 중소벤처기업부",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "030",
+      "title": "엔씨소프트 \"키프로스 계열사 주식 3천190억원에 추가취득\"",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "031",
+      "title": "석방 닷새만에 화상예배 나온 전광훈, '보석조건 위반' 고발당해",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "032",
+      "title": "경북 상주 야산 불, 1시간여만에 진화 완료(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "033",
+      "title": "인천 영종·영흥권 2개 군구 오존주의보 해제",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "034",
+      "title": "사실혼 관계 여성·딸 흉기로 찌르고 자해한 60대 숨져(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "035",
+      "title": "세월호 유가족 건강 갈수록 악화…피해자 비난 등이 영향 미쳐",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "036",
+      "title": "'소방관 순직' 완도 창고화재 과실 중국인 구속(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "037",
+      "title": "비행기서 다른 승객 머리 폭행한 20대 특수상해죄 송치",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "038",
+      "title": "수원에서 크레인 차량이 시내버스 충격…2명 부상",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "039",
+      "title": "경기 중부·북부권 19개 시군 오존주의보 해제",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "040",
+      "title": "'대마 혐의' 김바다 \"소속사·멤버와 결별…깊이 반성\"",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "041",
+      "title": "경북 상주 야산서 산불 발생…'진화 중'",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "042",
+      "title": "사실혼 관계 여성·딸 흉기 찌르고 자해한 60대 남성 숨져",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 95
+    },
+    {
+      "id": "043",
+      "title": "[부고] 김봉한(백도종합건축사사무소 총괄대표)씨 장인상",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "044",
+      "title": "[내일날씨] 서울 낮 최고 26도 초여름 더위…일교차 커",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "045",
+      "title": "정지영 감독 \"4·3사건 소재에 투자 못 받아…고생 많이 했죠\"",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "046",
+      "title": "'내 이름은' 염혜란 \"4·3사건 소재로 '보편적 사랑' 다룬 영화\"",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "047",
+      "title": "몬스타엑스, 6년 만 '켈리 클라크슨 쇼' 출연",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "048",
+      "title": "미야자키 하야오 작업실 엿본다…창작의 시간 담은 다큐 개봉",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "049",
+      "title": "아이브, 6월 도쿄돔 재입성…월드투어 진행",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    },
+    {
+      "id": "050",
+      "title": "[방송소식] 아이유·변우석 출연 '살롱드립', TV서 본다",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 100
+    }
+  ]
+}

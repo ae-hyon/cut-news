@@ -1,0 +1,19 @@
+{
+  "name": "Annoying Cap",
+  "short_name": "AnnoyingCap",
+  "description": "관심사 기반 뉴스 블록 PWA",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#181513",
+  "theme_color": "#181513",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

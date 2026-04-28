@@ -1,0 +1,359 @@
+{
+  "total": 50,
+  "clean": 50,
+  "suspicious": 0,
+  "clean_rate": "100.0%",
+  "suspicious_items": [],
+  "items": [
+    {
+      "id": "001",
+      "title": "靑 민정비서관·공직기강비서관, 이례적 보직 맞교대",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 97
+    },
+    {
+      "id": "002",
+      "title": "이진숙도 대구시장 불출마하나…내일 입장표명 예고(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "003",
+      "title": "李대통령, 순방 마치고 서울 도착…'중동 리스크' 대응 전념",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 96
+    },
+    {
+      "id": "004",
+      "title": "민주당 경기도당, 남양주시장 후보로 최현덕 확정",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "005",
+      "title": "민주당 광주 광역의원 경선선출인, 성비위 제보…시당 조사 착수",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 97
+    },
+    {
+      "id": "006",
+      "title": "오세훈 \"장동혁, '지지율 최저' 책임 느껴야…결단 필요한 시점\"(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "007",
+      "title": "장동혁 \"美, 정보공유 재개 위해 '유출방지 보장 필요' 인식\"(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 96
+    },
+    {
+      "id": "008",
+      "title": "민주 신용한·노영민·송기섭·한범덕 '치맥회동'…원팀 선언",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "009",
+      "title": "말레이시아서 납치된 한국인 남성 구조…납치범 3명도 한국인",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "010",
+      "title": "안규백, 해안경계 시범부대 방문…\"AI기반 감시 선택 아닌 필수\"",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 97
+    },
+    {
+      "id": "011",
+      "title": "가수 흰·NCT 도영 생명대사로…정부, 자살자 1천명 감소 주력(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 96
+    },
+    {
+      "id": "012",
+      "title": "靑 \"원유 대체물량 확보에 사활…5월 중 7천462만 배럴 확보\"(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "013",
+      "title": "金총리 \"AI 교육, 교육부만의 과제 아냐…연관부처 함께 계획\"(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "014",
+      "title": "정청래, '이원택 재감찰 요구' 단식 후 입원 안호영 병문안",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 96
+    },
+    {
+      "id": "015",
+      "title": "6·3지선 D-40 강원지사 여아 후보, 정책간담회·개소식 세 결집",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 96
+    },
+    {
+      "id": "016",
+      "title": "미·이란 협상재개 기대에 국제유가 5일만에 하락…WTI 1.5%↓",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "017",
+      "title": "[뉴욕유가] 美·이란 2주만에 다시 협상 테이블로…WTI 5일만에 하락",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 96
+    },
+    {
+      "id": "018",
+      "title": "달러-원, 美·이란 협상 기대 속 하락…1,476.80원 마감",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 96
+    },
+    {
+      "id": "019",
+      "title": "\"파라과이 통해 중남미 진출 도모\"… 아순시온서 韓 상품전시회",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 97
+    },
+    {
+      "id": "020",
+      "title": "NH투자증권, 단독→각자 대표 체제로 전환",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 97
+    },
+    {
+      "id": "021",
+      "title": "구의회 의장이 금품 받고 공무원 채용 뒷배로…검찰, 구속 기소",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "022",
+      "title": "리노공업, 최대주주 지분매각에 애프터마켓서 10%대 급락",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "023",
+      "title": "금융위 첫 여성 고위공무원 나와…국조실 파견 이석란 국장",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "024",
+      "title": "[연합뉴스 이 시각 헤드라인] - 18:00",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 97
+    },
+    {
+      "id": "025",
+      "title": "출석요구 10차례 불응…3천만원 임금체불 사업주 체포",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 96
+    },
+    {
+      "id": "026",
+      "title": "강원도립대, 영월 단종문화제서 '모두의 창업' 팝업 홍보",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "027",
+      "title": "[쇼츠] 현대차, 중국 전략 모델 '아이오닉V' 최초 공개",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "028",
+      "title": "[영상] 현대차, 베이징모터쇼서 중국 전략 모델 '아이오닉V' 최초 공개",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 97
+    },
+    {
+      "id": "029",
+      "title": "청주 호텔 지하주차장서 가스계 소화설비 오작동…2명 부상",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "030",
+      "title": "경찰, '이재명 대통령에 현금 전달' 주장 폭력배 무고 혐의 수사",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 92
+    },
+    {
+      "id": "031",
+      "title": "검찰, 김창민 감독 상해치사 피의자 2명 10시간 조사",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "032",
+      "title": "제주 한림읍 한 양돈장서 불…1시간 만에 초진(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "033",
+      "title": "특검, '평양무인기 의혹' 尹 30년 구형…\"반국가적 범죄\"(종합2보)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 99
+    },
+    {
+      "id": "034",
+      "title": "제주 한림읍 한 양돈장서 불…소방 대응 1단계 발령",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 99
+    },
+    {
+      "id": "035",
+      "title": "'인천업체 관리자가 외국인 노동자 폭행' 신고…경위 조사",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "036",
+      "title": "서삼석 \"인천신항 자동화부두 핵심장비, 中기업 독점할 수도\"",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 97
+    },
+    {
+      "id": "037",
+      "title": "[날씨] 나들이하기 좋은 맑은 주말…20도 안팎 큰 일교차",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 97
+    },
+    {
+      "id": "038",
+      "title": "이태원참사 합동수사팀, 前용산소방서장 불구속기소…“위험인식”",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "039",
+      "title": "검찰 \"방시혁 구속 필요 사유 소명 부족\" 구속영장 반려(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 97
+    },
+    {
+      "id": "040",
+      "title": "남해 먼바다 풍랑주의보 해제",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "041",
+      "title": "트럼프에 신랄했던 지미키멀쇼, '방송계 퓰리처' 피버디상 수상",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "042",
+      "title": "블랙핑크 지수, 칸 시리즈 페스티벌서 라이징 스타상 수상(종합)",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "043",
+      "title": "'르누아르' 하야카와 감독 \"부모 나약함 깨달을 때 아이는 성장\"",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 96
+    },
+    {
+      "id": "044",
+      "title": "[2보] 검찰, 하이브 방시혁 의장 구속영장 반려 \"보완수사 요구\"",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 97
+    },
+    {
+      "id": "045",
+      "title": "전북, K리그 최초 '경기 후 콘서트' 론칭…첫 주자는 잔나비",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "046",
+      "title": "",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "047",
+      "title": "[인사] 방송미디어통신심의위원회",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "048",
+      "title": "[가요소식] 트와이스, 북미 투어로 55만명 동원 '자체 최다 규모'",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "049",
+      "title": "[테크스냅] SKB, 도림천서 환경 정화 봉사활동",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    },
+    {
+      "id": "050",
+      "title": "MBC 일일드라마 '첫 번째 남자' 20회 연장한다",
+      "verdict": "clean",
+      "hallucinations": [],
+      "confidence": 98
+    }
+  ]
+}

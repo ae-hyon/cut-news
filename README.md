@@ -23,9 +23,11 @@
 ```
 cut-news/
 ├── apps/
-│   ├── backend/      # FastAPI 백엔드 API (port 8000)
-│   ├── crawler/      # 크롤러 서비스 (port 8001)
-│   └── frontend/     # Next.js 프론트엔드 (port 3000)
+│   ├── backend/       # FastAPI 백엔드 API (port 8000)
+│   ├── crawler/       # 크롤러 서비스 (port 8001)
+│   ├── frontend/      # Next.js 프론트엔드 (port 3000)
+│   ├── summarizer/    # 뉴스 요약 파이프라인/라이브러리
+│   └── test-frontend/ # 백엔드 API 연동 검증용 Vite 프론트엔드
 ├── packages/         # 공유 코드 (추후)
 ├── scripts/          # 개발 스크립트
 ├── Makefile          # 개발 명령어
