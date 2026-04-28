@@ -4,7 +4,10 @@
   "scripts": {
     "dev:frontend": "pnpm --filter frontend dev",
     "build:frontend": "pnpm --filter frontend build",
-    "lint:frontend": "pnpm --filter frontend lint"
+    "lint:frontend": "pnpm --filter frontend lint",
+    "dev:test-frontend": "npm --prefix apps/test-frontend run dev -- --host 127.0.0.1",
+    "test:test-frontend": "npm --prefix apps/test-frontend test",
+    "build:test-frontend": "npm --prefix apps/test-frontend run build"
   },
   "engines": {
     "node": ">=20.0.0",

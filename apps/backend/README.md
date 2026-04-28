@@ -7,15 +7,15 @@ Annoying Cap의 메인 서비스 백엔드입니다.
 - local Postgres + Docker Compose 사용
 - DDD + layered architecture 구조
 - domain/application/infrastructure/presentation 분리
-- sibling 프로젝트 `../summarizer`를 import 해서 요약 기능 사용
+- sibling 프로젝트 `../summarizer`의 `data/json`, `data/summarized`, `data/category_map.json`를 읽어 뉴스 홈 데이터를 seed
 - summary gateway가 API schema -> summarizer schema typed boundary를 거치도록 정리됨
 - `/v1/auth/session`, `/v1/auth/kakao/start`, `/v1/auth/kakao/callback`, `/v1/auth/refresh`, `/v1/auth/logout` API 경계 제공
 - Kakao `provider_subject -> internal user_id` 매핑 저장소가 추가됨
 - Kakao OAuth state는 JWT 서명 토큰으로 발급/검증함
 - access token은 JWT, refresh token은 DB 저장소 기반으로 운용
 - refresh token 원문은 DB에 저장하지 않고 SHA-256 hash + session metadata로 관리
-- `GET /v1/auth/kakao/callback`은 redirect를 하지 않고 session JSON + HttpOnly 쿠키를 반환함
-- 프론트는 `session_state` (`authenticated` / `onboarded`)를 보고 자체 라우팅하면 됨
+- `GET /v1/auth/kakao/callback`은 인증 완료 후 `FRONTEND_APP_URL/?auth=kakao`로 302 redirect하고 HttpOnly 쿠키를 설정함
+- 프론트는 `session_state` (`authenticated` / `onboarded`)와 저장된 preference를 보고 자체 라우팅하면 됨
 - 온보딩 validation은 backend가 보장: wide=대분류 3~5개/중복 금지/subcategory 금지, narrow=대분류 1개 + subcategory 1개 이상/중복 금지
 - 피드 블록 정책은 Flow.pdf 기준으로 backend가 보장: wide=선택 순서대로 블록 구성 + 가중치 1.0/0.85/0.70..., narrow=단일 focus block weight 1.0
 - auth application 영역은 `app/application/auth/` 하위로 분리됨
@@ -92,19 +92,19 @@ APP_ENV=development
 APP_NAME=Annoying Cap Core Backend
 APP_VERSION=0.1.0
 API_PREFIX=/v1
+FRONTEND_APP_URL=http://127.0.0.1:5173
 DEBUG=true
 DATABASE_ECHO=false
 MIGRATE_ON_STARTUP=true
 SEED_ON_STARTUP=true
 DATABASE_URL=postgresql+psycopg://annoyingcap:annoyingcap@localhost:54329/annoyingcap
 NEWS_SUMMARIZER_DIR=../summarizer
-KAKAO_REST_API_KEY=local-kakao-rest-key
+KAKAO_REST_API_KEY=<your-kakao-rest-api-key>
 KAKAO_REDIRECT_URI=http://127.0.0.1:8000/v1/auth/kakao/callback
-KAKAO_CLIENT_SECRET=
-KAKAO_AUTHORIZE_URL=https://kauth.kakao.com/oauth/authorize
+KAKAO_CLIENT_SECRET=<optional-kakao-client-secret>
 KAKAO_TOKEN_URL=https://kauth.kakao.com/oauth/token
 KAKAO_USERINFO_URL=https://kapi.kakao.com/v2/user/me
-JWT_SECRET_KEY=annoyingcap-dev-jwt-secret-key-32chars
+JWT_SECRET_KEY=<local-dev-jwt-secret>
 JWT_ALGORITHM=HS256
 JWT_ACCESS_TOKEN_MINUTES=30
 JWT_REFRESH_TOKEN_DAYS=14
@@ -114,6 +114,7 @@ AUTH_REFRESH_COOKIE_NAME=annoyingcap_refresh_token
 AUTH_COOKIE_SECURE=false
 AUTH_COOKIE_SAMESITE=lax
 ```
+```
 
 
 
@@ -122,9 +123,10 @@ AUTH_COOKIE_SAMESITE=lax
 
 
 주의:
-- `NEWS_SUMMARIZER_DIR`는 `news_service.py`, `news_adapter.py`, `news_schema.py`가 있는 sibling 프로젝트를 가리켜야 합니다.
+- `NEWS_SUMMARIZER_DIR`는 `data/json`, `data/summarized`, `data/category_map.json`가 있는 `apps/summarizer` 디렉터리를 가리켜야 합니다.
 - 현재 startup 시 `MIGRATE_ON_STARTUP=true`이면 Alembic `upgrade head`가 먼저 실행됩니다.
 - 현재 startup 시 `SEED_ON_STARTUP=true`이면 seed 데이터가 idempotent 하게 주입됩니다.
+- `NEWS_SUMMARIZER_DIR/data`에 요약 결과가 있으면 그 데이터를 우선 주입하고, 없으면 backend fallback seed를 사용합니다.
 
 ## Install
 
@@ -219,14 +221,11 @@ curl 'http://127.0.0.1:8000/v1/auth/kakao/start'
 
 Kakao callback 처리 확인:
 
-```bash
-curl -i 'http://127.0.0.1:8000/v1/auth/kakao/callback?code=***&state=<SIGNED_STATE>'
-```
+브라우저에서 Kakao 로그인 버튼을 통해 확인하세요. callback은 성공 시 `FRONTEND_APP_URL/?auth=kakao`로 302 redirect하고 access/refresh 쿠키를 설정합니다.
 
 주의:
-- callback은 redirect를 하지 않고 session JSON과 `HttpOnly` access/refresh 쿠키를 함께 반환합니다.
-- 프론트는 이 응답의 `session_state`를 보고 온보딩/홈 라우팅을 스스로 결정하면 됩니다.
-- 위 callback 예시는 실 Kakao code/state가 없으면 로컬 stub/TestClient 검증 용도로만 보세요.
+- OAuth code/state는 1회용입니다. callback URL을 새로고침하지 말고 로그인 버튼에서 새 flow를 시작하세요.
+- 로컬에서는 frontend/backend/Kakao redirect URI를 모두 `127.0.0.1` 기준으로 맞추는 것을 권장합니다.
 
 토큰 재발급:
 
