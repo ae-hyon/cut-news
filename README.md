@@ -60,15 +60,20 @@ make install-frontend
 
 1. `apps/crawler`
    - 다른 팀원이 작업한 crawler가 기사 원문을 수집합니다.
+   - crawler 결과 JSON은 `make crawler-export-raw NEWS_INPUT=apps/crawler/output/latest.json`로 summarizer raw 계약에 맞게 변환합니다.
    - backend/summarizer와 직접 맞물리는 저장 포맷은 `apps/crawler/src/crawler/pipeline.py`의 `save_raw_articles()`가 보장합니다.
    - 출력: `apps/summarizer/data/raw/001.txt` 형태
 2. `apps/summarizer`
    - `data/raw/*.txt`를 `data/json/*.json`, `data/summarized/*.json`, `data/category_map.json`으로 변환/요약합니다.
-   - 실행: `make pipeline-summarizer`
+   - 실행: `make pipeline-summarizer` (`run_pipeline.py --from 2`)
 3. `apps/backend`
    - startup seed 시 `NEWS_SUMMARIZER_DIR/data`를 읽어 `articles` 테이블에 `SUM-001` 같은 id로 주입합니다.
+   - 운영 중 갱신은 `make import-articles`가 같은 summarizer data를 insert/update 합니다.
    - summarizer 데이터가 없으면 기존 fallback seed를 사용합니다.
-4. `apps/test-frontend`
+4. 전체 E2E
+   - `make pipeline-news NEWS_INPUT=apps/crawler/output/latest.json`
+   - crawler JSON export → summarizer step2~5 → backend import/upsert 순서로 실행됩니다.
+5. `apps/test-frontend`
    - `/v1/users/{user_id}/feed`, detail, scrap, archive API를 통해 backend가 만든 실제 뉴스 데이터를 보여줍니다.
 
 주의: `apps/frontend`는 기존 Next.js 앱이므로 이번 API 검증 작업에서는 건드리지 않습니다. 백엔드 연동 검증은 `apps/test-frontend`만 사용합니다.
