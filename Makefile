@@ -4,7 +4,10 @@
 .PHONY: format format-backend format-crawler
 .PHONY: type-check type-check-backend type-check-crawler type-check-frontend
 .PHONY: test test-backend test-crawler test-summarizer test-test-frontend build-test-frontend
-.PHONY: pipeline-summarizer clean
+.PHONY: crawler-export-raw pipeline-summarizer import-articles pipeline-news clean
+
+NEWS_INPUT ?= apps/crawler/output/latest.json
+NEWS_RAW_DIR ?= apps/summarizer/data/raw
 
 help:
 	@echo "Cut News Development Commands"
@@ -31,6 +34,8 @@ help:
 	@echo ""
 	@echo "Pipeline:"
 	@echo "  make pipeline-summarizer - Run summarizer pipeline over data/raw"
+	@echo "  make import-articles    - Import summarizer data into backend DB"
+	@echo "  make pipeline-news NEWS_INPUT=apps/crawler/output/latest.json - Export crawler JSON, summarize, import"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean             - Clean build artifacts"
@@ -115,8 +120,16 @@ test-test-frontend:
 build-test-frontend:
 	npm --prefix apps/test-frontend run build
 
+crawler-export-raw:
+	cd apps/crawler && PYTHONPATH=src python3.11 -m crawler.export_raw --input ../../$(NEWS_INPUT) --output-dir ../../$(NEWS_RAW_DIR)
+
 pipeline-summarizer:
-	cd apps/summarizer && python3.11 run_pipeline.py
+	cd apps/summarizer && python3.11 run_pipeline.py --from 2
+
+import-articles:
+	cd apps/backend && PYTHONPATH=. python3.11 -m app.scripts.import_articles_from_summarizer
+
+pipeline-news: crawler-export-raw pipeline-summarizer import-articles
 
 # Cleanup
 clean:

@@ -99,12 +99,12 @@ MIGRATE_ON_STARTUP=true
 SEED_ON_STARTUP=true
 DATABASE_URL=postgresql+psycopg://annoyingcap:annoyingcap@localhost:54329/annoyingcap
 NEWS_SUMMARIZER_DIR=../summarizer
-KAKAO_REST_API_KEY=<your-kakao-rest-api-key>
+KAKAO_REST_API_KEY=...
 KAKAO_REDIRECT_URI=http://127.0.0.1:8000/v1/auth/kakao/callback
-KAKAO_CLIENT_SECRET=<optional-kakao-client-secret>
+KAKAO_CLIENT_SECRET=...
 KAKAO_TOKEN_URL=https://kauth.kakao.com/oauth/token
 KAKAO_USERINFO_URL=https://kapi.kakao.com/v2/user/me
-JWT_SECRET_KEY=<local-dev-jwt-secret>
+JWT_SECRET_KEY=...
 JWT_ALGORITHM=HS256
 JWT_ACCESS_TOKEN_MINUTES=30
 JWT_REFRESH_TOKEN_DAYS=14
@@ -127,6 +127,7 @@ AUTH_COOKIE_SAMESITE=lax
 - 현재 startup 시 `MIGRATE_ON_STARTUP=true`이면 Alembic `upgrade head`가 먼저 실행됩니다.
 - 현재 startup 시 `SEED_ON_STARTUP=true`이면 seed 데이터가 idempotent 하게 주입됩니다.
 - `NEWS_SUMMARIZER_DIR/data`에 요약 결과가 있으면 그 데이터를 우선 주입하고, 없으면 backend fallback seed를 사용합니다.
+- 서버 기동 후 요약 결과를 다시 반영하려면 `PYTHONPATH=. python3.11 -m app.scripts.import_articles_from_summarizer`를 실행합니다. 같은 id 또는 같은 `original_url`은 새로 추가하지 않고 update 합니다.
 
 ## Install
 
@@ -210,7 +211,7 @@ curl http://127.0.0.1:8000/v1/categories
 ```bash
 curl 'http://127.0.0.1:8000/v1/auth/session?user_id=demo-user'
 curl 'http://127.0.0.1:8000/v1/auth/session?provider=kakao&provider_subject=runtime-kakao-001'
-curl --cookie 'annoyingcap_access_token=<JWT_ACCESS_TOKEN>' 'http://127.0.0.1:8000/v1/auth/session'
+curl --cookie 'annoyingcap_access_token=...' 'http://127.0.0.1:8000/v1/auth/session'
 ```
 
 Kakao 로그인 시작 URL 생성:
@@ -230,13 +231,13 @@ Kakao callback 처리 확인:
 토큰 재발급:
 
 ```bash
-curl -X POST --cookie 'annoyingcap_refresh_token=<REFRESH_TOKEN>' http://127.0.0.1:8000/v1/auth/refresh
+curl -X POST --cookie 'annoyingcap_refresh_token=...' http://127.0.0.1:8000/v1/auth/refresh
 ```
 
 로그아웃:
 
 ```bash
-curl -X POST --cookie 'annoyingcap_refresh_token=<REFRESH_TOKEN>' http://127.0.0.1:8000/v1/auth/logout
+curl -X POST --cookie 'annoyingcap_refresh_token=...' http://127.0.0.1:8000/v1/auth/logout
 ```
 
 사용자 선호 업데이트:
