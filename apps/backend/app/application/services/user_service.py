@@ -5,7 +5,7 @@ from app.domain.enums import PreferenceMode
 from app.domain.exceptions import ValidationError
 from app.domain.repositories import CategoryRepository, UserPreferenceRepository
 
-DEFAULT_PRIMARY = ['economy', 'politics', 'tech']
+DEFAULT_PRIMARY = ['sectors', 'macro', 'assets', 'policy']
 
 
 class UserPreferenceService:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -21,63 +22,63 @@ class ArticleIngestRow(BaseModel):
 
 
 PRIMARY_CATEGORY_ALIASES = {
-    '경제': 'economy',
-    '정치': 'politics',
-    '문화연예': 'entertainment',
-    '연예': 'entertainment',
-    '스포츠': 'sports',
-    'IT': 'tech',
-    'IT통신': 'tech',
-    '테크': 'tech',
-    '국제': 'politics',
-    '사회': 'politics',
-    '생활': 'entertainment',
-    '종합': 'politics',
+    '경제': 'assets',
+    '정치': 'policy',
+    '사회': 'policy',
+    '국제': 'macro',
+    '산업': 'sectors',
+    'IT': 'sectors',
+    'IT통신': 'sectors',
+    '테크': 'sectors',
+    '문화연예': 'sectors',
+    '연예': 'sectors',
+    '생활': 'macro',
+    '종합': 'macro',
 }
 
 SUBCATEGORY_ALIASES = {
-    '증권': 'stocks',
-    '주식시장': 'stocks',
-    '금융': 'macro',
-    '에너지': 'macro',
-    '무역': 'macro',
-    '국제경제': 'macro',
-    '자동차': 'macro',
-    '부동산': 'real-estate',
-    '청와대': 'policy',
-    '대통령실': 'policy',
-    '산업정책': 'policy',
-    '교육정책': 'policy',
-    '지방선거': 'assembly',
-    '정당': 'assembly',
-    '국방': 'diplomacy',
-    '외교안보': 'diplomacy',
-    '해외사건': 'diplomacy',
-    '방송': 'broadcast',
-    '해외방송': 'broadcast',
-    '영화': 'film',
-    '가요': 'music',
-    '축구': 'soccer',
-    '야구': 'baseball',
-    'e스포츠': 'esports',
-    'IT통신': 'ai',
+    '증권': 'domestic-stocks',
+    '주식시장': 'domestic-stocks',
+    '국제경제': 'rates-fx',
+    '금융': 'rates-fx',
+    '에너지': 'energy',
+    '무역': 'supply-chain',
+    '자동차': 'mobility',
+    '반도체': 'semiconductor',
+    'IT통신': 'semiconductor',
+    '산업정책': 'regulation',
+    '대통령실': 'fiscal',
+    '청와대': 'fiscal',
+    '교육정책': 'regulation',
 }
 
 DEFAULT_SUBCATEGORY_BY_PRIMARY = {
-    'economy': 'macro',
-    'politics': 'policy',
-    'entertainment': 'broadcast',
-    'tech': 'ai',
-    'sports': 'soccer',
+    'sectors': 'semiconductor',
+    'macro': 'rates-fx',
+    'assets': 'domestic-stocks',
+    'policy': 'regulation',
 }
 
 SUPPORTED_SUBCATEGORIES = {
-    'economy': {'stocks', 'real-estate', 'macro'},
-    'politics': {'policy', 'assembly', 'diplomacy'},
-    'entertainment': {'broadcast', 'music', 'film'},
-    'tech': {'ai', 'startup', 'semiconductor'},
-    'sports': {'soccer', 'baseball', 'esports'},
+    'sectors': {'semiconductor', 'mobility', 'bio'},
+    'macro': {'rates-fx', 'energy', 'supply-chain'},
+    'assets': {'domestic-stocks', 'global-stocks', 'real-estate'},
+    'policy': {'fiscal', 'central-bank', 'regulation'},
 }
+
+KEYWORD_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
+    ('assets', 'domestic-stocks', ('증권', '증시', '코스피', '코스닥', '주가', '투자증권', '상장', '지분 매각')),
+    ('assets', 'real-estate', ('부동산', '전세', '아파트', '분양', '주택', '청약')),
+    ('assets', 'global-stocks', ('s&p', '나스닥', '다우', '미 증시', '미국 증시', '해외주식')),
+    ('macro', 'energy', ('원유', '유가', '정유', '에너지', '가스', '배럴', 'opec')),
+    ('macro', 'rates-fx', ('환율', '달러-원', '달러원', '금리', '국채', '물가', '인플레', 'cpi', 'fomc')),
+    ('policy', 'central-bank', ('한국은행', '연준', '기준금리', '통화정책', '금통위', 'fed')),
+    ('policy', 'fiscal', ('정부', '기재부', '예산', '추경', '세제', '세금', '재정')),
+    ('policy', 'regulation', ('금융위', '금감원', '규제', '법안', '공시', '감독', '제도')),
+    ('sectors', 'semiconductor', ('반도체', '메모리', '파운드리', '리노공업', 'sk하이닉스', '삼성전자')),
+    ('sectors', 'mobility', ('현대차', '기아', '배터리', '전기차', '모빌리티', '자동차')),
+    ('sectors', 'bio', ('바이오', '제약', '의료기기', '임상', '헬스케어')),
+)
 
 
 def _read_json(path: Path) -> dict | list:
@@ -85,13 +86,13 @@ def _read_json(path: Path) -> dict | list:
 
 
 def _normalise_primary(raw: str | None) -> str:
-    return PRIMARY_CATEGORY_ALIASES.get(raw or '', raw or 'politics')
+    return PRIMARY_CATEGORY_ALIASES.get(raw or '', raw or 'macro')
 
 
 def _normalise_subcategory(raw: str | None, primary: str) -> str:
-    subcategory = SUBCATEGORY_ALIASES.get(raw or '', DEFAULT_SUBCATEGORY_BY_PRIMARY.get(primary, 'policy'))
+    subcategory = SUBCATEGORY_ALIASES.get(raw or '', DEFAULT_SUBCATEGORY_BY_PRIMARY.get(primary, 'regulation'))
     if subcategory not in SUPPORTED_SUBCATEGORIES.get(primary, set()):
-        return DEFAULT_SUBCATEGORY_BY_PRIMARY.get(primary, 'policy')
+        return DEFAULT_SUBCATEGORY_BY_PRIMARY.get(primary, 'regulation')
     return subcategory
 
 
@@ -111,6 +112,33 @@ def _title(summary_payload: dict, article_payload: dict) -> str:
 
 def _published_at(article_payload: dict) -> str:
     return str(article_payload.get('date') or '').strip()[:10]
+
+
+def _classify_from_keywords(title: str, content: str) -> tuple[str, str] | None:
+    haystack = f'{title} {content}'.lower()
+    for primary, subcategory, keywords in KEYWORD_RULES:
+        if any(keyword.lower() in haystack for keyword in keywords):
+            return primary, subcategory
+    return None
+
+
+def _derive_categories(article_payload: dict, category_payload: dict) -> tuple[str, str] | None:
+    title = str(article_payload.get('title') or '')
+    content = str(article_payload.get('content') or '')
+    classified = _classify_from_keywords(title, content)
+    if classified:
+        return classified
+
+    primary = _normalise_primary(category_payload.get('primary_category'))
+    subcategory = _normalise_subcategory(category_payload.get('subcategory'), primary)
+    if primary not in SUPPORTED_SUBCATEGORIES:
+        return None
+
+    if primary == 'policy' and re.search(r'증권|증시|상장|주가|환율|금리|원유|유가|반도체|자동차|부동산', f'{title} {content}'):
+        classified = _classify_from_keywords(title, content)
+        if classified:
+            return classified
+    return primary, subcategory
 
 
 def load_summarized_articles(data_dir: Path) -> list[ArticleIngestRow]:
@@ -141,8 +169,10 @@ def load_summarized_articles(data_dir: Path) -> list[ArticleIngestRow]:
             continue
 
         category_payload = categories.get(article_id, {})
-        primary = _normalise_primary(category_payload.get('primary_category'))
-        subcategory = _normalise_subcategory(category_payload.get('subcategory'), primary)
+        derived = _derive_categories(article_payload, category_payload)
+        if derived is None:
+            continue
+        primary, subcategory = derived
         rows.append(
             ArticleIngestRow(
                 id=f'SUM-{article_id}',

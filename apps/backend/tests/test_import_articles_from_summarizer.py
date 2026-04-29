@@ -57,8 +57,8 @@ def test_import_summarized_articles_inserts_rows_into_existing_database(tmp_path
     assert article is not None
     assert article.title == '첫 번째 제목'
     assert article.summary == '첫 번째 요약'
-    assert article.primary_category == 'economy'
-    assert article.subcategory == 'stocks'
+    assert article.primary_category == 'assets'
+    assert article.subcategory == 'domestic-stocks'
 
 
 def test_import_summarized_articles_updates_existing_rows_without_duplicate_insert(tmp_path: Path):

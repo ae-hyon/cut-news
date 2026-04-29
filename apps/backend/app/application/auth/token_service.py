@@ -12,7 +12,7 @@ from app.domain.entities import AuthSession, AuthTokens, RefreshSession, UserPre
 from app.domain.enums import PreferenceMode
 from app.domain.repositories import RefreshSessionRepository
 
-DEFAULT_PRIMARY = ['economy', 'politics', 'tech']
+DEFAULT_PRIMARY = ['sectors', 'macro', 'assets', 'policy']
 
 
 class AuthTokenService:

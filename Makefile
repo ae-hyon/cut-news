@@ -7,7 +7,7 @@
 .PHONY: crawler-collect crawler-export-raw pipeline-summarizer import-articles pipeline-news clean
 
 NEWS_SOURCE ?= seeded
-NEWS_QUERY ?= 사회
+NEWS_QUERY ?= 경제
 NEWS_COUNT ?= 20
 NEWS_INPUT ?= apps/crawler/output/latest.json
 NEWS_RAW_DIR ?= apps/summarizer/data/raw

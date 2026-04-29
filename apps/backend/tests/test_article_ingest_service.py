@@ -41,8 +41,8 @@ def test_load_summarized_articles_builds_backend_article_rows_from_summarizer_ou
     assert rows[0].title == '시장 금리 하락에 증권주 강세'
     assert rows[0].summary == '시장 금리 하락 영향으로 증권주가 강세를 보였습니다.'
     assert rows[0].content.startswith('시장 금리가 하락하면서')
-    assert rows[0].primary_category == 'economy'
-    assert rows[0].subcategory == 'stocks'
+    assert rows[0].primary_category == 'assets'
+    assert rows[0].subcategory == 'domestic-stocks'
     assert rows[0].published_at == '2026-04-28'
     assert rows[0].original_url == 'https://example.com/economy/1'
     assert rows[0].score_weight == 1.0
@@ -64,11 +64,10 @@ def test_repo_summarizer_dataset_maps_to_supported_backend_categories():
 
     assert len(rows) >= 1
     supported = {
-        'economy': {'stocks', 'real-estate', 'macro'},
-        'politics': {'policy', 'assembly', 'diplomacy'},
-        'entertainment': {'broadcast', 'music', 'film'},
-        'tech': {'ai', 'startup', 'semiconductor'},
-        'sports': {'soccer', 'baseball', 'esports'},
+        'sectors': {'semiconductor', 'mobility', 'bio'},
+        'macro': {'rates-fx', 'energy', 'supply-chain'},
+        'assets': {'domestic-stocks', 'global-stocks', 'real-estate'},
+        'policy': {'fiscal', 'central-bank', 'regulation'},
     }
     for row in rows:
         assert row.primary_category in supported
