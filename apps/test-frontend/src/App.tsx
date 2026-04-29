@@ -34,7 +34,9 @@ function getScreenLabel({ selectedArticle, activeTab, showOnboardingScreen, read
 export default function App() {
   const app = usePrototypeApp()
   getScreenLabel(app)
-  const showDebug = new URLSearchParams(window.location.search).get('debug') === '1'
+  const searchParams = new URLSearchParams(window.location.search)
+  const showDebug = searchParams.get('debug') === '1'
+  const showDevDemoEntry = import.meta.env.DEV || showDebug
 
   return (
     <AppShell error={app.error}>
@@ -79,6 +81,8 @@ export default function App() {
           categories={app.categories}
           onEditMode={app.restartIntroFlow}
           onEditSelection={app.editCompletedPreferences}
+          onStartDemo={app.startDemo}
+          showDevDemoEntry={showDevDemoEntry}
           onBeginKakaoLogin={app.beginKakaoStart}
         />
       ) : (

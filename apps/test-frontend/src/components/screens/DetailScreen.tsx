@@ -1,5 +1,5 @@
 import React from 'react'
-import { toCategoryLabel } from '../../lib/constants'
+import { toCategoryLabel, toSubcategoryLabel } from '../../lib/constants'
 import { formatDateLabel } from '../../lib/dateLabel'
 import type { ArticleDetail } from '../../lib/types'
 
@@ -25,7 +25,7 @@ export default function DetailScreen({ article, onBack, onToggleScrap }: DetailS
         </div>
         <div className="detail-meta-row">
           <span>{article.published_at}</span>
-          <span>{toCategoryLabel(article.primary_category)} · {article.subcategory}</span>
+          <span>{toCategoryLabel(article.primary_category)} · {toSubcategoryLabel(article.subcategory)}</span>
         </div>
         <h2>{article.title}</h2>
         <p className="detail-body-text">{article.content}</p>
