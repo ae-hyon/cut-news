@@ -11,6 +11,9 @@ NEWS_QUERY ?= 사회
 NEWS_COUNT ?= 20
 NEWS_INPUT ?= apps/crawler/output/latest.json
 NEWS_RAW_DIR ?= apps/summarizer/data/raw
+PIPELINE_LLM_BACKEND ?= codex_exec
+PIPELINE_MODEL ?= gpt-5.4-mini
+PIPELINE_CODEX_REASONING_EFFORT ?= low
 
 help:
 	@echo "Cut News Development Commands"
@@ -128,13 +131,21 @@ crawler-collect:
 	cd apps/crawler && PYTHONPATH=src python3.11 -m crawler.collect_naver --source $(NEWS_SOURCE) --query "$(NEWS_QUERY)" --count $(NEWS_COUNT) --output-dir output
 
 crawler-export-raw:
-	cd apps/crawler && PYTHONPATH=src python3.11 -m crawler.export_raw --input ../../$(NEWS_INPUT) --output-dir ../../$(NEWS_RAW_DIR) --clear
+	cd apps/crawler && PYTHONPATH=src python3.11 -m crawler.export_raw \
+		--input ../../$(NEWS_INPUT) \
+		--output-dir ../../$(NEWS_RAW_DIR) \
+		--clear \
+		--clear-derived-dir ../../apps/summarizer/data/json \
+		--clear-derived-dir ../../apps/summarizer/data/scored \
+		--clear-derived-dir ../../apps/summarizer/data/summarized \
+		--clear-derived-dir ../../apps/summarizer/data/verified
+	rm -f apps/summarizer/data/category_map.json
 
 pipeline-summarizer:
-	cd apps/summarizer && python3.11 run_pipeline.py --from 2
+	cd apps/summarizer && PYTHONUNBUFFERED=1 PIPELINE_LLM_BACKEND=$(PIPELINE_LLM_BACKEND) PIPELINE_MODEL=$(PIPELINE_MODEL) PIPELINE_CODEX_REASONING_EFFORT=$(PIPELINE_CODEX_REASONING_EFFORT) python3.11 run_pipeline.py --from 2
 
 import-articles:
-	cd apps/backend && PYTHONPATH=. python3.11 -m app.scripts.import_articles_from_summarizer
+	cd apps/backend && PYTHONPATH=. DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" python3.11 -m app.scripts.import_articles_from_summarizer
 
 pipeline-news: crawler-collect crawler-export-raw pipeline-summarizer import-articles
 

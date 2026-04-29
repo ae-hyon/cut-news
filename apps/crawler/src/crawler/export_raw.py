@@ -64,13 +64,28 @@ def load_articles_from_json(path: Path) -> list[CrawledArticle]:
     return articles
 
 
-def export_articles_to_raw(input_path: Path, output_dir: Path, *, clear: bool = False) -> list[Path]:
-    if clear and output_dir.exists():
-        for child in output_dir.iterdir():
-            if child.is_file() and child.suffix == '.txt':
+def _clear_directory(path: Path, *, suffixes: tuple[str, ...] | None = None) -> None:
+    if not path.exists():
+        return
+    for child in path.iterdir():
+        if child.is_file():
+            if suffixes is None or child.suffix in suffixes:
                 child.unlink()
-            elif child.is_dir():
-                shutil.rmtree(child)
+        elif child.is_dir():
+            shutil.rmtree(child)
+
+
+def export_articles_to_raw(
+    input_path: Path,
+    output_dir: Path,
+    *,
+    clear: bool = False,
+    clear_derived_dirs: list[Path] | None = None,
+) -> list[Path]:
+    if clear:
+        _clear_directory(output_dir, suffixes=('.txt',))
+        for derived_dir in clear_derived_dirs or []:
+            _clear_directory(derived_dir)
     return save_raw_articles(load_articles_from_json(input_path), output_dir)
 
 
@@ -79,9 +94,21 @@ def main() -> None:
     parser.add_argument('--input', required=True, type=Path, help='crawler output JSON file')
     parser.add_argument('--output-dir', required=True, type=Path, help='summarizer raw output directory')
     parser.add_argument('--clear', action='store_true', help='remove stale raw files before writing new ones')
+    parser.add_argument(
+        '--clear-derived-dir',
+        action='append',
+        default=[],
+        type=Path,
+        help='also clear downstream summarizer output directories so the next pipeline run only uses the latest raw dataset',
+    )
     args = parser.parse_args()
 
-    paths = export_articles_to_raw(args.input, args.output_dir, clear=args.clear)
+    paths = export_articles_to_raw(
+        args.input,
+        args.output_dir,
+        clear=args.clear,
+        clear_derived_dirs=args.clear_derived_dir,
+    )
     print(f'exported {len(paths)} articles to {args.output_dir}')
 
 

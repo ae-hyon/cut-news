@@ -137,6 +137,41 @@ def _normalize_result_texts(result: dict) -> None:
             result[field] = " ".join(value.split())
 
 
+def _compute_length_violations(result: dict) -> list[str]:
+    violations = []
+    for field, (min_len, max_len) in {"headline_34": (29, 34), "headline_58": (50, 58), "headline_89": (76, 89)}.items():
+        val = result.get(field, "")
+        val_len = len(val)
+        result[f"_{field}_len"] = val_len
+        if val_len < min_len:
+            violations.append(f"{field}:{val_len}<{min_len}")
+        elif val_len > max_len:
+            violations.append(f"{field}:{val_len}>{max_len}")
+    result["_violations"] = violations
+    return violations
+
+
+def _repair_overlong_headlines(result: dict) -> list[str]:
+    repaired_fields: list[str] = []
+    for field, (_, max_len) in {"headline_34": (29, 34), "headline_58": (50, 58), "headline_89": (76, 89)}.items():
+        value = result.get(field)
+        if not isinstance(value, str):
+            continue
+        overflow = len(value) - max_len
+        if overflow <= 0:
+            continue
+        if overflow > 5:
+            continue
+        trimmed = value[:max_len].rstrip(" ,·-—:;…")
+        if len(trimmed) < max_len - 5:
+            continue
+        result[field] = trimmed
+        repaired_fields.append(field)
+    if repaired_fields:
+        result["_auto_trimmed_fields"] = repaired_fields
+    return repaired_fields
+
+
 def _check_hallucination(article: dict, result: dict) -> dict:
     """요약 결과에 대해 할루시네이션 검증. verdict/hallucinations/confidence 반환."""
     summary_text = "\n".join([
@@ -190,20 +225,16 @@ def process_file(json_path: Path) -> dict | None:
             _normalize_result_texts(result)
 
             # 글자 수 검증
-            violations = []
-            for field, (min_len, max_len) in {"headline_34": (29, 34), "headline_58": (50, 58), "headline_89": (76, 89)}.items():
-                val = result.get(field, "")
-                val_len = len(val)
-                result[f"_{field}_len"] = val_len
-                if val_len < min_len:
-                    violations.append(f"{field}:{val_len}<{min_len}")
-                elif val_len > max_len:
-                    violations.append(f"{field}:{val_len}>{max_len}")
-            result["_violations"] = violations
+            violations = _compute_length_violations(result)
 
             if violations and attempt < MAX_RETRIES:
                 user_prompt = _build_length_retry_prompt(article, result, violations)
                 continue
+
+            if violations:
+                repaired_fields = _repair_overlong_headlines(result)
+                if repaired_fields:
+                    violations = _compute_length_violations(result)
 
             if violations:
                 raise ValueError(

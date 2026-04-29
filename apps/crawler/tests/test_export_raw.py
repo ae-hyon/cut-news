@@ -84,3 +84,33 @@ def test_export_articles_to_raw_clears_stale_raw_files_before_writing_latest_dat
     assert paths == [raw_dir / '001.txt']
     assert not stale_path.exists()
     assert '제목: 새 기사' in paths[0].read_text(encoding='utf-8')
+
+
+def test_export_articles_to_raw_can_clear_downstream_summarizer_outputs_for_fresh_pipeline_run(tmp_path: Path):
+    input_path = tmp_path / 'articles.json'
+    raw_dir = tmp_path / 'raw'
+    derived_dir = tmp_path / 'summarized'
+    raw_dir.mkdir()
+    derived_dir.mkdir()
+    (derived_dir / '001.json').write_text('{"stale": true}', encoding='utf-8')
+    nested_dir = derived_dir / 'nested'
+    nested_dir.mkdir()
+    (nested_dir / 'keep.txt').write_text('stale nested', encoding='utf-8')
+    input_path.write_text(
+        json.dumps(
+            [
+                {
+                    'title': '새 기사',
+                    'url': 'https://news.example.com/new/1',
+                    'content': '새 기사 본문입니다.',
+                }
+            ],
+            ensure_ascii=False,
+        ),
+        encoding='utf-8',
+    )
+
+    paths = export_articles_to_raw(input_path, raw_dir, clear=True, clear_derived_dirs=[derived_dir])
+
+    assert paths == [raw_dir / '001.txt']
+    assert list(derived_dir.iterdir()) == []
