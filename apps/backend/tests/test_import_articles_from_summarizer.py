@@ -36,6 +36,7 @@ def write_dataset(base: Path, title: str, summary: str, article_id: str = '001',
             'summary': summary,
         },
     )
+    write_json(base / 'verified' / f'{article_id}.json', {'verdict': 'clean', '_article_id': article_id, '_title': title})
     write_json(base / 'category_map.json', [{'article_id': article_id, 'primary_category': '경제', 'subcategory': '증권'}])
 
 
@@ -59,6 +60,18 @@ def test_import_summarized_articles_inserts_rows_into_existing_database(tmp_path
     assert article.summary == '첫 번째 요약'
     assert article.primary_category == 'assets'
     assert article.subcategory == 'domestic-stocks'
+
+
+def test_import_summarized_articles_skips_non_clean_verifications(tmp_path: Path):
+    write_dataset(tmp_path, '첫 번째 제목', '첫 번째 요약')
+    write_json(tmp_path / 'verified' / '001.json', {'verdict': 'suspicious', '_article_id': '001', '_title': '첫 번째 제목'})
+    session = make_session()
+
+    stats = import_summarized_articles(session, tmp_path)
+
+    assert stats.inserted == 0
+    assert stats.updated == 0
+    assert session.get(ArticleModel, 'SUM-001') is None
 
 
 def test_import_summarized_articles_updates_existing_rows_without_duplicate_insert(tmp_path: Path):

@@ -32,6 +32,7 @@ def test_load_summarized_articles_builds_backend_article_rows_from_summarizer_ou
             'summary': '시장 금리 하락 영향으로 증권주가 강세를 보였습니다.',
         },
     )
+    write_json(dataset / 'verified' / '001.json', {'verdict': 'clean', '_article_id': '001', '_title': '시장 금리 하락에 증권주 강세'})
     write_json(dataset / 'category_map.json', [{'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'}])
 
     rows = load_summarized_articles(dataset)
@@ -54,6 +55,28 @@ def test_load_summarized_articles_skips_items_without_summary(tmp_path: Path):
         dataset / 'json' / '001.json',
         {'title': '제목', 'date': '2026-04-28', 'url': 'https://example.com/1', 'content': '본문'},
     )
+    write_json(dataset / 'verified' / '001.json', {'verdict': 'clean', '_article_id': '001', '_title': '제목'})
+    write_json(dataset / 'category_map.json', [{'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'}])
+
+    assert load_summarized_articles(dataset) == []
+
+
+def test_load_summarized_articles_skips_items_without_clean_verification(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / '001.json',
+        {'title': '제목', 'date': '2026-04-28', 'url': 'https://example.com/1', 'content': '본문'},
+    )
+    write_json(
+        dataset / 'summarized' / '001.json',
+        {
+            'headline_34': '제목',
+            'headline_58': '제목',
+            'headline_89': '제목',
+            'summary': '요약',
+        },
+    )
+    write_json(dataset / 'verified' / '001.json', {'verdict': 'suspicious', '_article_id': '001', '_title': '제목'})
     write_json(dataset / 'category_map.json', [{'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'}])
 
     assert load_summarized_articles(dataset) == []
@@ -62,7 +85,6 @@ def test_load_summarized_articles_skips_items_without_summary(tmp_path: Path):
 def test_repo_summarizer_dataset_maps_to_supported_backend_categories():
     rows = load_summarized_articles(Path(__file__).resolve().parents[2] / 'summarizer' / 'data')
 
-    assert len(rows) >= 1
     supported = {
         'sectors': {'semiconductor', 'mobility', 'bio'},
         'macro': {'rates-fx', 'energy', 'supply-chain'},

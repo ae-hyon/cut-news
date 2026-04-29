@@ -5,6 +5,7 @@ export type PreferenceMode = 'wide' | 'narrow'
 export interface HealthResponse {
   status: string
   app: string
+  version: string
 }
 
 export interface AuthStartResponse {
@@ -62,8 +63,8 @@ export interface ArticleDetail extends ArticleCard {
 }
 
 export interface FeedBlock {
-  block_id: string
-  label: string
+  key: string
+  title: string
   weight: number
   articles: ArticleCard[]
 }

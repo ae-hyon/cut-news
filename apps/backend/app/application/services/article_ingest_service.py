@@ -144,7 +144,8 @@ def _derive_categories(article_payload: dict, category_payload: dict) -> tuple[s
 def load_summarized_articles(data_dir: Path) -> list[ArticleIngestRow]:
     json_dir = data_dir / 'json'
     summarized_dir = data_dir / 'summarized'
-    if not json_dir.exists() or not summarized_dir.exists():
+    verified_dir = data_dir / 'verified'
+    if not json_dir.exists() or not summarized_dir.exists() or not verified_dir.exists():
         return []
 
     categories = _category_index(data_dir)
@@ -152,12 +153,16 @@ def load_summarized_articles(data_dir: Path) -> list[ArticleIngestRow]:
     for article_path in sorted(json_dir.glob('*.json')):
         article_id = article_path.stem
         summary_path = summarized_dir / f'{article_id}.json'
-        if not summary_path.exists():
+        verification_path = verified_dir / f'{article_id}.json'
+        if not summary_path.exists() or not verification_path.exists():
             continue
 
         article_payload = _read_json(article_path)
         summary_payload = _read_json(summary_path)
-        if not isinstance(article_payload, dict) or not isinstance(summary_payload, dict):
+        verification_payload = _read_json(verification_path)
+        if not isinstance(article_payload, dict) or not isinstance(summary_payload, dict) or not isinstance(verification_payload, dict):
+            continue
+        if str(verification_payload.get('verdict') or '').strip().lower() != 'clean':
             continue
 
         summary = str(summary_payload.get('summary') or '').strip()
