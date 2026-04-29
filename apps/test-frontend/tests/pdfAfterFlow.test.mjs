@@ -30,6 +30,9 @@ test('home and scraps use PDF-style masonry card boards', async () => {
 
   assert.match(home, /className="pdf-card-board home-card-board"/)
   assert.match(home, /onEditPreference: \(\) => void/)
+  assert.match(home, /const emptyMessage = preference\?\.onboarding_completed/)
+  assert.match(home, /선택한 관심사에 맞는 뉴스가 아직 없어요\./)
+  assert.match(home, /관심사를 선택하면 뉴스가 표시됩니다\./)
   assert.match(home, /<button onClick=\{onEditPreference\}>선택<\/button>/)
   assert.match(app, /onEditPreference=\{app\.editCompletedPreferences\}/)
   assert.match(scraps, /className="pdf-card-board scraps-card-board"/)
