@@ -130,6 +130,48 @@ def _build_density_retry_prompt(article: dict, result: dict) -> str | None:
     )
 
 
+def _can_attempt_final_underlength_rescue(violations: list[str]) -> bool:
+    if not violations:
+        return False
+    for violation in violations:
+        field, detail = violation.split(":", 1)
+        if ">" in detail:
+            return False
+        current_len, min_len = detail.split("<", 1)
+        if int(min_len) - int(current_len) > 8:
+            return False
+        if field not in {"headline_34", "headline_58", "headline_89"}:
+            return False
+    return True
+
+
+def _build_final_underlength_rescue_prompt(article: dict, result: dict, violations: list[str]) -> str:
+    guidance = []
+    for violation in violations:
+        field = violation.split(":", 1)[0]
+        current_len = result.get(f"_{field}_len", len(result.get(field, "")))
+        if field == "headline_34":
+            min_len, max_len = 29, 34
+        elif field == "headline_58":
+            min_len, max_len = 50, 58
+        else:
+            min_len, max_len = 76, 89
+        guidance.append(
+            f"- {field}: 현재 {current_len}자입니다. 기존 의미는 유지하고 원문에 있는 주체·수치·대상 중 빠진 사실을 보강해 최소 {min_len}자, 가능하면 {max_len - 1}~{max_len}자로 맞추세요."
+        )
+    guidance_text = "\n".join(guidance)
+    return (
+        "다음 뉴스 기사를 다시 요약해주세요.\n"
+        "이전 응답은 거의 맞았지만 일부 headline이 최소 글자 수에 몇 글자 부족합니다.\n"
+        "이번에는 부족한 headline만 원문 사실로 조금 더 보강해 길이 계약을 정확히 맞추세요.\n"
+        "절대 원문에 없는 해석이나 배경을 추가하지 말고, 이미 범위를 만족한 headline과 summary의 의미는 최대한 유지하세요.\n"
+        f"{guidance_text}\n"
+        f"현재 위반: {violations}\n"
+        f"이전 응답: {json.dumps(result, ensure_ascii=False)}\n\n"
+        f"기사: {json.dumps(article, ensure_ascii=False, indent=2)}"
+    )
+
+
 def _normalize_result_texts(result: dict) -> None:
     for field in ("headline_34", "headline_58", "headline_89", "summary"):
         value = result.get(field)
@@ -235,6 +277,18 @@ def process_file(json_path: Path) -> dict | None:
                 repaired_fields = _repair_overlong_headlines(result)
                 if repaired_fields:
                     violations = _compute_length_violations(result)
+
+            if violations and attempt == MAX_RETRIES and _can_attempt_final_underlength_rescue(violations):
+                rescue_prompt = _build_final_underlength_rescue_prompt(article, result, violations)
+                rescue_response = call_llm(SYSTEM, rescue_prompt, temperature=0.2, timeout=300)
+                result = parse_json_response(rescue_response)
+                _normalize_result_texts(result)
+                violations = _compute_length_violations(result)
+                if violations:
+                    repaired_fields = _repair_overlong_headlines(result)
+                    if repaired_fields:
+                        violations = _compute_length_violations(result)
+                result["_final_length_rescue"] = True
 
             if violations:
                 raise ValueError(
