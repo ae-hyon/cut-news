@@ -687,6 +687,9 @@
   font-style: normal;
   font-weight: 850;
 }
+.archive-empty-state {
+  margin-top: 18px;
+}
 .archive-date-panel {
   position: relative;
   margin: 4px -4px 0;
