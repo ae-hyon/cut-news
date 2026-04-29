@@ -1,5 +1,5 @@
 import React from 'react'
-import type { ArchiveDateResponse, ArchiveDay, ArchiveMonthResponse, FeedResponse } from '../lib/types'
+import type { ArchiveDateResponse, ArchiveDay, ArchiveMonthResponse, ArticleCard, FeedResponse } from '../lib/types'
 import { getArchiveDate, getArchiveMonth } from '../services/backendApi'
 
 function toArchiveDateResponse(userId: string, day?: ArchiveDay | null): ArchiveDateResponse | null {
@@ -17,6 +17,20 @@ function pickArchiveDay(days: ArchiveDay[], preferredDate?: string | null): Arch
     if (matched) return matched
   }
   return days[0] ?? null
+}
+
+function updateArticle(article: ArticleCard, articleId: string, nextScrapped: boolean): ArticleCard {
+  if (article.id !== articleId) return article
+  return { ...article, is_scrapped: nextScrapped }
+}
+
+function updateArchiveDay(day: ArchiveDay, articleId: string, nextScrapped: boolean): ArchiveDay {
+  const updatedItems = day.items.map((article) => updateArticle(article, articleId, nextScrapped))
+  return {
+    ...day,
+    items: nextScrapped ? updatedItems : updatedItems.filter((article) => article.id !== articleId),
+    count: nextScrapped ? updatedItems.length : updatedItems.filter((article) => article.id !== articleId).length,
+  }
 }
 
 export function useArchiveState() {
@@ -69,6 +83,22 @@ export function useArchiveState() {
     setArchiveDateData(null)
   }, [])
 
+  const applyScrapState = React.useCallback((articleId: string, nextScrapped: boolean) => {
+    setArchiveMonthData((currentMonthData) => currentMonthData ? {
+      ...currentMonthData,
+      days: currentMonthData.days
+        .map((day) => updateArchiveDay(day, articleId, nextScrapped))
+        .filter((day) => day.items.length > 0),
+    } : currentMonthData)
+
+    setArchiveDateData((currentDateData) => currentDateData ? {
+      ...currentDateData,
+      items: nextScrapped
+        ? currentDateData.items.map((article) => updateArticle(article, articleId, nextScrapped))
+        : currentDateData.items.filter((article) => article.id !== articleId),
+    } : currentDateData)
+  }, [])
+
   return {
     archiveMonth,
     archiveMonthData,
@@ -79,6 +109,7 @@ export function useArchiveState() {
     restoreArchiveContext,
     openArchiveDate,
     closeArchiveDate,
+    applyScrapState,
   }
 }
 
