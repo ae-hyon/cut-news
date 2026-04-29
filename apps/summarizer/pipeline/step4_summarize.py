@@ -35,10 +35,23 @@ VERIFY_SYSTEM = """당신은 팩트체크 전문가입니다. 뉴스 기사 원�
 }"""
 
 PREFERRED_HEADLINE_FLOORS = {
-    "headline_34": 32,
+    "headline_34": 31,
     "headline_58": 54,
     "headline_89": 82,
 }
+
+
+def _build_directional_fact_rules(article: dict) -> list[str]:
+    text = f"{article.get('title', '')}\n{article.get('content', '')}"
+    directional_markers = [
+        "상승", "하락", "오름", "내림", "상승분", "반납", "마감", "종가", "장중", "등락", "WTI", "브렌트유", "달러-원", "환율", "유가",
+    ]
+    if not any(marker in text for marker in directional_markers):
+        return []
+    return [
+        "가격·지수·환율·유가 기사에서는 상승/하락 방향, 변동률, 마감가를 원문과 다르게 바꾸지 마세요.",
+        "장중 움직임과 최종 마감 결과를 혼동하지 말고, '상승분 반납' 같은 표현을 임의로 '상승'으로 바꾸지 마세요.",
+    ]
 
 
 def _build_initial_prompt(article: dict) -> str:
@@ -61,6 +74,7 @@ def _build_initial_prompt(article: dict) -> str:
         extra_rules.append(
             "기상 기사이므로 원문에 없는 '주의 필요', '안전 유의' 같은 상식적 권고를 추가하지 마세요."
         )
+    extra_rules.extend(_build_directional_fact_rules(article))
 
     return (
         "다음 뉴스 기사를 요약해주세요.\n"
@@ -234,11 +248,20 @@ def _check_hallucination(article: dict, result: dict) -> dict:
 
 def _build_retry_prompt(article: dict, hallucinations: list[str]) -> str:
     issues = "\n".join(f"- {h}" for h in hallucinations)
+    extra_guidance = _build_directional_fact_rules(article)
+    if any(keyword in issues for keyword in ["상승", "하락", "반납", "마감", "WTI", "유가", "환율"]):
+        extra_guidance.append(
+            "특히 방향·변동률·마감가 오류를 고치세요. 장중 고점/저점이나 상승분 반납을 최종 등락 방향으로 오해하면 안 됩니다."
+        )
+    guidance_block = ""
+    if extra_guidance:
+        guidance_block = "\n[추가 수정 지침]\n- " + "\n- ".join(extra_guidance)
     return (
         f"다음 뉴스 기사를 요약해주세요.\n\n"
         f"{json.dumps(article, ensure_ascii=False, indent=2)}\n\n"
         f"[이전 요약의 문제점 — 아래 내용은 원문에 없는 정보입니다. 반드시 제거하거나 수정하세요]\n"
         f"{issues}"
+        f"{guidance_block}"
     )
 
 
