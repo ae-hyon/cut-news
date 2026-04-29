@@ -87,3 +87,56 @@ def test_process_file_salvages_small_overflow_by_trimming_last_retry_result(tmp_
     assert len(result["headline_58"]) == 58
     assert len(result["headline_89"]) == 89
     assert (summarized_dir / "010.json").exists()
+
+
+def test_process_file_attempts_final_underlength_rescue_on_last_retry(tmp_path, monkeypatch):
+    article_path = tmp_path / "011.json"
+    article_path.write_text(
+        json.dumps(
+            {
+                "title": "테스트 기사",
+                "content": "이 기사는 마지막 재시도 뒤에도 몇 글자 부족한 headline을 한 번 더 구조화된 프롬프트로 복구하는지 확인합니다.",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    summarized_dir = tmp_path / "summarized"
+    monkeypatch.setattr(step4_summarize, "SUMMARIZED_DIR", summarized_dir)
+    monkeypatch.setenv("PIPELINE_SKIP_INLINE_VERIFY", "1")
+
+    first_payload = json.dumps(
+        {
+            "headline_34": "가" * 34,
+            "headline_58": "나" * 46,
+            "headline_89": "다" * 89,
+            "summary": "요약 본문",
+        },
+        ensure_ascii=False,
+    )
+    rescued_payload = json.dumps(
+        {
+            "headline_34": "가" * 34,
+            "headline_58": "나" * 55,
+            "headline_89": "다" * 89,
+            "summary": "요약 본문",
+        },
+        ensure_ascii=False,
+    )
+
+    responses = [first_payload, first_payload, first_payload, rescued_payload]
+
+    def fake_call_llm(*args, **kwargs):
+        return responses.pop(0)
+
+    monkeypatch.setattr(step4_summarize, "call_llm", fake_call_llm)
+
+    result = step4_summarize.process_file(article_path)
+
+    assert result is not None
+    assert result["_final_length_rescue"] is True
+    assert len(result["headline_58"]) == 55
+    assert result["_retry_count"] == 2
+    assert not (summarized_dir / "011_error.json").exists()
+    assert (summarized_dir / "011.json").exists()
