@@ -68,3 +68,16 @@ test('onboarding complete chips route mode editing and selection editing separat
   assert.match(app, /onEditMode=\{app\.restartIntroFlow\}/)
   assert.match(app, /onEditSelection=\{app\.editCompletedPreferences\}/)
 })
+
+test('onboarding complete exposes a dev-only demo entry wired to startDemo', async () => {
+  const completeScreen = await readFile(path.join(projectRoot, 'src/components/screens/OnboardingCompleteScreen.tsx'), 'utf8')
+  const app = await readFile(path.join(projectRoot, 'src/App.tsx'), 'utf8')
+
+  assert.match(completeScreen, /onStartDemo\?: \(\) => void/)
+  assert.match(completeScreen, /showDevDemoEntry\?: boolean/)
+  assert.match(completeScreen, /showDevDemoEntry && !!onStartDemo/)
+  assert.match(completeScreen, /로컬 데모 피드로 바로 보기/)
+  assert.match(app, /const showDevDemoEntry = import\.meta\.env\.DEV \|\| showDebug/)
+  assert.match(app, /onStartDemo=\{app\.startDemo\}/)
+  assert.match(app, /showDevDemoEntry=\{showDevDemoEntry\}/)
+})

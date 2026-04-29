@@ -12,9 +12,11 @@ interface OnboardingCompleteScreenProps {
   onEditMode: () => void
   onEditSelection: () => void
   onBeginKakaoLogin: () => void
+  onStartDemo?: () => void
+  showDevDemoEntry?: boolean
 }
 
-export default function OnboardingCompleteScreen({ loading, mode, preference, categories, onEditMode, onEditSelection, onBeginKakaoLogin }: OnboardingCompleteScreenProps) {
+export default function OnboardingCompleteScreen({ loading, mode, preference, categories, onEditMode, onEditSelection, onBeginKakaoLogin, onStartDemo, showDevDemoEntry = false }: OnboardingCompleteScreenProps) {
   const summaryChip = formatPreferenceSummary(mode, preference, categories)
 
   return (
@@ -39,6 +41,9 @@ export default function OnboardingCompleteScreen({ loading, mode, preference, ca
         {!!summaryChip && <button className="chip static-chip" onClick={onEditSelection}>{summaryChip}</button>}
       </div>
 
+      {showDevDemoEntry && !!onStartDemo && (
+        <button className="secondary-cta pdf-bottom-cta" onClick={onStartDemo} disabled={loading}>로컬 데모 피드로 바로 보기</button>
+      )}
       <button className="primary-cta pdf-bottom-cta" onClick={onBeginKakaoLogin} disabled={loading}>카카오 로그인하고 매일 블록 받아보기</button>
     </section>
   )

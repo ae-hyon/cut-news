@@ -33,6 +33,7 @@ test('home and scraps use PDF-style masonry card boards', async () => {
 
 test('detail screen matches PDF summary-card plus action-row structure', async () => {
   const detail = await source('src/components/screens/DetailScreen.tsx')
+  const constants = await source('src/lib/constants.ts')
   const css = await source('src/styles/screens.css')
 
   assert.match(detail, /detail-close-button/)
@@ -40,6 +41,9 @@ test('detail screen matches PDF summary-card plus action-row structure', async (
   assert.match(detail, /detail-meta-row/)
   assert.match(detail, /detail-action-row/)
   assert.match(detail, /원문 보기/)
+  assert.match(detail, /toSubcategoryLabel\(article\.subcategory\)/)
+  assert.match(constants, /energy: '에너지'/)
+  assert.match(constants, /'rates-fx': '환율·금리'/)
   assert.match(css, /\.detail-summary-card/)
   assert.match(css, /\.detail-action-row/)
 })
