@@ -73,6 +73,10 @@ export default function ArchiveScreen({ archiveMonth, archiveMonthOptions, archi
         })}
       </div>
 
+      {archiveDays.length === 0 && (
+        <p className="empty-state compact archive-empty-state">선택한 관심사에 맞는 아카이브 뉴스가 아직 없어요.</p>
+      )}
+
       {archiveDateData && (
         <div className="archive-date-panel">
           <button className="archive-date-close" onClick={onCloseArchiveDate} aria-label="날짜별 보기 닫기">×</button>
@@ -81,7 +85,7 @@ export default function ArchiveScreen({ archiveMonth, archiveMonthOptions, archi
             <h3>{formatDateLabel(archiveDateData.date)}</h3>
             <span>총 {archiveDateData.items.length}건</span>
           </div>
-          {archiveDateData.items.length === 0 ? <p className="empty-state compact">이 날짜에는 저장된 뉴스가 없어요.</p> : (
+          {archiveDateData.items.length === 0 ? <p className="empty-state compact">이 날짜에는 관심사에 맞는 아카이브 뉴스가 없어요.</p> : (
             <div className="pdf-card-board archive-date-board">
               {archiveDateData.items.map((article, idx) => (
                 <NewsCard key={article.id} article={article} index={idx} size={idx % 2 === 0 ? 'feature' : 'regular'} onOpenArticle={onOpenArticle} onToggleScrap={noopScrap} />
