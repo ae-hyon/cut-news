@@ -37,3 +37,12 @@ test('archive month selection is derived from backend/feed state without fixed P
   assert.doesNotMatch(archive, /2026-04-14/)
   assert.match(prototype, /archiveMonthOptions: \[archive\.archiveMonth\]/)
 })
+
+test('archive defaults to the current feed-leading date instead of the earliest day in the month', async () => {
+  const archive = await readFile(path.join(projectRoot, 'src/hooks/useArchiveState.ts'), 'utf8')
+
+  assert.match(archive, /function pickArchiveDay\(days: ArchiveDay\[], preferredDate\?: string \| null\)/)
+  assert.match(archive, /const matched = days\.find\(\(day\) => day\.date === preferredDate\)/)
+  assert.match(archive, /const selectedDay = pickArchiveDay\(archiveData\.days, firstArticleDate\)/)
+  assert.match(archive, /setArchiveDateData\(toArchiveDateResponse\(userId, selectedDay\)\)/)
+})

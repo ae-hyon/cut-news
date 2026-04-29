@@ -1,6 +1,23 @@
 import React from 'react'
-import type { ArchiveDateResponse, ArchiveMonthResponse, FeedResponse } from '../lib/types'
+import type { ArchiveDateResponse, ArchiveDay, ArchiveMonthResponse, FeedResponse } from '../lib/types'
 import { getArchiveDate, getArchiveMonth } from '../services/backendApi'
+
+function toArchiveDateResponse(userId: string, day?: ArchiveDay | null): ArchiveDateResponse | null {
+  if (!day) return null
+  return {
+    user_id: userId,
+    date: day.date,
+    items: day.items,
+  }
+}
+
+function pickArchiveDay(days: ArchiveDay[], preferredDate?: string | null): ArchiveDay | null {
+  if (preferredDate) {
+    const matched = days.find((day) => day.date === preferredDate)
+    if (matched) return matched
+  }
+  return days[0] ?? null
+}
 
 export function useArchiveState() {
   const initialArchiveMonth = React.useMemo(() => new Date().toISOString().slice(0, 7), [])
@@ -19,8 +36,8 @@ export function useArchiveState() {
     setArchiveMonth(derivedMonth)
     const archiveData = await getArchiveMonth(userId, derivedMonth)
     setArchiveMonthData(archiveData)
-    const firstDay = archiveData.days[0]
-    setArchiveDateData(firstDay ? { user_id: userId, date: firstDay.date, items: firstDay.items } : null)
+    const selectedDay = pickArchiveDay(archiveData.days, firstArticleDate)
+    setArchiveDateData(toArchiveDateResponse(userId, selectedDay))
     return archiveData
   }, [])
 
@@ -28,8 +45,8 @@ export function useArchiveState() {
     setArchiveMonth(nextMonth)
     const data = await getArchiveMonth(userId, nextMonth)
     setArchiveMonthData(data)
-    const firstDay = data.days[0]
-    setArchiveDateData(firstDay ? { user_id: userId, date: firstDay.date, items: firstDay.items } : null)
+    const firstDay = pickArchiveDay(data.days)
+    setArchiveDateData(toArchiveDateResponse(userId, firstDay))
     return data
   }, [])
 
