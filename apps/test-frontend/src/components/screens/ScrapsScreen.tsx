@@ -12,7 +12,10 @@ export default function ScrapsScreen({ scraps, onOpenArticle, onToggleScrap }: S
   return (
     <section className="screen list-screen scraps-screen">
       <div className="scraps-context-row">
-        <span>저장한 뉴스</span>
+        <div>
+          <span>저장한 뉴스</span>
+          <p className="screen-helper-text">관심 분야를 바꿔도, 저장한 기사는 여기서 다시 볼 수 있어요.</p>
+        </div>
         <strong>{scraps.length}개</strong>
       </div>
       {scraps.length === 0 ? <p className="empty-state">아직 스크랩한 기사가 없어요.</p> : (
