@@ -32,16 +32,35 @@ class FeedService:
             return [1.0]
         return [round(1.0 - 0.15 * idx, 2) for idx in range(count)]
 
-    def get_feed(self, user_id: str) -> dict:
+    def _resolve_preference(self, user_id: str) -> tuple[PreferenceMode, list[str], list[str]]:
         preference = self.preference_repository.get(user_id)
         if not preference:
-            preference_mode = PreferenceMode.WIDE
-            primary_categories = ['sectors', 'macro', 'assets', 'policy']
-            subcategories = []
-        else:
-            preference_mode = preference.mode
-            primary_categories = preference.primary_categories
-            subcategories = preference.subcategories
+            return PreferenceMode.WIDE, ['sectors', 'macro', 'assets', 'policy'], []
+        return preference.mode, preference.primary_categories, preference.subcategories
+
+    @staticmethod
+    def _matches_preference(
+        article: Article,
+        preference_mode: PreferenceMode,
+        primary_categories: list[str],
+        subcategories: list[str],
+    ) -> bool:
+        if preference_mode is PreferenceMode.NARROW:
+            if not primary_categories:
+                return False
+            return article.primary_category == primary_categories[0] and article.subcategory in subcategories
+        return article.primary_category in primary_categories
+
+    def _filter_articles_for_user(self, user_id: str, articles: list[Article]) -> list[Article]:
+        preference_mode, primary_categories, subcategories = self._resolve_preference(user_id)
+        return [
+            article
+            for article in articles
+            if self._matches_preference(article, preference_mode, primary_categories, subcategories)
+        ]
+
+    def get_feed(self, user_id: str) -> dict:
+        preference_mode, primary_categories, subcategories = self._resolve_preference(user_id)
 
         if preference_mode is PreferenceMode.NARROW:
             articles = self._sort_articles(self.article_repository.list_by_primary_and_subcategories(primary_categories[0], subcategories))
@@ -96,11 +115,11 @@ class FeedService:
     def remove_scrap(self, user_id: str, article_id: str) -> None:
         self.scrap_repository.remove(user_id, article_id)
 
-    def list_archive_month(self, month: str) -> dict[str, list[Article]]:
+    def list_archive_month(self, user_id: str, month: str) -> dict[str, list[Article]]:
         grouped: dict[str, list[Article]] = defaultdict(list)
-        for article in self.article_repository.list_by_month(month):
+        for article in self._filter_articles_for_user(user_id, self.article_repository.list_by_month(month)):
             grouped[article.published_at].append(article)
         return dict(sorted(grouped.items()))
 
-    def list_archive_date(self, archive_date: str) -> list[Article]:
-        return self.article_repository.list_by_date(archive_date)
+    def list_archive_date(self, user_id: str, archive_date: str) -> list[Article]:
+        return self._filter_articles_for_user(user_id, self.article_repository.list_by_date(archive_date))
