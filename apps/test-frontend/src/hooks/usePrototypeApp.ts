@@ -21,6 +21,12 @@ type LoadUserStateOptions = {
   preferredArchiveDate?: string | null
 }
 
+type PreferenceEditReturnContext = {
+  preferredTab: AppTab
+  preferredArchiveMonth?: string | null
+  preferredArchiveDate?: string | null
+}
+
 export function usePrototypeApp() {
   const auth = useAuthSession()
   const content = useContentFeed()
@@ -30,6 +36,7 @@ export function usePrototypeApp() {
 
   const [preference, setPreference] = React.useState<UserPreference | null>(null)
   const [isEditingCompletedPreference, setIsEditingCompletedPreference] = React.useState(false)
+  const [preferenceEditReturnContext, setPreferenceEditReturnContext] = React.useState<PreferenceEditReturnContext | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
 
@@ -74,6 +81,7 @@ export function usePrototypeApp() {
     }
 
     setIsEditingCompletedPreference(false)
+    setPreferenceEditReturnContext(null)
     auth.setUserId(nextUserId)
     auth.setSession({
       ...sessionData,
@@ -172,6 +180,7 @@ export function usePrototypeApp() {
         onboarding_completed: false,
       })
       setIsEditingCompletedPreference(false)
+      setPreferenceEditReturnContext(null)
       content.clearContent()
       archive.clearArchive()
       content.setSelectedArticle(null)
@@ -192,6 +201,8 @@ export function usePrototypeApp() {
     auth.setUserId(null)
     auth.setSession(null)
     setPreference(null)
+    setIsEditingCompletedPreference(false)
+    setPreferenceEditReturnContext(null)
     content.clearContent()
     content.setSelectedArticle(null)
     archive.clearArchive()
@@ -269,8 +280,10 @@ export function usePrototypeApp() {
       auth.setSession((prev) => prev ? { ...prev, onboarding_completed: true } : prev)
 
       if (isEditingCompletedPreference) {
+        const returnContext = preferenceEditReturnContext
         setIsEditingCompletedPreference(false)
-        await loadUserState(auth.userId as string)
+        setPreferenceEditReturnContext(null)
+        await loadUserState(auth.userId as string, returnContext ?? undefined)
         return
       }
 
@@ -336,8 +349,13 @@ export function usePrototypeApp() {
 
   const editCompletedPreferences = React.useCallback(() => {
     setIsEditingCompletedPreference(true)
+    setPreferenceEditReturnContext({
+      preferredTab: view.activeTab,
+      preferredArchiveMonth: view.activeTab === 'archive' ? archive.archiveMonth : null,
+      preferredArchiveDate: view.activeTab === 'archive' ? archive.archiveDateData?.date ?? null : null,
+    })
     view.resetToOnboarding()
-  }, [view.resetToOnboarding])
+  }, [archive.archiveDateData, archive.archiveMonth, view.activeTab, view.resetToOnboarding])
 
   const showOnboardingScreen = Boolean(auth.userId) && (!preference?.onboarding_completed || view.activeTab === 'onboarding')
   const showOnboardingCompleteScreen = Boolean(auth.userId) && Boolean(preference?.onboarding_completed) && view.activeTab === 'onboarding-complete'
