@@ -25,6 +25,7 @@ type PreferenceEditReturnContext = {
   preferredTab: AppTab
   preferredArchiveMonth?: string | null
   preferredArchiveDate?: string | null
+  reopenDetailArticleId?: string | null
 }
 
 function toLoadUserStateOptions(rememberedViewContext: ReturnType<typeof getRememberedViewContext>): LoadUserStateOptions | undefined {
@@ -389,9 +390,10 @@ export function usePrototypeApp() {
       preferredTab: view.activeTab,
       preferredArchiveMonth: view.activeTab === 'archive' ? archive.archiveMonth : null,
       preferredArchiveDate: view.activeTab === 'archive' ? archive.archiveDateData?.date ?? null : null,
+      reopenDetailArticleId: view.isDetailOpen ? view.detailArticleId : null,
     })
     view.resetToOnboarding()
-  }, [archive.archiveDateData, archive.archiveMonth, view.activeTab, view.resetToOnboarding])
+  }, [archive.archiveDateData, archive.archiveMonth, view.activeTab, view.detailArticleId, view.isDetailOpen, view.resetToOnboarding])
 
   const showOnboardingScreen = Boolean(auth.userId) && (!preference?.onboarding_completed || view.activeTab === 'onboarding')
   const showOnboardingCompleteScreen = Boolean(auth.userId) && Boolean(preference?.onboarding_completed) && view.activeTab === 'onboarding-complete'
