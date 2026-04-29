@@ -27,6 +27,16 @@ type PreferenceEditReturnContext = {
   preferredArchiveDate?: string | null
 }
 
+function toLoadUserStateOptions(rememberedViewContext: ReturnType<typeof getRememberedViewContext>): LoadUserStateOptions | undefined {
+  if (!rememberedViewContext) return undefined
+  return {
+    preferredTab: rememberedViewContext.tab,
+    preferredArchiveMonth: rememberedViewContext.tab === 'archive' ? rememberedViewContext.archiveMonth ?? null : null,
+    preferredArchiveDate: rememberedViewContext.tab === 'archive' ? rememberedViewContext.archiveDate ?? null : null,
+    reopenDetailArticleId: rememberedViewContext.detailArticleId ?? null,
+  }
+}
+
 export function usePrototypeApp() {
   const auth = useAuthSession()
   const content = useContentFeed()
@@ -80,15 +90,7 @@ export function usePrototypeApp() {
       ])
     }
 
-    const restoredViewContext: LoadUserStateOptions | undefined = options ?? (() => {
-      const rememberedViewContext = getRememberedViewContext()
-      if (!rememberedViewContext) return undefined
-      return {
-        preferredTab: rememberedViewContext.tab,
-        preferredArchiveMonth: rememberedViewContext.tab === 'archive' ? rememberedViewContext.archiveMonth ?? null : null,
-        preferredArchiveDate: rememberedViewContext.tab === 'archive' ? rememberedViewContext.archiveDate ?? null : null,
-      }
-    })()
+    const restoredViewContext: LoadUserStateOptions | undefined = options ?? toLoadUserStateOptions(getRememberedViewContext())
 
     setIsEditingCompletedPreference(false)
     setPreferenceEditReturnContext(null)
@@ -149,15 +151,16 @@ export function usePrototypeApp() {
 
   const loadBootstrap = React.useCallback(async () => {
     await runWithLoading(async () => {
+      const rememberedDemoUserId = getRememberedDemoUserId()
+      const rememberedViewContext = toLoadUserStateOptions(getRememberedViewContext())
       const bootstrap = await auth.loadBootstrap()
       if (bootstrap.session.user_id) {
-        await loadUserState(bootstrap.session.user_id)
+        await loadUserState(bootstrap.session.user_id, rememberedViewContext)
         return
       }
 
-      const rememberedDemoUserId = getRememberedDemoUserId()
       if (rememberedDemoUserId) {
-        await loadUserState(rememberedDemoUserId)
+        await loadUserState(rememberedDemoUserId, rememberedViewContext)
       }
     })
   }, [auth.loadBootstrap, loadUserState, runWithLoading])
@@ -167,13 +170,14 @@ export function usePrototypeApp() {
   }, [loadBootstrap])
 
   React.useEffect(() => {
-    if (!auth.userId || !preference?.onboarding_completed || view.isDetailOpen) return
+    if (!auth.userId || !preference?.onboarding_completed) return
     if (view.activeTab === 'onboarding' || view.activeTab === 'onboarding-complete') return
 
     rememberViewContext({
       tab: view.activeTab === 'scraps' || view.activeTab === 'archive' ? view.activeTab : 'home',
       archiveMonth: view.activeTab === 'archive' ? archive.archiveMonth : null,
       archiveDate: view.activeTab === 'archive' ? archive.archiveDateData?.date ?? null : null,
+      detailArticleId: view.isDetailOpen ? view.detailArticleId : null,
     })
   }, [
     archive.archiveDateData,
@@ -181,6 +185,7 @@ export function usePrototypeApp() {
     auth.userId,
     preference?.onboarding_completed,
     view.activeTab,
+    view.detailArticleId,
     view.isDetailOpen,
   ])
 

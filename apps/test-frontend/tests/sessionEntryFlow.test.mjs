@@ -9,7 +9,7 @@ test('bootstrap with an existing authenticated session hydrates the full user st
   const source = await readFile(path.join(projectRoot, 'src/hooks/usePrototypeApp.ts'), 'utf8')
 
   assert.match(source, /const bootstrap = await auth\.loadBootstrap\(\)/)
-  assert.match(source, /if \(bootstrap\.session\.user_id\) \{\s*await loadUserState\(bootstrap\.session\.user_id\)/s)
+  assert.match(source, /if \(bootstrap\.session\.user_id\) \{\s*await loadUserState\(bootstrap\.session\.user_id, rememberedViewContext\)/s)
 })
 
 test('logged-in state is represented by direct home entry, not a visible login badge', async () => {

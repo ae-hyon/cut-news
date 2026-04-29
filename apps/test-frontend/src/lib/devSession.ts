@@ -7,6 +7,7 @@ export type RememberedViewContext = {
   tab: RememberedTab
   archiveMonth?: string | null
   archiveDate?: string | null
+  detailArticleId?: string | null
 }
 
 function isDevEnvironment(): boolean {
