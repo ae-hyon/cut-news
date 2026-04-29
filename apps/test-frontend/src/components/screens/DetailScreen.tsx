@@ -7,9 +7,10 @@ interface DetailScreenProps {
   article: ArticleDetail
   onBack: () => void
   onToggleScrap: (article: ArticleDetail) => void
+  onEditPreference?: () => void
 }
 
-export default function DetailScreen({ article, onBack, onToggleScrap }: DetailScreenProps) {
+export default function DetailScreen({ article, onBack, onToggleScrap, onEditPreference }: DetailScreenProps) {
   return (
     <section className="screen detail-screen">
       <header className="pdf-topbar detail-topbar">
@@ -17,7 +18,10 @@ export default function DetailScreen({ article, onBack, onToggleScrap }: DetailS
           <strong>Annoying Cap</strong>
           <span>{formatDateLabel()}</span>
         </div>
-        <button className="detail-close-button" onClick={onBack} aria-label="상세 닫기">×</button>
+        <div className="detail-header-actions">
+          <button className="profile-pill detail-profile-pill" type="button" aria-label="관심 분야 편집" onClick={onEditPreference}>관심 분야 수정</button>
+          <button className="detail-close-button" onClick={onBack} aria-label="상세 닫기">×</button>
+        </div>
       </header>
       <article className="detail-article">
         <div className="detail-summary-card">

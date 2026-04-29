@@ -55,6 +55,7 @@ export default function App() {
           article={app.selectedArticle}
           onBack={app.closeArticle}
           onToggleScrap={app.toggleScrap}
+          onEditPreference={app.editCompletedPreferences}
         />
       ) : app.showOnboardingScreen ? (
         <OnboardingScreen
