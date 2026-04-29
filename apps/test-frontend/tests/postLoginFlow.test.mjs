@@ -21,6 +21,6 @@ test('authenticated sessions enter the feed flow directly instead of rendering a
 
   assert.doesNotMatch(app, /AuthStatusBadge/)
   assert.match(source, /const bootstrap = await auth\.loadBootstrap\(\)/)
-  assert.match(source, /await loadUserState\(bootstrap\.session\.user_id\)/)
+  assert.match(source, /await loadUserState\(bootstrap\.session\.user_id, rememberedViewContext\)/)
   assert.match(source, /view\.resetToHome\(\)/)
 })
