@@ -50,6 +50,15 @@ export function useArchiveState() {
     return data
   }, [])
 
+  const restoreArchiveContext = React.useCallback(async (userId: string, month: string, preferredDate?: string | null) => {
+    setArchiveMonth(month)
+    const data = await getArchiveMonth(userId, month)
+    setArchiveMonthData(data)
+    const selectedDay = pickArchiveDay(data.days, preferredDate)
+    setArchiveDateData(toArchiveDateResponse(userId, selectedDay))
+    return data
+  }, [])
+
   const openArchiveDate = React.useCallback(async (userId: string, date: string) => {
     const data = await getArchiveDate(userId, date)
     setArchiveDateData(data)
@@ -67,6 +76,7 @@ export function useArchiveState() {
     clearArchive,
     loadArchiveForFirstFeedDate,
     loadArchiveMonth,
+    restoreArchiveContext,
     openArchiveDate,
     closeArchiveDate,
   }

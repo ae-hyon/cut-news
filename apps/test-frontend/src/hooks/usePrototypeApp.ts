@@ -17,6 +17,8 @@ export type { AppTab } from './useViewState'
 type LoadUserStateOptions = {
   preferredTab?: AppTab
   reopenDetailArticleId?: string | null
+  preferredArchiveMonth?: string | null
+  preferredArchiveDate?: string | null
 }
 
 export function usePrototypeApp() {
@@ -89,7 +91,12 @@ export function usePrototypeApp() {
     }
 
     const { feed } = await content.loadContent(nextUserId)
-    await archive.loadArchiveForFirstFeedDate(nextUserId, feed)
+
+    if (options?.preferredTab === 'archive' && options.preferredArchiveMonth) {
+      await archive.restoreArchiveContext(nextUserId, options.preferredArchiveMonth, options.preferredArchiveDate)
+    } else {
+      await archive.loadArchiveForFirstFeedDate(nextUserId, feed)
+    }
 
     if (options?.reopenDetailArticleId) {
       view.changeTab(options.preferredTab ?? 'home')
@@ -107,6 +114,7 @@ export function usePrototypeApp() {
   }, [
     archive.clearArchive,
     archive.loadArchiveForFirstFeedDate,
+    archive.restoreArchiveContext,
     auth.loadUserSession,
     auth.setUserId,
     content.clearContent,
@@ -282,10 +290,26 @@ export function usePrototypeApp() {
     await runWithLoading(async () => {
       const preferredTab = view.activeTab
       const reopenDetailArticleId = view.isDetailOpen ? article.id : null
+      const preferredArchiveMonth = view.activeTab === 'archive' ? archive.archiveMonth : null
+      const preferredArchiveDate = view.activeTab === 'archive' ? archive.archiveDateData?.date ?? null : null
       await content.toggleScrap(auth.userId as string, article)
-      await loadUserState(auth.userId as string, { preferredTab, reopenDetailArticleId })
+      await loadUserState(auth.userId as string, {
+        preferredTab,
+        reopenDetailArticleId,
+        preferredArchiveMonth,
+        preferredArchiveDate,
+      })
     })
-  }, [auth.userId, content.toggleScrap, loadUserState, runWithLoading, view.activeTab, view.isDetailOpen])
+  }, [
+    archive.archiveDateData,
+    archive.archiveMonth,
+    auth.userId,
+    content.toggleScrap,
+    loadUserState,
+    runWithLoading,
+    view.activeTab,
+    view.isDetailOpen,
+  ])
 
   const loadArchiveMonth = React.useCallback(async (nextMonth: string) => {
     if (!auth.userId) return
