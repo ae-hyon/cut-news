@@ -55,18 +55,24 @@ class StubPreferenceRepository:
 
 
 class StubScrapRepository:
+    def __init__(self, article_ids: list[str] | None = None):
+        self.article_ids = list(article_ids or [])
+
     def list_article_ids(self, user_id: str):
-        return []
+        return list(self.article_ids)
 
     def add(self, user_id: str, article_id: str):
+        if article_id not in self.article_ids:
+            self.article_ids.append(article_id)
         return None
 
     def remove(self, user_id: str, article_id: str):
+        self.article_ids = [item for item in self.article_ids if item != article_id]
         return None
 
 
-def build_service(preference: UserPreference | None) -> FeedService:
-    return FeedService(StubArticleRepository(), StubPreferenceRepository(preference), StubScrapRepository())
+def build_service(preference: UserPreference | None, scrap_ids: list[str] | None = None) -> FeedService:
+    return FeedService(StubArticleRepository(), StubPreferenceRepository(preference), StubScrapRepository(scrap_ids))
 
 
 def test_wide_feed_preserves_preference_order_and_descending_weights():
@@ -154,3 +160,20 @@ def test_archive_date_respects_narrow_subcategory_preferences():
     payload = service.list_archive_date('demo-user', '2026-04-14')
 
     assert [article.id for article in payload] == ['A2']
+
+
+def test_scraps_remain_available_even_when_current_preference_would_filter_them_out():
+    service = build_service(
+        UserPreference(
+            user_id='demo-user',
+            mode=PreferenceMode.NARROW,
+            primary_categories=['economy'],
+            subcategories=['real-estate'],
+            onboarding_completed=True,
+        ),
+        scrap_ids=['A3', 'A4'],
+    )
+
+    payload = service.list_scraps('demo-user')
+
+    assert [article.id for article in payload] == ['A3', 'A4']

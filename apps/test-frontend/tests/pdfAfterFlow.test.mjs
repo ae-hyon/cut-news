@@ -33,6 +33,7 @@ test('home and scraps use PDF-style masonry card boards', async () => {
   assert.match(home, /<button onClick=\{onEditPreference\}>선택<\/button>/)
   assert.match(app, /onEditPreference=\{app\.editCompletedPreferences\}/)
   assert.match(scraps, /className="pdf-card-board scraps-card-board"/)
+  assert.match(scraps, /관심 분야를 바꿔도, 저장한 기사는 여기서 다시 볼 수 있어요\./)
   assert.match(css, /\.pdf-card-board/) 
   assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
   assert.match(css, /\.news-card\.size-feature/) 
