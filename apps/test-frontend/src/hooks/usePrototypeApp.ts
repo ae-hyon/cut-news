@@ -1,7 +1,7 @@
 import React from 'react'
 import { getErrorMessage } from '../lib/api'
 import { DEMO_USER_ID } from '../lib/constants'
-import { clearRememberedDemoUserId, getRememberedDemoUserId, rememberDemoUserId } from '../lib/devSession'
+import { clearRememberedDemoUserId, clearRememberedViewContext, getRememberedDemoUserId, getRememberedViewContext, rememberDemoUserId, rememberViewContext } from '../lib/devSession'
 import type { ArticleCard, ArticleDetail, UserPreference } from '../lib/types'
 import { getUserPreference, saveUserPreference } from '../services/backendApi'
 import { useArchiveState } from './useArchiveState'
@@ -80,6 +80,16 @@ export function usePrototypeApp() {
       ])
     }
 
+    const restoredViewContext: LoadUserStateOptions | undefined = options ?? (() => {
+      const rememberedViewContext = getRememberedViewContext()
+      if (!rememberedViewContext) return undefined
+      return {
+        preferredTab: rememberedViewContext.tab,
+        preferredArchiveMonth: rememberedViewContext.tab === 'archive' ? rememberedViewContext.archiveMonth ?? null : null,
+        preferredArchiveDate: rememberedViewContext.tab === 'archive' ? rememberedViewContext.archiveDate ?? null : null,
+      }
+    })()
+
     setIsEditingCompletedPreference(false)
     setPreferenceEditReturnContext(null)
     auth.setUserId(nextUserId)
@@ -94,27 +104,28 @@ export function usePrototypeApp() {
     if (!pref.onboarding_completed) {
       content.clearContent()
       archive.clearArchive()
+      clearRememberedViewContext()
       view.resetToOnboarding()
       return
     }
 
     const { feed } = await content.loadContent(nextUserId)
 
-    if (options?.preferredTab === 'archive' && options.preferredArchiveMonth) {
-      await archive.restoreArchiveContext(nextUserId, options.preferredArchiveMonth, options.preferredArchiveDate)
+    if (restoredViewContext?.preferredTab === 'archive' && restoredViewContext.preferredArchiveMonth) {
+      await archive.restoreArchiveContext(nextUserId, restoredViewContext.preferredArchiveMonth, restoredViewContext.preferredArchiveDate)
     } else {
       await archive.loadArchiveForFirstFeedDate(nextUserId, feed)
     }
 
-    if (options?.reopenDetailArticleId) {
-      view.changeTab(options.preferredTab ?? 'home')
-      await content.openArticle(options.reopenDetailArticleId, nextUserId)
-      view.openDetail(options.reopenDetailArticleId)
+    if (restoredViewContext?.reopenDetailArticleId) {
+      view.changeTab(restoredViewContext.preferredTab ?? 'home')
+      await content.openArticle(restoredViewContext.reopenDetailArticleId, nextUserId)
+      view.openDetail(restoredViewContext.reopenDetailArticleId)
       return
     }
 
-    if (options?.preferredTab && options.preferredTab !== 'home') {
-      view.changeTab(options.preferredTab)
+    if (restoredViewContext?.preferredTab && restoredViewContext.preferredTab !== 'home') {
+      view.changeTab(restoredViewContext.preferredTab)
       return
     }
 
@@ -155,6 +166,24 @@ export function usePrototypeApp() {
     void loadBootstrap()
   }, [loadBootstrap])
 
+  React.useEffect(() => {
+    if (!auth.userId || !preference?.onboarding_completed || view.isDetailOpen) return
+    if (view.activeTab === 'onboarding' || view.activeTab === 'onboarding-complete') return
+
+    rememberViewContext({
+      tab: view.activeTab === 'scraps' || view.activeTab === 'archive' ? view.activeTab : 'home',
+      archiveMonth: view.activeTab === 'archive' ? archive.archiveMonth : null,
+      archiveDate: view.activeTab === 'archive' ? archive.archiveDateData?.date ?? null : null,
+    })
+  }, [
+    archive.archiveDateData,
+    archive.archiveMonth,
+    auth.userId,
+    preference?.onboarding_completed,
+    view.activeTab,
+    view.isDetailOpen,
+  ])
+
   const startDemo = React.useCallback(async () => {
     await runWithLoading(async () => {
       rememberDemoUserId(DEMO_USER_ID)
@@ -181,6 +210,7 @@ export function usePrototypeApp() {
       })
       setIsEditingCompletedPreference(false)
       setPreferenceEditReturnContext(null)
+      clearRememberedViewContext()
       content.clearContent()
       archive.clearArchive()
       content.setSelectedArticle(null)
@@ -198,6 +228,7 @@ export function usePrototypeApp() {
 
   const restartIntroFlow = React.useCallback(() => {
     clearRememberedDemoUserId()
+    clearRememberedViewContext()
     auth.setUserId(null)
     auth.setSession(null)
     setPreference(null)

@@ -10,12 +10,12 @@ test('scrap toggle preserves the current tab context instead of forcing home rel
 
   assert.match(source, /const preferredTab = view\.activeTab/)
   assert.match(source, /await loadUserState\(auth\.userId as string, \{\s*preferredTab,\s*reopenDetailArticleId,\s*preferredArchiveMonth,\s*preferredArchiveDate,\s*\}\)/s)
-  assert.match(source, /if \(options\?\.preferredTab && options\.preferredTab !== 'home'\) \{\s*view\.changeTab\(options\.preferredTab\)\s*return\s*\}/s)
+  assert.match(source, /if \(restoredViewContext\?\.preferredTab && restoredViewContext\.preferredTab !== 'home'\) \{\s*view\.changeTab\(restoredViewContext\.preferredTab\)\s*return\s*\}/s)
 })
 
 test('scrap toggle from detail reopens the same article while preserving the underlying tab', async () => {
   const source = await readFile(path.join(projectRoot, 'src/hooks/usePrototypeApp.ts'), 'utf8')
 
   assert.match(source, /const reopenDetailArticleId = view\.isDetailOpen \? article\.id : null/)
-  assert.match(source, /if \(options\?\.reopenDetailArticleId\) \{\s*view\.changeTab\(options\.preferredTab \?\? 'home'\)\s*await content\.openArticle\(options\.reopenDetailArticleId, nextUserId\)\s*view\.openDetail\(options\.reopenDetailArticleId\)\s*return\s*\}/s)
+  assert.match(source, /if \(restoredViewContext\?\.reopenDetailArticleId\) \{\s*view\.changeTab\(restoredViewContext\.preferredTab \?\? 'home'\)\s*await content\.openArticle\(restoredViewContext\.reopenDetailArticleId, nextUserId\)\s*view\.openDetail\(restoredViewContext\.reopenDetailArticleId\)\s*return\s*\}/s)
 })
