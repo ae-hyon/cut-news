@@ -169,6 +169,7 @@ class SqlAlchemyUserPreferenceRepository:
             self.db.add(UserSubcategoryModel(user_id=preference.user_id, subcategory_slug=slug, sort_order=idx))
 
         self.db.commit()
+        self.db.expire_all()
         return self.get(preference.user_id)
 
 

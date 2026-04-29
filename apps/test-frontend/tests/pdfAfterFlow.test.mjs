@@ -21,10 +21,14 @@ test('top bar includes the PDF profile pill and active text navigation', async (
 
 test('home and scraps use PDF-style masonry card boards', async () => {
   const home = await source('src/components/screens/HomeScreen.tsx')
+  const app = await source('src/App.tsx')
   const scraps = await source('src/components/screens/ScrapsScreen.tsx')
   const css = await source('src/styles/screens.css')
 
   assert.match(home, /className="pdf-card-board home-card-board"/)
+  assert.match(home, /onEditPreference: \(\) => void/)
+  assert.match(home, /<button onClick=\{onEditPreference\}>선택<\/button>/)
+  assert.match(app, /onEditPreference=\{app\.editCompletedPreferences\}/)
   assert.match(scraps, /className="pdf-card-board scraps-card-board"/)
   assert.match(css, /\.pdf-card-board/) 
   assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
