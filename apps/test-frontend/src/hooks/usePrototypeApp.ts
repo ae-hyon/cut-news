@@ -21,6 +21,7 @@ export function usePrototypeApp() {
   const preferenceSelection = usePreferenceSelection(auth.categories)
 
   const [preference, setPreference] = React.useState<UserPreference | null>(null)
+  const [isEditingCompletedPreference, setIsEditingCompletedPreference] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
 
@@ -64,6 +65,7 @@ export function usePrototypeApp() {
       ])
     }
 
+    setIsEditingCompletedPreference(false)
     auth.setUserId(nextUserId)
     auth.setSession({
       ...sessionData,
@@ -139,6 +141,7 @@ export function usePrototypeApp() {
         subcategories: [],
         onboarding_completed: false,
       })
+      setIsEditingCompletedPreference(false)
       content.clearContent()
       archive.clearArchive()
       content.setSelectedArticle(null)
@@ -234,9 +237,16 @@ export function usePrototypeApp() {
       setPreference(pref)
       preferenceSelection.hydratePreferenceState(pref)
       auth.setSession((prev) => prev ? { ...prev, onboarding_completed: true } : prev)
+
+      if (isEditingCompletedPreference) {
+        setIsEditingCompletedPreference(false)
+        await loadUserState(auth.userId as string)
+        return
+      }
+
       view.resetToOnboardingComplete()
     })
-  }, [auth, preferenceSelection, runWithLoading, view.resetToOnboardingComplete])
+  }, [auth, isEditingCompletedPreference, loadUserState, preferenceSelection, runWithLoading, view.resetToOnboardingComplete])
 
   const openArticle = React.useCallback(async (articleId: string) => {
     await runWithLoading(async () => {
@@ -281,6 +291,7 @@ export function usePrototypeApp() {
   }, [content.setSelectedArticle, view.changeTab])
 
   const editCompletedPreferences = React.useCallback(() => {
+    setIsEditingCompletedPreference(true)
     view.resetToOnboarding()
   }, [view.resetToOnboarding])
 

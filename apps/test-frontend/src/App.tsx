@@ -94,6 +94,7 @@ export default function App() {
               feed={app.feed}
               onOpenArticle={app.openArticle}
               onToggleScrap={app.toggleScrap}
+              onEditPreference={app.editCompletedPreferences}
             />
           )}
           {app.activeTab === 'scraps' && (

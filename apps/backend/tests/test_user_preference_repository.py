@@ -29,3 +29,34 @@ def test_save_new_user_preference_persists_mode_before_flush():
     assert saved.user_id == 'new-user'
     assert saved.mode == PreferenceMode.WIDE
     assert saved.onboarding_completed is False
+
+
+def test_save_existing_user_preference_clears_stale_subcategories_when_switching_to_wide_mode():
+    engine = create_engine('sqlite+pysqlite:///:memory:', future=True)
+    Base.metadata.create_all(engine)
+    session_local = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
+    with session_local() as db:
+        repository = SqlAlchemyUserPreferenceRepository(db)
+        repository.save(
+            UserPreference(
+                user_id='demo-user',
+                mode=PreferenceMode.NARROW,
+                primary_categories=['economy'],
+                subcategories=['macro', 'real-estate'],
+                onboarding_completed=True,
+            )
+        )
+        saved = repository.save(
+            UserPreference(
+                user_id='demo-user',
+                mode=PreferenceMode.WIDE,
+                primary_categories=['economy', 'politics', 'tech'],
+                subcategories=[],
+                onboarding_completed=True,
+            )
+        )
+
+    assert saved.mode == PreferenceMode.WIDE
+    assert saved.primary_categories == ['economy', 'politics', 'tech']
+    assert saved.subcategories == []

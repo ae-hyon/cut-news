@@ -7,9 +7,10 @@ interface HomeScreenProps {
   feed: FeedResponse | null
   onOpenArticle: (articleId: string) => void
   onToggleScrap: (article: ArticleCard) => void
+  onEditPreference: () => void
 }
 
-export default function HomeScreen({ preference, feed, onOpenArticle, onToggleScrap }: HomeScreenProps) {
+export default function HomeScreen({ preference, feed, onOpenArticle, onToggleScrap, onEditPreference }: HomeScreenProps) {
   const articles = (feed?.blocks.flatMap((block) => block.articles) ?? []).slice(0, 6)
   const modeLabel = preference?.mode === 'narrow' ? '깊게 보기' : '전체'
 
@@ -17,7 +18,7 @@ export default function HomeScreen({ preference, feed, onOpenArticle, onToggleSc
     <section className="screen home-screen">
       <div className="home-filter-row">
         <span>{modeLabel}</span>
-        <button>선택</button>
+        <button onClick={onEditPreference}>선택</button>
       </div>
       {!articles.length ? (
         <div className="empty-state">관심사를 선택하면 뉴스가 표시됩니다.</div>
