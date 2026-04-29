@@ -7,6 +7,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from pipeline import step4_summarize
+from pipeline.step4_summarize import _build_initial_prompt, _build_retry_prompt
 
 
 def test_process_file_writes_error_instead_of_saving_contract_violating_summary(tmp_path, monkeypatch):
@@ -48,6 +49,30 @@ def test_process_file_writes_error_instead_of_saving_contract_violating_summary(
     error_data = json.loads(error_path.read_text(encoding="utf-8"))
     assert error_data["_article_id"] == "009"
     assert "length contract" in error_data["error"]
+
+
+def test_initial_prompt_adds_directional_fact_guard_for_market_articles():
+    article = {
+        "title": "미·이란 협상재개 기대에 국제유가 5일만에 하락…WTI 1.5%↓",
+        "content": "WTI는 전장 대비 1.51% 내렸고 장초반 상승분을 반납했다.",
+    }
+
+    prompt = _build_initial_prompt(article)
+
+    assert "상승/하락 방향, 변동률, 마감가를 원문과 다르게 바꾸지 마세요." in prompt
+    assert "장중 움직임과 최종 마감 결과를 혼동하지 말고" in prompt
+
+
+def test_retry_prompt_adds_directional_fact_fix_guidance_for_hallucination_feedback():
+    article = {
+        "title": "[뉴욕유가] 美·이란 2주만에 다시 협상 테이블로…WTI 5일만에 하락",
+        "content": "WTI 가격은 전장 대비 1.51% 내렸고 장중 92.71달러까지 떨어졌다.",
+    }
+
+    prompt = _build_retry_prompt(article, ["headline_58의 'WTI는 장초반 상승분 1.5%↑를 반납'은 원문과 다릅니다."])
+
+    assert "특히 방향·변동률·마감가 오류를 고치세요." in prompt
+    assert "상승/하락 방향, 변동률, 마감가를 원문과 다르게 바꾸지 마세요." in prompt
 
 
 def test_process_file_salvages_small_overflow_by_trimming_last_retry_result(tmp_path, monkeypatch):
