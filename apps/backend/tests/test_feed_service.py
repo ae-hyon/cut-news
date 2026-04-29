@@ -7,26 +7,26 @@ from app.domain.enums import PreferenceMode
 
 class StubArticleRepository:
     def __init__(self):
+        self.all_articles = [
+            Article(id='A1', title='e1', summary='s', content='c', primary_category='economy', subcategory='macro', published_at='2026-04-14', original_url='https://e', score_weight=0.80),
+            Article(id='A2', title='e2', summary='s', content='c', primary_category='economy', subcategory='real-estate', published_at='2026-04-14', original_url='https://e', score_weight=0.95),
+            Article(id='A3', title='p1', summary='s', content='c', primary_category='politics', subcategory='policy', published_at='2026-04-14', original_url='https://p', score_weight=0.70),
+            Article(id='A4', title='t1', summary='s', content='c', primary_category='tech', subcategory='ai', published_at='2026-04-15', original_url='https://t', score_weight=0.88),
+        ]
         self.by_primary = {
-            'economy': [
-                Article(id='A1', title='e1', summary='s', content='c', primary_category='economy', subcategory='macro', published_at='2026-04-14', original_url='https://e', score_weight=0.80),
-                Article(id='A2', title='e2', summary='s', content='c', primary_category='economy', subcategory='real-estate', published_at='2026-04-14', original_url='https://e', score_weight=0.95),
-            ],
-            'politics': [
-                Article(id='A3', title='p1', summary='s', content='c', primary_category='politics', subcategory='policy', published_at='2026-04-14', original_url='https://p', score_weight=0.70),
-            ],
-            'tech': [
-                Article(id='A4', title='t1', summary='s', content='c', primary_category='tech', subcategory='ai', published_at='2026-04-14', original_url='https://t', score_weight=0.88),
-            ],
+            'economy': [self.all_articles[0], self.all_articles[1]],
+            'politics': [self.all_articles[2]],
+            'tech': [self.all_articles[3]],
         }
         self.by_primary_and_subcategories = {
-            ('economy', ('macro', 'real-estate')): [
-                Article(id='A1', title='e1', summary='s', content='c', primary_category='economy', subcategory='macro', published_at='2026-04-14', original_url='https://e', score_weight=0.80),
-                Article(id='A2', title='e2', summary='s', content='c', primary_category='economy', subcategory='real-estate', published_at='2026-04-14', original_url='https://e', score_weight=0.95),
-            ]
+            ('economy', ('macro', 'real-estate')): [self.all_articles[0], self.all_articles[1]],
+            ('economy', ('real-estate',)): [self.all_articles[1]],
         }
 
     def get_by_id(self, article_id: str):
+        for article in self.all_articles:
+            if article.id == article_id:
+                return article
         return None
 
     def list_by_primary(self, slug: str):
@@ -36,10 +36,10 @@ class StubArticleRepository:
         return list(self.by_primary_and_subcategories.get((primary, tuple(subs)), []))
 
     def list_by_month(self, month: str):
-        return []
+        return [article for article in self.all_articles if article.published_at.startswith(month)]
 
     def list_by_date(self, archive_date: str):
-        return []
+        return [article for article in self.all_articles if article.published_at == archive_date]
 
 
 class StubPreferenceRepository:
@@ -120,3 +120,37 @@ def test_narrow_feed_returns_single_focus_block_with_full_weight_and_sorted_arti
     assert payload['blocks'][0]['key'] == 'economy-focus'
     assert payload['blocks'][0]['weight'] == 1.0
     assert [article.id for article in payload['blocks'][0]['articles']] == ['A2', 'A1']
+
+
+def test_archive_month_respects_wide_primary_category_preferences():
+    service = build_service(
+        UserPreference(
+            user_id='demo-user',
+            mode=PreferenceMode.WIDE,
+            primary_categories=['tech', 'economy'],
+            subcategories=[],
+            onboarding_completed=True,
+        )
+    )
+
+    payload = service.list_archive_month('demo-user', '2026-04')
+
+    assert list(payload) == ['2026-04-14', '2026-04-15']
+    assert [article.id for article in payload['2026-04-14']] == ['A1', 'A2']
+    assert [article.id for article in payload['2026-04-15']] == ['A4']
+
+
+def test_archive_date_respects_narrow_subcategory_preferences():
+    service = build_service(
+        UserPreference(
+            user_id='demo-user',
+            mode=PreferenceMode.NARROW,
+            primary_categories=['economy'],
+            subcategories=['real-estate'],
+            onboarding_completed=True,
+        )
+    )
+
+    payload = service.list_archive_date('demo-user', '2026-04-14')
+
+    assert [article.id for article in payload] == ['A2']

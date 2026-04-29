@@ -49,9 +49,9 @@ def get_user_scraps(user_id: str, service: FeedService = Depends(get_feed_servic
 
 @router.get('/users/{user_id}/archives', response_model=ArchiveMonthResponseSchema)
 def get_archive_month(user_id: str, month: str, service: FeedService = Depends(get_feed_service)):
-    return ArchiveMonthResponseSchema.from_payload(user_id, month, service.list_archive_month(month), service)
+    return ArchiveMonthResponseSchema.from_payload(user_id, month, service.list_archive_month(user_id, month), service)
 
 
 @router.get('/users/{user_id}/archives/{archive_date}', response_model=ArchiveDateResponseSchema)
 def get_archive_date(user_id: str, archive_date: str, service: FeedService = Depends(get_feed_service)):
-    return ArchiveDateResponseSchema.from_entities(user_id, archive_date, service.list_archive_date(archive_date), service)
+    return ArchiveDateResponseSchema.from_entities(user_id, archive_date, service.list_archive_date(user_id, archive_date), service)
