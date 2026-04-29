@@ -1,6 +1,7 @@
 import React from 'react'
 import { getErrorMessage } from '../lib/api'
 import { DEMO_USER_ID } from '../lib/constants'
+import { clearRememberedDemoUserId, getRememberedDemoUserId, rememberDemoUserId } from '../lib/devSession'
 import type { ArticleCard, ArticleDetail, UserPreference } from '../lib/types'
 import { getUserPreference, saveUserPreference } from '../services/backendApi'
 import { useArchiveState } from './useArchiveState'
@@ -100,6 +101,12 @@ export function usePrototypeApp() {
       const bootstrap = await auth.loadBootstrap()
       if (bootstrap.session.user_id) {
         await loadUserState(bootstrap.session.user_id)
+        return
+      }
+
+      const rememberedDemoUserId = getRememberedDemoUserId()
+      if (rememberedDemoUserId) {
+        await loadUserState(rememberedDemoUserId)
       }
     })
   }, [auth.loadBootstrap, loadUserState, runWithLoading])
@@ -110,6 +117,7 @@ export function usePrototypeApp() {
 
   const startDemo = React.useCallback(async () => {
     await runWithLoading(async () => {
+      rememberDemoUserId(DEMO_USER_ID)
       await loadUserState(DEMO_USER_ID)
     })
   }, [loadUserState, runWithLoading])
@@ -147,6 +155,7 @@ export function usePrototypeApp() {
   ])
 
   const restartIntroFlow = React.useCallback(() => {
+    clearRememberedDemoUserId()
     auth.setUserId(null)
     auth.setSession(null)
     setPreference(null)
@@ -220,6 +229,7 @@ export function usePrototypeApp() {
     if (!auth.userId || !preferenceSelection.isSelectionValid) return
     await runWithLoading(async () => {
       await saveUserPreference(auth.userId as string, preferenceSelection.toPreferencePayload())
+      if (auth.userId === DEMO_USER_ID) rememberDemoUserId(auth.userId)
       const pref = await getUserPreference(auth.userId as string)
       setPreference(pref)
       preferenceSelection.hydratePreferenceState(pref)
