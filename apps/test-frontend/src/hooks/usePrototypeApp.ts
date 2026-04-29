@@ -342,7 +342,10 @@ export function usePrototypeApp() {
       const reopenDetailArticleId = view.isDetailOpen ? article.id : null
       const preferredArchiveMonth = view.activeTab === 'archive' ? archive.archiveMonth : null
       const preferredArchiveDate = view.activeTab === 'archive' ? archive.archiveDateData?.date ?? null : null
+      const nextScrapped = !article.is_scrapped
       await content.toggleScrap(auth.userId as string, article)
+      content.applyScrapState(article.id, nextScrapped)
+      archive.applyScrapState(article.id, nextScrapped)
       await loadUserState(auth.userId as string, {
         preferredTab,
         reopenDetailArticleId,
@@ -351,9 +354,11 @@ export function usePrototypeApp() {
       })
     })
   }, [
+    archive.applyScrapState,
     archive.archiveDateData,
     archive.archiveMonth,
     auth.userId,
+    content.applyScrapState,
     content.toggleScrap,
     loadUserState,
     runWithLoading,
