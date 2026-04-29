@@ -41,7 +41,7 @@ export default function App() {
 
   return (
     <AppShell error={app.error}>
-      {!!app.userId && !app.isDetailOpen && app.activeTab !== 'onboarding' && app.activeTab !== 'onboarding-complete' && <TopBar activeTab={app.activeTab} onNavigate={app.changeTab} profilePill="선우" />}
+      {!!app.userId && !app.isDetailOpen && app.activeTab !== 'onboarding' && app.activeTab !== 'onboarding-complete' && <TopBar activeTab={app.activeTab} onNavigate={app.changeTab} onProfileClick={app.editCompletedPreferences} profilePill="선우" />}
 
       {!app.userId ? (
         <IntroScreen

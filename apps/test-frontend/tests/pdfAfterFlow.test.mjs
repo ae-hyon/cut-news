@@ -9,14 +9,17 @@ async function source(relativePath) {
   return readFile(path.join(projectRoot, relativePath), 'utf8')
 }
 
-test('top bar includes the PDF profile pill and active text navigation', async () => {
+test('top bar includes the PDF profile pill, active text navigation, and preference-edit entry wiring', async () => {
   const topBar = await source('src/components/layout/TopBar.tsx')
   const app = await source('src/App.tsx')
 
   assert.match(topBar, /profilePill\?: string/)
+  assert.match(topBar, /onProfileClick\?: \(\) => void/)
   assert.match(topBar, /className="profile-pill"/)
+  assert.match(topBar, /onClick=\{onProfileClick\}/)
   assert.match(topBar, /선우/)
   assert.match(app, /profilePill="선우"/)
+  assert.match(app, /onProfileClick=\{app\.editCompletedPreferences\}/)
 })
 
 test('home and scraps use PDF-style masonry card boards', async () => {
