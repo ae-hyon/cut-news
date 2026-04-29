@@ -5,10 +5,11 @@ import { formatDateLabel } from '../../lib/dateLabel'
 interface TopBarProps {
   activeTab: AppTab
   onNavigate: (tab: AppTab) => void
+  onProfileClick?: () => void
   profilePill?: string
 }
 
-export default function TopBar({ activeTab, onNavigate, profilePill = '선우' }: TopBarProps) {
+export default function TopBar({ activeTab, onNavigate, onProfileClick, profilePill = '선우' }: TopBarProps) {
   return (
     <header className="pdf-topbar app-topbar">
       <button className="brand-block" onClick={() => onNavigate('home')}>
@@ -20,7 +21,7 @@ export default function TopBar({ activeTab, onNavigate, profilePill = '선우' }
         <span>|</span>
         <button className={activeTab === 'archive' ? 'active' : ''} onClick={() => onNavigate('archive')}>아카이브</button>
       </nav>
-      <button className="profile-pill" type="button" aria-label="사용자 프로필">{profilePill}</button>
+      <button className="profile-pill" type="button" aria-label="사용자 프로필" onClick={onProfileClick}>{profilePill}</button>
     </header>
   )
 }
