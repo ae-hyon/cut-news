@@ -24,7 +24,12 @@ export default function HomeScreen({ preference, feed, onOpenArticle, onToggleSc
         <button onClick={onEditPreference}>선택</button>
       </div>
       {!articles.length ? (
-        <div className="empty-state">{emptyMessage}</div>
+        <div>
+          <div className="empty-state">{emptyMessage}</div>
+          {preference?.onboarding_completed ? (
+            <p className="screen-helper-text home-empty-helper">상단 선택 버튼에서 관심 분야를 다시 조정해보세요.</p>
+          ) : null}
+        </div>
       ) : (
         <div className="pdf-card-board home-card-board">
           {articles.map((article, index) => (

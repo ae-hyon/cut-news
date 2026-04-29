@@ -477,6 +477,15 @@
   text-align: center;
   font-size: 13px;
 }
+.screen-helper-text {
+  margin: 8px 2px 0;
+  color: #a7a7a7;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.home-empty-helper {
+  text-align: center;
+}
 .archive-hero h2 { text-align: left; }
 .archive-switcher {
   display: flex;
