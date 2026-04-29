@@ -36,7 +36,7 @@ class FeedService:
         preference = self.preference_repository.get(user_id)
         if not preference:
             preference_mode = PreferenceMode.WIDE
-            primary_categories = ['economy', 'politics', 'tech']
+            primary_categories = ['sectors', 'macro', 'assets', 'policy']
             subcategories = []
         else:
             preference_mode = preference.mode

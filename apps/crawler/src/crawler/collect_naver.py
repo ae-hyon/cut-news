@@ -16,11 +16,12 @@ from crawler.schemas import CrawledArticle
 
 NAVER_SEARCH_URL = 'https://openapi.naver.com/v1/search/news.json'
 DEFAULT_SEEDED_ARTICLES = (
-    {'topic': '방시혁, 2000억 부당이득 혐의 구속영장 신청', 'url': 'https://www.newsis.com/view/NISX20260421_0003600696'},
-    {'topic': '뉴진스, 코펜하겐 포착…민지 합류 미정 컴백 임박', 'url': 'https://www.mt.co.kr/entertainment/2026/04/27/2026042714067299138'},
-    {'topic': '위너 송민호, 병역법 위반 징역 1년 6개월 구형', 'url': 'https://www.news1.kr/society/court-prosecution/6143557'},
-    {'topic': '어도어, 다니엘·민희진에 431억 손해배상 청구 소송', 'url': 'https://www.newsis.com/view/NISX20260325_0003563829'},
-    {'topic': '위너 송민호, 부실 복무 이유 묻자 즉답 회피', 'url': 'https://imnews.imbc.com/news/2026/society/article/6816838_36918.html'},
+    {'topic': '정부, 5월 중 원유 대체 물량 7462만 배럴 확보 추진', 'url': 'https://www.yna.co.kr/view/AKR20260424118751001'},
+    {'topic': '미·이란 협상 기대에 국제유가 5일 만에 하락', 'url': 'https://www.yna.co.kr/view/AKR20260425007300072'},
+    {'topic': '달러-원 환율 하락 마감', 'url': 'https://www.yna.co.kr/view/AKR20260425004300002'},
+    {'topic': 'NH투자증권, 각자대표 체제로 전환', 'url': 'https://www.yna.co.kr/view/AKR20260424170600008'},
+    {'topic': '리노공업, 최대주주 지분 매각에 급락', 'url': 'https://www.yna.co.kr/view/AKR20260424159100008'},
+    {'topic': '금융위 첫 여성 고위공무원 배출', 'url': 'https://www.yna.co.kr/view/AKR20260424155500002'},
 )
 TARGET_BODY_MARKERS = ('dic_area', 'articleBodyContents', 'go_trans', '_article_content')
 HEADERS = {
@@ -225,7 +226,7 @@ def save_latest_articles(articles: list[CrawledArticle], output_dir: Path, *, qu
 
 def main() -> None:
     parser = argparse.ArgumentParser(description='Collect real Naver news into apps/crawler/output/latest.json')
-    parser.add_argument('--query', default='사회', help='Naver news search query')
+    parser.add_argument('--query', default='경제', help='Naver news search query')
     parser.add_argument('--count', default=20, type=int, help='Number of articles to request')
     parser.add_argument('--source', choices=('naver-search', 'seeded'), default='naver-search')
     parser.add_argument('--output-dir', default=Path('output'), type=Path, help='Crawler output directory')
