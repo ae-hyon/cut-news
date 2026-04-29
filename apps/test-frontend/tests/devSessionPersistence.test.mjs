@@ -12,12 +12,13 @@ test('bootstrap re-enters the remembered demo user when no backend auth session 
   assert.match(source, /if \(rememberedDemoUserId\) \{\s*await loadUserState\(rememberedDemoUserId\)/s)
 })
 
-test('demo entry persists the remembered demo user and intro reset clears it', async () => {
+test('demo entry persists the remembered demo user and intro reset clears local session memory', async () => {
   const source = await readFile(path.join(projectRoot, 'src/hooks/usePrototypeApp.ts'), 'utf8')
 
   assert.match(source, /rememberDemoUserId\(DEMO_USER_ID\)/)
   assert.match(source, /if \(auth\.userId === DEMO_USER_ID\) rememberDemoUserId\(auth\.userId\)/)
   assert.match(source, /clearRememberedDemoUserId\(\)/)
+  assert.match(source, /clearRememberedViewContext\(\)/)
 })
 
 test('app uses shared dev-session gating for demo entry visibility', async () => {

@@ -18,7 +18,7 @@ test('archive detail scrap reload preserves month and date context instead of fa
 
   assert.match(source, /preferredArchiveMonth\?: string \| null/)
   assert.match(source, /preferredArchiveDate\?: string \| null/)
-  assert.match(source, /if \(options\?\.preferredTab === 'archive' && options\.preferredArchiveMonth\) \{\s*await archive\.restoreArchiveContext\(nextUserId, options\.preferredArchiveMonth, options\.preferredArchiveDate\)\s*\} else \{\s*await archive\.loadArchiveForFirstFeedDate\(nextUserId, feed\)\s*\}/s)
+  assert.match(source, /if \(restoredViewContext\?\.preferredTab === 'archive' && restoredViewContext\.preferredArchiveMonth\) \{\s*await archive\.restoreArchiveContext\(nextUserId, restoredViewContext\.preferredArchiveMonth, restoredViewContext\.preferredArchiveDate\)\s*\} else \{\s*await archive\.loadArchiveForFirstFeedDate\(nextUserId, feed\)\s*\}/s)
   assert.match(source, /const preferredArchiveMonth = view\.activeTab === 'archive' \? archive\.archiveMonth : null/)
   assert.match(source, /const preferredArchiveDate = view\.activeTab === 'archive' \? archive\.archiveDateData\?\.date \?\? null : null/)
   assert.match(source, /await loadUserState\(auth\.userId as string, \{\s*preferredTab,\s*reopenDetailArticleId,\s*preferredArchiveMonth,\s*preferredArchiveDate,\s*\}\)/s)
