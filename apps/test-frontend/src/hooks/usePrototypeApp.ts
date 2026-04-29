@@ -9,9 +9,15 @@ import { useAuthSession } from './useAuthSession'
 import { useContentFeed } from './useContentFeed'
 import { usePreferenceSelection } from './usePreferenceSelection'
 import { useViewState } from './useViewState'
+import type { AppTab } from './useViewState'
 
 export type { NarrowStep, SubcategoryMap } from './usePreferenceSelection'
 export type { AppTab } from './useViewState'
+
+type LoadUserStateOptions = {
+  preferredTab?: AppTab
+  reopenDetailArticleId?: string | null
+}
 
 export function usePrototypeApp() {
   const auth = useAuthSession()
@@ -42,7 +48,7 @@ export function usePrototypeApp() {
     view.closeDetail()
   }, [content.setSelectedArticle, view.closeDetail])
 
-  const loadUserState = React.useCallback(async (nextUserId: string) => {
+  const loadUserState = React.useCallback(async (nextUserId: string, options?: LoadUserStateOptions) => {
     let [sessionData, pref] = await Promise.all([
       auth.loadUserSession(nextUserId),
       getUserPreference(nextUserId),
@@ -84,6 +90,19 @@ export function usePrototypeApp() {
 
     const { feed } = await content.loadContent(nextUserId)
     await archive.loadArchiveForFirstFeedDate(nextUserId, feed)
+
+    if (options?.reopenDetailArticleId) {
+      view.changeTab(options.preferredTab ?? 'home')
+      await content.openArticle(options.reopenDetailArticleId, nextUserId)
+      view.openDetail(options.reopenDetailArticleId)
+      return
+    }
+
+    if (options?.preferredTab && options.preferredTab !== 'home') {
+      view.changeTab(options.preferredTab)
+      return
+    }
+
     view.resetToHome()
   }, [
     archive.clearArchive,
@@ -92,8 +111,11 @@ export function usePrototypeApp() {
     auth.setUserId,
     content.clearContent,
     content.loadContent,
+    content.openArticle,
     preference,
     preferenceSelection.hydratePreferenceState,
+    view.changeTab,
+    view.openDetail,
     view.resetToHome,
     view.resetToOnboarding,
   ])
@@ -258,14 +280,12 @@ export function usePrototypeApp() {
   const toggleScrap = React.useCallback(async (article: ArticleCard | ArticleDetail) => {
     if (!auth.userId) return
     await runWithLoading(async () => {
+      const preferredTab = view.activeTab
+      const reopenDetailArticleId = view.isDetailOpen ? article.id : null
       await content.toggleScrap(auth.userId as string, article)
-      await loadUserState(auth.userId as string)
-      if (content.selectedArticle?.id === article.id) {
-        await content.refreshSelectedArticle(article.id, auth.userId)
-        view.openDetail(article.id)
-      }
+      await loadUserState(auth.userId as string, { preferredTab, reopenDetailArticleId })
     })
-  }, [auth.userId, content.refreshSelectedArticle, content.selectedArticle?.id, content.toggleScrap, loadUserState, runWithLoading, view.openDetail])
+  }, [auth.userId, content.toggleScrap, loadUserState, runWithLoading, view.activeTab, view.isDetailOpen])
 
   const loadArchiveMonth = React.useCallback(async (nextMonth: string) => {
     if (!auth.userId) return
