@@ -64,14 +64,17 @@ make install-frontend
    - Naver Search API credential이 있으면 `make crawler-collect NEWS_SOURCE=naver-search NEWS_QUERY=사회 NEWS_COUNT=20`로 최신 검색 결과를 수집합니다.
    - 수집 결과는 `apps/crawler/output/latest.json`에 저장됩니다.
    - crawler 결과 JSON은 `make crawler-export-raw NEWS_INPUT=apps/crawler/output/latest.json`로 summarizer raw 계약에 맞게 변환합니다.
+   - `make crawler-export-raw`는 `data/raw`뿐 아니라 `data/json`, `data/scored`, `data/summarized`, `data/verified`, `data/category_map.json`도 함께 비워서 다음 요약 실행이 직전 수집 기사만 사용하도록 보장합니다.
    - backend/summarizer와 직접 맞물리는 저장 포맷은 `apps/crawler/src/crawler/pipeline.py`의 `save_raw_articles()`가 보장합니다.
    - 출력: `apps/summarizer/data/raw/001.txt` 형태
 2. `apps/summarizer`
    - `data/raw/*.txt`를 `data/json/*.json`, `data/summarized/*.json`, `data/category_map.json`으로 변환/요약합니다.
    - 실행: `make pipeline-summarizer` (`run_pipeline.py --from 2`)
+   - 기본 실행은 `codex exec` + `gpt-5.4-mini` + reasoning effort `low`를 사용하며, 필요하면 `PIPELINE_LLM_BACKEND`, `PIPELINE_MODEL`, `PIPELINE_CODEX_REASONING_EFFORT`로 override 할 수 있습니다.
 3. `apps/backend`
    - startup seed 시 `NEWS_SUMMARIZER_DIR/data`를 읽어 `articles` 테이블에 `SUM-001` 같은 id로 주입합니다.
    - 운영 중 갱신은 `make import-articles`가 같은 summarizer data를 insert/update 합니다.
+   - `make import-articles`와 `make pipeline-news`는 `DATABASE_URL`이 없으면 로컬 sqlite(`apps/backend/dev-ui-test.db`)를 기본 사용하므로 Postgres가 없어도 E2E smoke를 계속 진행할 수 있습니다.
    - summarizer 데이터가 없으면 기존 fallback seed를 사용합니다.
 4. 전체 E2E
    - `make pipeline-news NEWS_SOURCE=seeded` 또는 `make pipeline-news NEWS_SOURCE=naver-search NEWS_QUERY=사회 NEWS_COUNT=20`
