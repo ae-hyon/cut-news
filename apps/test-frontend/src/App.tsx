@@ -4,6 +4,7 @@ import AppShell from './components/layout/AppShell'
 import TopBar from './components/layout/TopBar'
 import DevPanel from './components/common/DevPanel'
 import IntroScreen from './components/screens/IntroScreen'
+import { isDevDemoEntryEnabled } from './lib/devSession'
 import OnboardingScreen from './components/screens/OnboardingScreen'
 import OnboardingCompleteScreen from './components/screens/OnboardingCompleteScreen'
 import HomeScreen from './components/screens/HomeScreen'
@@ -36,7 +37,7 @@ export default function App() {
   getScreenLabel(app)
   const searchParams = new URLSearchParams(window.location.search)
   const showDebug = searchParams.get('debug') === '1'
-  const showDevDemoEntry = import.meta.env.DEV || showDebug
+  const showDevDemoEntry = isDevDemoEntryEnabled(window.location.search)
 
   return (
     <AppShell error={app.error}>
