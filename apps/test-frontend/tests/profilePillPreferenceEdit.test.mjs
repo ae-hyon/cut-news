@@ -18,5 +18,5 @@ test('profile pill can reopen preference editing from any non-detail logged-in s
   assert.match(topBar, /aria-label="사용자 프로필"/)
   assert.match(topBar, /onClick=\{onProfileClick\}/)
   assert.match(app, /<TopBar activeTab=\{app\.activeTab\} onNavigate=\{app\.changeTab\} onProfileClick=\{app\.editCompletedPreferences\} profilePill="선우" \/>/)
-  assert.match(prototype, /const editCompletedPreferences = React\.useCallback\(\(\) => \{\s*setIsEditingCompletedPreference\(true\)\s*view\.resetToOnboarding\(\)\s*\}, \[view\.resetToOnboarding\]\)/s)
+  assert.match(prototype, /const editCompletedPreferences = React\.useCallback\(\(\) => \{\s*setIsEditingCompletedPreference\(true\)\s*setPreferenceEditReturnContext\(\{\s*preferredTab: view\.activeTab,/s)
 })
