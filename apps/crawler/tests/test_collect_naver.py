@@ -32,6 +32,7 @@ def test_collect_naver_articles_turns_search_items_and_scraped_body_into_crawled
     assert str(articles[0].url) == 'https://example.com/original/1'
     assert articles[0].date == '2026-04-28 10:00'
     assert articles[0].media == 'naver-news'
+    assert articles[0].article_id
 
 
 def test_collect_naver_articles_falls_back_to_description_when_body_scrape_is_empty():
@@ -51,6 +52,7 @@ def test_collect_naver_articles_falls_back_to_description_when_body_scrape_is_em
     assert len(articles) == 1
     assert articles[0].content == 'API 설명을 fallback 본문으로 씁니다.'
     assert articles[0].date == 'bad-date'
+    assert articles[0].content_source == 'description'
 
 
 def test_collect_seeded_articles_scrapes_direct_article_urls_without_naver_credentials():
@@ -73,6 +75,34 @@ def test_collect_seeded_articles_scrapes_direct_article_urls_without_naver_crede
     assert articles[0].content == '직접 URL에서 가져온 기사 본문입니다. 충분한 길이입니다.'
     assert str(articles[0].url) == 'https://example.com/direct/1'
     assert articles[0].media == 'example.com'
+
+
+def test_collect_naver_articles_dedupes_same_original_article_and_keeps_stable_article_id():
+    def fake_search(query: str, count: int):
+        return [
+            {
+                'title': '중복 기사 A',
+                'description': '첫 번째 결과',
+                'link': 'https://news.naver.com/article/001/0000000001',
+                'originallink': 'https://example.com/original/dupe',
+                'pubDate': 'Tue, 28 Apr 2026 10:00:00 +0900',
+            },
+            {
+                'title': '중복 기사 A',
+                'description': '두 번째 결과',
+                'link': 'https://news.naver.com/article/001/0000000999',
+                'originallink': 'https://example.com/original/dupe',
+                'pubDate': 'Tue, 28 Apr 2026 10:05:00 +0900',
+            },
+        ]
+
+    def fake_fetch_html(url: str) -> str:
+        return '<html><body><article id="dic_area">실제 기사 본문입니다. 충분한 길이의 본문입니다.</article></body></html>'
+
+    articles = collect_naver_articles('경제', 2, search_items=fake_search, fetch_html=fake_fetch_html)
+
+    assert len(articles) == 1
+    assert articles[0].article_id == 'bc5a6db53ff4'
 
 
 def test_save_latest_articles_writes_stable_pipeline_input_and_timestamped_copy(tmp_path: Path):

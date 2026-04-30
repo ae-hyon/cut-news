@@ -54,7 +54,7 @@ def test_exported_legacy_crawler_output_can_be_saved_as_summarizer_raw(tmp_path:
 
     paths = save_raw_articles(load_articles_from_json(input_path), raw_dir)
 
-    assert paths == [raw_dir / '001.txt']
+    assert paths == [raw_dir / 'raw-001.txt']
     assert '제목: 영문 키 기반 crawler 결과' in paths[0].read_text(encoding='utf-8')
     assert 'URL: https://news.example.com/economy/1' in paths[0].read_text(encoding='utf-8')
 
@@ -81,7 +81,7 @@ def test_export_articles_to_raw_clears_stale_raw_files_before_writing_latest_dat
 
     paths = export_articles_to_raw(input_path, raw_dir, clear=True)
 
-    assert paths == [raw_dir / '001.txt']
+    assert paths == [raw_dir / 'raw-001.txt']
     assert not stale_path.exists()
     assert '제목: 새 기사' in paths[0].read_text(encoding='utf-8')
 
@@ -112,5 +112,5 @@ def test_export_articles_to_raw_can_clear_downstream_summarizer_outputs_for_fres
 
     paths = export_articles_to_raw(input_path, raw_dir, clear=True, clear_derived_dirs=[derived_dir])
 
-    assert paths == [raw_dir / '001.txt']
+    assert paths == [raw_dir / 'raw-001.txt']
     assert list(derived_dir.iterdir()) == []

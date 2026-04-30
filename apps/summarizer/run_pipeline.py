@@ -7,7 +7,9 @@
   python3 run_pipeline.py --from 3 # 특정 스텝부터 실행
 """
 
+import json
 import sys
+from pathlib import Path
 
 STEPS = {
     1: ("scrape",    "pipeline.step1_scrape"),
@@ -16,6 +18,8 @@ STEPS = {
     4: ("summarize", "pipeline.step4_summarize"),
     5: ("verify",    "pipeline.step5_verify"),
 }
+DATA_DIR = Path(__file__).resolve().parent / 'data'
+RUN_MANIFEST_PATH = DATA_DIR / 'run_manifest.json'
 
 
 def run_step(step_num: int):
@@ -28,8 +32,23 @@ def run_step(step_num: int):
     mod.main()
 
 
+def _raw_article_ids() -> list[str]:
+    raw_dir = DATA_DIR / 'raw'
+    if not raw_dir.exists():
+        return []
+    return sorted(path.stem for path in raw_dir.glob('*.txt'))
+
+
+def _write_run_manifest(*, complete: bool) -> None:
+    RUN_MANIFEST_PATH.write_text(
+        json.dumps({'article_ids': _raw_article_ids(), 'complete': complete}, ensure_ascii=False, indent=2),
+        encoding='utf-8',
+    )
+
+
 def main():
     args = sys.argv[1:]
+    _write_run_manifest(complete=False)
 
     if "--step" in args:
         idx = args.index("--step")
@@ -46,6 +65,7 @@ def main():
         for s in STEPS:
             run_step(s)
 
+    _write_run_manifest(complete=True)
     print("\n\n파이프라인 완료. 평가 리포트를 보려면:")
     print("  python3 evaluate.py")
 

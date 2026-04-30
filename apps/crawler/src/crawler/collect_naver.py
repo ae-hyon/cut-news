@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -111,6 +112,10 @@ def _hostname(url: str) -> str:
     return match.group(1).removeprefix('www.') if match else ''
 
 
+def _make_article_id(url: str) -> str:
+    return hashlib.sha256(url.encode('utf-8')).hexdigest()[:12]
+
+
 def search_naver_items(query: str, count: int) -> list[dict[str, Any]]:
     client_id = os.getenv('NAVER_CLIENT_ID')
     client_secret = os.getenv('NAVER_CLIENT_SECRET')
@@ -145,6 +150,7 @@ def collect_naver_articles(
     fetch_html: FetchHtml = fetch_article_html,
 ) -> list[CrawledArticle]:
     articles: list[CrawledArticle] = []
+    seen_article_ids: set[str] = set()
     for item in search_items(query, count):
         title = _strip_html(str(item.get('title', '')))
         description = _strip_html(str(item.get('description', '')))
@@ -162,14 +168,20 @@ def collect_naver_articles(
         content = body or description
         if not content:
             continue
+        article_id = _make_article_id(original_link)
+        if article_id in seen_article_ids:
+            continue
+        seen_article_ids.add(article_id)
 
         articles.append(
             CrawledArticle(
+                article_id=article_id,
                 title=title,
                 content=content,
                 url=original_link,
                 date=_format_pub_date(str(item.get('pubDate') or '')),
                 media='naver-news',
+                content_source='body' if body else 'description',
                 scraped_at=datetime.now(),
             )
         )
@@ -182,6 +194,7 @@ def collect_seeded_articles(
     fetch_html: FetchHtml = fetch_article_html,
 ) -> list[CrawledArticle]:
     articles: list[CrawledArticle] = []
+    seen_article_ids: set[str] = set()
     for seed in seeds:
         url = seed.get('url', '')
         if not url:
@@ -194,13 +207,19 @@ def collect_seeded_articles(
         content = _extract_body(html)
         if not title or not content:
             continue
+        article_id = _make_article_id(url)
+        if article_id in seen_article_ids:
+            continue
+        seen_article_ids.add(article_id)
         articles.append(
             CrawledArticle(
+                article_id=article_id,
                 title=title,
                 content=content,
                 url=url,
                 date=datetime.now().strftime('%Y-%m-%d %H:%M'),
                 media=_extract_meta_content(html, 'og:site_name', 'twitter:site') or _hostname(url),
+                content_source='body',
                 scraped_at=datetime.now(),
             )
         )
