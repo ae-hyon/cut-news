@@ -15,6 +15,14 @@ export function usePreferenceSelection(categories: Category[]) {
   const [selectedSubs, setSelectedSubs] = React.useState<string[]>([])
   const [narrowStep, setNarrowStep] = React.useState<NarrowStep>(1)
 
+  const resetSelectionState = React.useCallback((nextMode: PreferenceMode = 'wide') => {
+    setMode(nextMode)
+    setSelectedCategories(DEFAULT_WIDE_CATEGORIES)
+    setSelectedPrimary(DEFAULT_NARROW_PRIMARY)
+    setSelectedSubs([])
+    setNarrowStep(1)
+  }, [])
+
   const subcategoryMap = React.useMemo<SubcategoryMap>(() => {
     const map: SubcategoryMap = {}
     for (const category of categories) map[category.slug] = category.subcategories || []
@@ -87,6 +95,7 @@ export function usePreferenceSelection(categories: Category[]) {
     setMode: chooseMode,
     setSelectedPrimary,
     setNarrowStep,
+    resetSelectionState,
     hydratePreferenceState,
     toggleWideCategory,
     toggleSubcategory,

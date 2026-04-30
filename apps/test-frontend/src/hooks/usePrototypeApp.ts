@@ -48,6 +48,7 @@ export function usePrototypeApp() {
   const [preference, setPreference] = React.useState<UserPreference | null>(null)
   const [isEditingCompletedPreference, setIsEditingCompletedPreference] = React.useState(false)
   const [preferenceEditReturnContext, setPreferenceEditReturnContext] = React.useState<PreferenceEditReturnContext | null>(null)
+  const bootstrapStartedRef = React.useRef(false)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
 
@@ -167,6 +168,8 @@ export function usePrototypeApp() {
   }, [auth.loadBootstrap, loadUserState, runWithLoading])
 
   React.useEffect(() => {
+    if (bootstrapStartedRef.current) return
+    bootstrapStartedRef.current = true
     void loadBootstrap()
   }, [loadBootstrap])
 
@@ -199,6 +202,8 @@ export function usePrototypeApp() {
 
   const startPreferenceFlow = React.useCallback(async () => {
     await runWithLoading(async () => {
+      const nextMode = preferenceSelection.mode
+      preferenceSelection.resetSelectionState(nextMode)
       auth.setUserId(DEMO_USER_ID)
       auth.setSession({
         user_id: DEMO_USER_ID,
@@ -209,8 +214,8 @@ export function usePrototypeApp() {
       })
       setPreference({
         user_id: DEMO_USER_ID,
-        mode: preferenceSelection.mode,
-        primary_categories: preferenceSelection.mode === 'wide' ? preferenceSelection.selectedCategories : [],
+        mode: nextMode,
+        primary_categories: [],
         subcategories: [],
         onboarding_completed: false,
       })
@@ -227,16 +232,17 @@ export function usePrototypeApp() {
     auth,
     content.clearContent,
     content.setSelectedArticle,
-    preferenceSelection.mode,
-    preferenceSelection.selectedCategories,
+    preferenceSelection,
     view.resetToOnboarding,
   ])
 
   const restartIntroFlow = React.useCallback(() => {
+    preferenceSelection.resetSelectionState()
     clearRememberedDemoUserId()
     clearRememberedViewContext()
     auth.setUserId(null)
     auth.setSession(null)
+    auth.setAuthNotice('')
     setPreference(null)
     setIsEditingCompletedPreference(false)
     setPreferenceEditReturnContext(null)
@@ -244,7 +250,23 @@ export function usePrototypeApp() {
     content.setSelectedArticle(null)
     archive.clearArchive()
     view.resetToHome()
-  }, [archive.clearArchive, auth, content.clearContent, content.setSelectedArticle, view.resetToHome])
+  }, [archive.clearArchive, auth, content.clearContent, content.setSelectedArticle, preferenceSelection, view.resetToHome])
+
+  const logout = React.useCallback(async () => {
+    await runWithLoading(async () => {
+      await auth.logout()
+      preferenceSelection.resetSelectionState()
+      clearRememberedDemoUserId()
+      clearRememberedViewContext()
+      setPreference(null)
+      setIsEditingCompletedPreference(false)
+      setPreferenceEditReturnContext(null)
+      content.clearContent()
+      content.setSelectedArticle(null)
+      archive.clearArchive()
+      view.resetToHome()
+    })
+  }, [archive.clearArchive, auth, content.clearContent, content.setSelectedArticle, preferenceSelection, runWithLoading, view.resetToHome])
 
   const refreshCurrentState = React.useCallback(async () => {
     if (!auth.userId) return
@@ -263,6 +285,18 @@ export function usePrototypeApp() {
       })
     })
   }, [auth.checkKakaoSession, loadUserState, runWithLoading])
+
+  const beginKakaoStart = React.useCallback(() => {
+    preferenceSelection.resetSelectionState()
+    setIsEditingCompletedPreference(false)
+    setPreferenceEditReturnContext(null)
+    clearRememberedViewContext()
+    content.clearContent()
+    content.setSelectedArticle(null)
+    archive.clearArchive()
+    view.resetToHome()
+    auth.beginKakaoStart()
+  }, [archive.clearArchive, auth, content.clearContent, content.setSelectedArticle, preferenceSelection, view.resetToHome])
 
   React.useEffect(() => {
     const handleKakaoMessage = (event: MessageEvent) => {
@@ -435,7 +469,8 @@ export function usePrototypeApp() {
     startPreferenceFlow,
     restartIntroFlow,
     refreshCurrentState,
-    beginKakaoStart: auth.beginKakaoStart,
+    beginKakaoStart,
+    logout,
     checkKakaoSession,
     submitPreferences,
     editCompletedPreferences,

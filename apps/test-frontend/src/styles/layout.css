@@ -48,6 +48,11 @@
   color: inherit;
   padding: 0;
 }
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .profile-pill {
   border: 0;
   border-radius: 999px;
@@ -57,6 +62,11 @@
   font-size: 11px;
   font-weight: 820;
   line-height: 1;
+}
+.profile-pill-muted {
+  background: transparent;
+  color: #d1d1d1;
+  border: 1px solid rgba(255,255,255,.22);
 }
 .error-banner {
   position: fixed;

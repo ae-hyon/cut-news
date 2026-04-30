@@ -5,6 +5,11 @@
   flex-direction: column;
 }
 .intro-topbar { margin-bottom: 46px; }
+.intro-helper-text {
+  max-width: 320px;
+  margin: 14px auto 0;
+  text-align: center;
+}
 .pdf-question {
   width: 100%;
   max-width: 356px;
@@ -80,6 +85,7 @@
   border: 1px solid var(--orange);
 }
 .pdf-bottom-cta { margin-top: 42px; }
+.intro-returning-cta { margin-top: 10px; }
 
 .home-screen { padding-bottom: 24px; }
 .home-filter-row {

@@ -6,10 +6,11 @@ interface TopBarProps {
   activeTab: AppTab
   onNavigate: (tab: AppTab) => void
   onProfileClick?: () => void
+  onLogout?: () => void
   profilePill?: string
 }
 
-export default function TopBar({ activeTab, onNavigate, onProfileClick, profilePill = '선우' }: TopBarProps) {
+export default function TopBar({ activeTab, onNavigate, onProfileClick, onLogout, profilePill = '선우' }: TopBarProps) {
   return (
     <header className="pdf-topbar app-topbar">
       <button className="brand-block" onClick={() => onNavigate('home')}>
@@ -21,7 +22,10 @@ export default function TopBar({ activeTab, onNavigate, onProfileClick, profileP
         <span>|</span>
         <button className={activeTab === 'archive' ? 'active' : ''} onClick={() => onNavigate('archive')}>아카이브</button>
       </nav>
-      <button className="profile-pill" type="button" aria-label="사용자 프로필" onClick={onProfileClick}>{profilePill}</button>
+      <div className="topbar-actions">
+        <button className="profile-pill profile-pill-muted" type="button" aria-label="로그아웃" onClick={onLogout}>로그아웃</button>
+        <button className="profile-pill" type="button" aria-label="사용자 프로필" onClick={onProfileClick}>{profilePill}</button>
+      </div>
     </header>
   )
 }

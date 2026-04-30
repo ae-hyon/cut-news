@@ -20,10 +20,13 @@ test('submitting edited preferences reloads live user state into the saved retur
   assert.match(source, /view\.resetToOnboardingComplete\(\)/)
 })
 
-test('loading or starting a new preference flow clears edit mode and saved return context before continuing', async () => {
+test('loading out or starting fresh clears stale onboarding selection state before a new flow begins', async () => {
+  const selection = await readFile(path.join(projectRoot, 'src/hooks/usePreferenceSelection.ts'), 'utf8')
   const source = await readFile(path.join(projectRoot, 'src/hooks/usePrototypeApp.ts'), 'utf8')
 
-  assert.match(source, /setIsEditingCompletedPreference\(false\)\s*setPreferenceEditReturnContext\(null\)\s*auth\.setUserId\(nextUserId\)/s)
-  assert.match(source, /setIsEditingCompletedPreference\(false\)\s*setPreferenceEditReturnContext\(null\)\s*content\.clearContent\(\)/s)
-  assert.match(source, /setPreference\(null\)\s*setIsEditingCompletedPreference\(false\)\s*setPreferenceEditReturnContext\(null\)\s*content\.clearContent\(\)/s)
+  assert.match(selection, /const resetSelectionState = React\.useCallback\(\(nextMode: PreferenceMode = 'wide'\) => \{\s*setMode\(nextMode\)\s*setSelectedCategories\(DEFAULT_WIDE_CATEGORIES\)\s*setSelectedPrimary\(DEFAULT_NARROW_PRIMARY\)\s*setSelectedSubs\(\[\]\)\s*setNarrowStep\(1\)/s)
+  assert.match(source, /const nextMode = preferenceSelection\.mode\s*preferenceSelection\.resetSelectionState\(nextMode\)\s*auth\.setUserId\(DEMO_USER_ID\)/s)
+  assert.match(source, /const restartIntroFlow = React\.useCallback\(\(\) => \{\s*preferenceSelection\.resetSelectionState\(\)\s*clearRememberedDemoUserId\(\)/s)
+  assert.match(source, /const logout = React\.useCallback\(async \(\) => \{\s*await runWithLoading\(async \(\) => \{\s*await auth\.logout\(\)\s*preferenceSelection\.resetSelectionState\(\)/s)
+  assert.match(source, /const beginKakaoStart = React\.useCallback\(\(\) => \{\s*preferenceSelection\.resetSelectionState\(\)\s*setIsEditingCompletedPreference\(false\)\s*setPreferenceEditReturnContext\(null\)/s)
 })

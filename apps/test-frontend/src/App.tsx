@@ -48,7 +48,7 @@ export default function App() {
 
   return (
     <AppShell error={app.error}>
-      {!!app.userId && !app.isDetailOpen && app.activeTab !== 'onboarding' && app.activeTab !== 'onboarding-complete' && <TopBar activeTab={app.activeTab} onNavigate={app.changeTab} onProfileClick={app.editCompletedPreferences} profilePill="선우" />}
+      {!!app.userId && !app.isDetailOpen && app.activeTab !== 'onboarding' && app.activeTab !== 'onboarding-complete' && <TopBar activeTab={app.activeTab} onNavigate={app.changeTab} onProfileClick={app.editCompletedPreferences} onLogout={app.logout} profilePill="선우" />}
 
       {!app.userId ? (
         <IntroScreen
@@ -56,6 +56,7 @@ export default function App() {
           mode={app.mode}
           onSelectMode={app.setMode}
           onContinue={app.startPreferenceFlow}
+          onBeginKakaoLogin={app.beginKakaoStart}
         />
       ) : app.selectedArticle ? (
         <DetailScreen
@@ -63,6 +64,7 @@ export default function App() {
           onBack={app.closeArticle}
           onToggleScrap={app.toggleScrap}
           onEditPreference={app.editCompletedPreferences}
+          onLogout={app.logout}
           showPreferenceMismatchNotice={showDetailPreferenceMismatchNotice}
         />
       ) : app.showOnboardingScreen ? (
@@ -137,6 +139,7 @@ export default function App() {
           onRefreshBootstrap={app.loadBootstrap}
           onStartDemo={app.startDemo}
           onRefreshCurrentState={app.refreshCurrentState}
+          onLogout={app.logout}
         />
       )}
     </AppShell>
