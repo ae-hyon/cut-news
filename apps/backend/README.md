@@ -8,6 +8,7 @@ Annoying Cap의 메인 서비스 백엔드입니다.
 - DDD + layered architecture 구조
 - domain/application/infrastructure/presentation 분리
 - sibling 프로젝트 `../summarizer`의 `data/json`, `data/summarized`, `data/category_map.json`를 읽어 뉴스 홈 데이터를 seed
+- summarizer ingest는 경제성 title signal 또는 신뢰 가능한 source subcategory가 있는 기사만 backend taxonomy로 매핑하고, 최신 import 결과에 없는 기존 `SUM-*` 기사는 stale 데이터로 정리함
 - summary gateway가 API schema -> summarizer schema typed boundary를 거치도록 정리됨
 - `/v1/auth/session`, `/v1/auth/kakao/start`, `/v1/auth/kakao/callback`, `/v1/auth/refresh`, `/v1/auth/logout` API 경계 제공
 - Kakao `provider_subject -> internal user_id` 매핑 저장소가 추가됨
@@ -17,7 +18,7 @@ Annoying Cap의 메인 서비스 백엔드입니다.
 - `GET /v1/auth/kakao/callback`은 인증 완료 후 `FRONTEND_APP_URL/?auth=kakao`로 302 redirect하고 HttpOnly 쿠키를 설정함
 - 프론트는 `session_state` (`authenticated` / `onboarded`)와 저장된 preference를 보고 자체 라우팅하면 됨
 - 온보딩 validation은 backend가 보장: wide=대분류 3~5개/중복 금지/subcategory 금지, narrow=대분류 1개 + subcategory 1개 이상/중복 금지
-- 피드 블록 정책은 Flow.pdf 기준으로 backend가 보장: wide=선택 순서대로 블록 구성 + 가중치 1.0/0.85/0.70..., narrow=단일 focus block weight 1.0
+- 피드 블록 정책은 Flow.pdf 기준으로 backend가 보장: wide=선택 순서대로 블록 구성 + 가중치 1.0/0.85/0.70... + 블록당 최대 4개 기사, narrow=단일 focus block weight 1.0 + 선택 subcategory 부족 시 같은 primary 기사로 4개까지 fallback 채움 + 같은 날짜/같은 대분류의 유사 제목 기사는 중복 제거 + score_weight 0.65 미만 기사는 feed에서 제외
 - auth application 영역은 `app/application/auth/` 하위로 분리됨
 - domain 모델은 dataclass 대신 Pydantic으로 통일
 - schema 관리는 Alembic migration 기반, startup 시 migration + seed 수행
@@ -128,6 +129,7 @@ AUTH_COOKIE_SAMESITE=lax
 - 현재 startup 시 `SEED_ON_STARTUP=true`이면 seed 데이터가 idempotent 하게 주입됩니다.
 - `NEWS_SUMMARIZER_DIR/data`에 요약 결과가 있으면 그 데이터를 우선 주입하고, 없으면 backend fallback seed를 사용합니다.
 - 서버 기동 후 요약 결과를 다시 반영하려면 `PYTHONPATH=. python3.11 -m app.scripts.import_articles_from_summarizer`를 실행합니다. 같은 id 또는 같은 `original_url`은 새로 추가하지 않고 update 합니다.
+- 애매한 경제 기사에 대해 LLM fallback 분류를 켜려면 `ARTICLE_CLASSIFIER_ENABLED=true`, `ARTICLE_CLASSIFIER_PROVIDER=hermit`, `ARTICLE_CLASSIFIER_COMMAND=hermit`를 설정하세요. 기본값은 `~/.hermit/settings.json`의 `providers.z.ai` / `model`을 읽어 Hermit one-line CLI로 직접 분류를 호출합니다. 필요하면 `ARTICLE_CLASSIFIER_HERMIT_PROVIDER_NAME`, `ARTICLE_CLASSIFIER_MODEL`, `ARTICLE_CLASSIFIER_BASE_URL`, `ARTICLE_CLASSIFIER_API_KEY`로 override 할 수 있습니다. backend는 비-TTY subprocess에서도 동작하도록 `script -q /dev/null hermit ...` 래퍼를 사용합니다. fallback 결과는 `NEWS_SUMMARIZER_DIR/data/classification_cache.json`에 캐시됩니다.
 
 ## Install
 
@@ -296,7 +298,7 @@ curl -X POST http://127.0.0.1:8000/v1/summaries \
 - `/v1/summaries`가 `../summarizer` 연동으로 정상 동작 확인
 - domain dataclass 제거, Pydantic 기반 모델로 통일 완료
 - onboarding validation: wide/narrow 규칙 및 중복 금지 contract 테스트로 검증
-- feed weighting: 선호 순서 보존, block weight 하향, article `score_weight` 내림차순 정렬 검증
+- feed weighting: 선호 순서 보존, block weight 하향, article 점수+최신성 혼합 정렬, wide 4개 노출, narrow same-primary fallback 검증
 
 ## Tests
 

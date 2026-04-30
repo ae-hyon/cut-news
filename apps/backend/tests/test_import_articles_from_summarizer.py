@@ -90,6 +90,26 @@ def test_import_summarized_articles_updates_existing_rows_without_duplicate_inse
     assert rows[0].summary == '수정된 요약'
 
 
+def test_import_summarized_articles_removes_stale_summarizer_rows_absent_from_latest_dataset(tmp_path: Path):
+    write_dataset(tmp_path, '첫 번째 제목', '첫 번째 요약', article_id='001', url='https://example.com/news/1')
+    session = make_session()
+    import_summarized_articles(session, tmp_path)
+
+    for child in tmp_path.iterdir():
+        if child.is_dir():
+            for file in child.iterdir():
+                file.unlink()
+    write_dataset(tmp_path, '두 번째 제목', '두 번째 요약', article_id='002', url='https://example.com/news/2')
+
+    stats = import_summarized_articles(session, tmp_path)
+
+    assert stats.inserted == 1
+    assert stats.updated == 0
+    assert stats.deleted == 1
+    rows = session.scalars(select(ArticleModel).order_by(ArticleModel.id)).all()
+    assert [row.id for row in rows] == ['SUM-002']
+
+
 def test_import_summarized_articles_matches_existing_rows_by_original_url_when_id_changes(tmp_path: Path):
     write_dataset(tmp_path, '첫 번째 제목', '첫 번째 요약', article_id='001', url='https://example.com/news/same')
     session = make_session()
@@ -105,6 +125,7 @@ def test_import_summarized_articles_matches_existing_rows_by_original_url_when_i
 
     assert stats.inserted == 0
     assert stats.updated == 1
+    assert stats.deleted == 0
     rows = session.scalars(select(ArticleModel)).all()
     assert len(rows) == 1
     assert rows[0].id == 'SUM-001'
