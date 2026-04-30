@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import date, datetime
+from difflib import SequenceMatcher
+import re
 
 from app.domain.entities import Article
 from app.domain.enums import PreferenceMode
@@ -9,6 +12,14 @@ from app.domain.repositories import ArticleRepository, ScrapRepository, UserPref
 
 
 class FeedService:
+    SCORE_WEIGHT_FACTOR = 0.85
+    RECENCY_WEIGHT_FACTOR = 0.15
+    RECENCY_WINDOW_DAYS = 7
+    WIDE_BLOCK_ARTICLE_LIMIT = 4
+    NARROW_BLOCK_ARTICLE_TARGET = 4
+    DUPLICATE_TITLE_SIMILARITY = 0.72
+    MINIMUM_FEED_SCORE_WEIGHT = 0.65
+
     def __init__(self, article_repository: ArticleRepository, preference_repository: UserPreferenceRepository, scrap_repository: ScrapRepository):
         self.article_repository = article_repository
         self.preference_repository = preference_repository
@@ -20,9 +31,79 @@ class FeedService:
             raise NotFoundError('Article not found')
         return article
 
+    @classmethod
+    def _published_date(cls, article: Article) -> date:
+        try:
+            return datetime.strptime(article.published_at, '%Y-%m-%d').date()
+        except ValueError:
+            return date.min
+
+    @classmethod
+    def _recency_weight(cls, article: Article, newest_date: date) -> float:
+        published_date = cls._published_date(article)
+        if published_date is date.min or newest_date is date.min:
+            return 0.0
+        age_days = max((newest_date - published_date).days, 0)
+        bounded_age_days = min(age_days, cls.RECENCY_WINDOW_DAYS)
+        return round(1.0 - (bounded_age_days / cls.RECENCY_WINDOW_DAYS), 4)
+
+    @classmethod
+    def _ranking_weight(cls, article: Article, newest_date: date) -> float:
+        return round(
+            (article.score_weight * cls.SCORE_WEIGHT_FACTOR)
+            + (cls._recency_weight(article, newest_date) * cls.RECENCY_WEIGHT_FACTOR),
+            4,
+        )
+
+    @classmethod
+    def _sort_articles(cls, articles: list[Article]) -> list[Article]:
+        if not articles:
+            return []
+        newest_date = max((cls._published_date(article) for article in articles), default=date.min)
+        return sorted(
+            articles,
+            key=lambda article: (
+                cls._ranking_weight(article, newest_date),
+                article.score_weight,
+                article.published_at,
+                article.id,
+            ),
+            reverse=True,
+        )
+
     @staticmethod
-    def _sort_articles(articles: list[Article]) -> list[Article]:
-        return sorted(articles, key=lambda article: article.score_weight, reverse=True)
+    def _normalized_title(title: str) -> str:
+        return re.sub(r'[^0-9A-Za-z가-힣]+', '', title).lower()
+
+    @classmethod
+    def _is_duplicate_article(cls, candidate: Article, selected: Article) -> bool:
+        if candidate.primary_category != selected.primary_category:
+            return False
+        if candidate.published_at != selected.published_at:
+            return False
+
+        candidate_title = cls._normalized_title(candidate.title)
+        selected_title = cls._normalized_title(selected.title)
+        if not candidate_title or not selected_title:
+            return False
+        if candidate_title == selected_title:
+            return True
+
+        similarity = SequenceMatcher(None, candidate_title, selected_title).ratio()
+        return similarity >= cls.DUPLICATE_TITLE_SIMILARITY
+
+    @classmethod
+    def _dedupe_articles(cls, articles: list[Article]) -> list[Article]:
+        unique: list[Article] = []
+        for article in articles:
+            if any(cls._is_duplicate_article(article, existing) for existing in unique):
+                continue
+            unique.append(article)
+        return unique
+
+    @classmethod
+    def _feed_eligible_articles(cls, articles: list[Article]) -> list[Article]:
+        return [article for article in articles if article.score_weight >= cls.MINIMUM_FEED_SCORE_WEIGHT]
 
     @staticmethod
     def _wide_weights(count: int) -> list[float]:
@@ -59,11 +140,28 @@ class FeedService:
             if self._matches_preference(article, preference_mode, primary_categories, subcategories)
         ]
 
+    def _fill_narrow_articles(self, primary_category: str, subcategories: list[str]) -> list[Article]:
+        selected = self._dedupe_articles(
+            self._feed_eligible_articles(
+                self._sort_articles(self.article_repository.list_by_primary_and_subcategories(primary_category, subcategories))
+            )
+        )
+        if len(selected) >= self.NARROW_BLOCK_ARTICLE_TARGET:
+            return selected[: self.NARROW_BLOCK_ARTICLE_TARGET]
+
+        selected_ids = {article.id for article in selected}
+        fallback = [
+            article
+            for article in self._feed_eligible_articles(self._sort_articles(self.article_repository.list_by_primary(primary_category)))
+            if article.id not in selected_ids
+        ]
+        return self._dedupe_articles(selected + fallback)[: self.NARROW_BLOCK_ARTICLE_TARGET]
+
     def get_feed(self, user_id: str) -> dict:
         preference_mode, primary_categories, subcategories = self._resolve_preference(user_id)
 
         if preference_mode is PreferenceMode.NARROW:
-            articles = self._sort_articles(self.article_repository.list_by_primary_and_subcategories(primary_categories[0], subcategories))
+            articles = self._fill_narrow_articles(primary_categories[0], subcategories)
             return {
                 'user_id': user_id,
                 'mode': preference_mode.value,
@@ -80,7 +178,7 @@ class FeedService:
         blocks = []
         weights = self._wide_weights(len(primary_categories))
         for slug, weight in zip(primary_categories, weights):
-            articles = self._sort_articles(self.article_repository.list_by_primary(slug))
+            articles = self._dedupe_articles(self._feed_eligible_articles(self._sort_articles(self.article_repository.list_by_primary(slug))))
             if not articles:
                 continue
             blocks.append(
@@ -88,7 +186,7 @@ class FeedService:
                     'key': f'{slug}-block',
                     'title': f'{slug} block',
                     'weight': weight,
-                    'articles': articles[:3],
+                    'articles': articles[: self.WIDE_BLOCK_ARTICLE_LIMIT],
                 }
             )
 
