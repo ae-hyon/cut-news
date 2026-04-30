@@ -147,7 +147,8 @@ pipeline-summarizer:
 import-articles:
 	cd apps/backend && PYTHONPATH=. DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" python3.11 -m app.scripts.import_articles_from_summarizer
 
-pipeline-news: crawler-collect crawler-export-raw pipeline-summarizer import-articles
+pipeline-news:
+	cd apps/backend && NEWS_SOURCE=$(NEWS_SOURCE) NEWS_QUERY="$(NEWS_QUERY)" NEWS_COUNT=$(NEWS_COUNT) DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" PIPELINE_LLM_BACKEND=$(PIPELINE_LLM_BACKEND) PIPELINE_MODEL=$(PIPELINE_MODEL) PIPELINE_CODEX_REASONING_EFFORT=$(PIPELINE_CODEX_REASONING_EFFORT) PYTHONPATH=. python3.11 -m app.scripts.run_news_pipeline_job
 
 # Cleanup
 clean:
