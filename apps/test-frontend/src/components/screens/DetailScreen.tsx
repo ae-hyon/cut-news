@@ -8,9 +8,10 @@ interface DetailScreenProps {
   onBack: () => void
   onToggleScrap: (article: ArticleDetail) => void
   onEditPreference?: () => void
+  showPreferenceMismatchNotice?: boolean
 }
 
-export default function DetailScreen({ article, onBack, onToggleScrap, onEditPreference }: DetailScreenProps) {
+export default function DetailScreen({ article, onBack, onToggleScrap, onEditPreference, showPreferenceMismatchNotice = false }: DetailScreenProps) {
   return (
     <section className="screen detail-screen">
       <header className="pdf-topbar detail-topbar">
@@ -31,6 +32,11 @@ export default function DetailScreen({ article, onBack, onToggleScrap, onEditPre
           <span>{article.published_at}</span>
           <span>{toCategoryLabel(article.primary_category)} · {toSubcategoryLabel(article.subcategory)}</span>
         </div>
+        {showPreferenceMismatchNotice && (
+          <p className="screen-helper-text detail-preference-mismatch">
+            이 기사는 현재 관심사 밖에 있지만, 저장하거나 원문으로 계속 확인할 수 있어요.
+          </p>
+        )}
         <h2>{article.title}</h2>
         <p className="detail-body-text">{article.content}</p>
         <div className="detail-action-row">

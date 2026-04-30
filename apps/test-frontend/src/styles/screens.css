@@ -486,6 +486,10 @@
 .home-empty-helper {
   text-align: center;
 }
+.detail-preference-mismatch {
+  margin: 10px 0 0;
+  text-align: left;
+}
 .archive-hero h2 { text-align: left; }
 .archive-switcher {
   display: flex;

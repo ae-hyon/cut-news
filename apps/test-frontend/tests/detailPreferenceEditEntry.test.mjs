@@ -11,7 +11,9 @@ test('detail screen exposes a preference edit entry and App wires it to editComp
   const detail = await source('src/components/screens/DetailScreen.tsx')
 
   assert.match(detail, /onEditPreference\?: \(\) => void/)
+  assert.match(detail, /showPreferenceMismatchNotice\?: boolean/)
   assert.match(detail, /aria-label="관심 분야 편집"/)
   assert.match(detail, />관심 분야 수정</)
   assert.match(app, /onEditPreference=\{app\.editCompletedPreferences\}/)
+  assert.match(app, /showPreferenceMismatchNotice=\{showDetailPreferenceMismatchNotice\}/)
 })
