@@ -91,6 +91,9 @@ SUPPORTED_SUBCATEGORIES = {
 }
 
 SOURCE_CATEGORIES_REQUIRING_ECONOMIC_TITLE_SIGNAL = {'정치', '사회', '문화연예', '연예', '스포츠', '생활', '종합'}
+MIN_VERIFICATION_CONFIDENCE = 80
+MIN_DESCRIPTION_SOURCE_VERIFICATION_CONFIDENCE = 90
+MAX_SUMMARY_RETRY_COUNT = 2
 RELIABLE_SOURCE_CATEGORY_BY_SUBCATEGORY = {
     '증권': ('assets', 'domestic-stocks'),
     '주식시장': ('assets', 'domestic-stocks'),
@@ -181,6 +184,30 @@ def _title(summary_payload: dict, article_payload: dict) -> str:
 
 def _published_at(article_payload: dict) -> str:
     return str(article_payload.get('date') or '').strip()[:10]
+
+
+def _passes_quality_gate(article_payload: dict, summary_payload: dict, verification_payload: dict) -> bool:
+    verdict = str(verification_payload.get('verdict') or '').strip().lower()
+    if verdict != 'clean':
+        return False
+
+    confidence = verification_payload.get('confidence')
+    if not isinstance(confidence, int | float):
+        confidence = 100
+    min_confidence = MIN_VERIFICATION_CONFIDENCE
+    if str(article_payload.get('content_source') or '').strip().lower() == 'description':
+        min_confidence = MIN_DESCRIPTION_SOURCE_VERIFICATION_CONFIDENCE
+    if float(confidence) < min_confidence:
+        return False
+
+    violations = summary_payload.get('_violations')
+    if isinstance(violations, list) and any(str(item).strip() for item in violations):
+        return False
+
+    retry_count = summary_payload.get('_retry_count')
+    if isinstance(retry_count, int | float) and int(retry_count) > MAX_SUMMARY_RETRY_COUNT:
+        return False
+    return True
 
 
 def _classify_from_keywords(title: str, content: str) -> tuple[str, str] | None:
@@ -349,7 +376,7 @@ def load_summarized_articles(
         verification_payload = _read_json(verification_path)
         if not isinstance(article_payload, dict) or not isinstance(summary_payload, dict) or not isinstance(verification_payload, dict):
             continue
-        if str(verification_payload.get('verdict') or '').strip().lower() != 'clean':
+        if not _passes_quality_gate(article_payload, summary_payload, verification_payload):
             continue
 
         summary = str(summary_payload.get('summary') or '').strip()
