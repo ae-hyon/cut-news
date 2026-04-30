@@ -55,10 +55,12 @@ test('detail screen matches PDF summary-card plus action-row structure', async (
   assert.match(detail, /detail-action-row/)
   assert.match(detail, /원문 보기/)
   assert.match(detail, /toSubcategoryLabel\(article\.subcategory\)/)
+  assert.match(detail, /현재 관심사 밖에 있지만, 저장하거나 원문으로 계속 확인할 수 있어요\./)
   assert.match(constants, /energy: '에너지'/)
   assert.match(constants, /'rates-fx': '환율·금리'/)
   assert.match(css, /\.detail-summary-card/)
   assert.match(css, /\.detail-action-row/)
+  assert.match(css, /\.detail-preference-mismatch/)
 })
 
 test('archive screen renders PDF calendar first and date-specific board as a dismissible panel', async () => {

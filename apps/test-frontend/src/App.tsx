@@ -32,12 +32,19 @@ function getScreenLabel({ selectedArticle, activeTab, showOnboardingScreen, read
   return '시작 화면'
 }
 
+function articleMatchesPreference(article: ArticleDetail | null, preference: ReturnType<typeof usePrototypeApp>['preference']) {
+  if (!article || !preference?.onboarding_completed) return true
+  if (preference.mode === 'wide') return preference.primary_categories.includes(article.primary_category)
+  return preference.primary_categories.includes(article.primary_category) && preference.subcategories.includes(article.subcategory)
+}
+
 export default function App() {
   const app = usePrototypeApp()
   getScreenLabel(app)
   const searchParams = new URLSearchParams(window.location.search)
   const showDebug = searchParams.get('debug') === '1'
   const showDevDemoEntry = isDevDemoEntryEnabled(window.location.search)
+  const showDetailPreferenceMismatchNotice = !articleMatchesPreference(app.selectedArticle, app.preference)
 
   return (
     <AppShell error={app.error}>
@@ -56,6 +63,7 @@ export default function App() {
           onBack={app.closeArticle}
           onToggleScrap={app.toggleScrap}
           onEditPreference={app.editCompletedPreferences}
+          showPreferenceMismatchNotice={showDetailPreferenceMismatchNotice}
         />
       ) : app.showOnboardingScreen ? (
         <OnboardingScreen
