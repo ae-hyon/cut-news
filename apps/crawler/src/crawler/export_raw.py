@@ -27,16 +27,20 @@ def _normalise_article(payload: dict[str, Any]) -> CrawledArticle | None:
     date = _pick(payload, 'date', '날짜', 'published_at', 'pubDate')
     author = _pick(payload, 'author', '기자')
     media = _pick(payload, 'media', '언론사', 'source')
+    article_id = _pick(payload, 'article_id')
+    content_source = _pick(payload, 'content_source')
     if not (title and content and url):
         return None
     try:
         return CrawledArticle(
+            article_id=str(article_id) if article_id else None,
             title=str(title),
             content=str(content),
             url=str(url),
             date=str(date) if date else None,
             author=str(author) if author else None,
             media=str(media) if media else None,
+            content_source=str(content_source) if content_source else None,
         )
     except ValidationError:
         return None
@@ -57,9 +61,11 @@ def _extract_items(payload: Any) -> list[dict[str, Any]]:
 def load_articles_from_json(path: Path) -> list[CrawledArticle]:
     payload = json.loads(path.read_text(encoding='utf-8'))
     articles: list[CrawledArticle] = []
-    for item in _extract_items(payload):
+    for index, item in enumerate(_extract_items(payload), start=1):
         article = _normalise_article(item)
         if article is not None:
+            if article.article_id is None:
+                article.article_id = f'raw-{index:03d}'
             articles.append(article)
     return articles
 

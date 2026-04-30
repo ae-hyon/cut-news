@@ -20,7 +20,8 @@ def save_raw_articles(articles: list[CrawledArticle], output_dir: Path) -> list[
     output_dir.mkdir(parents=True, exist_ok=True)
     paths: list[Path] = []
     for index, article in enumerate(articles, start=1):
-        path = output_dir / f"{index:03d}.txt"
+        article_id = article.article_id or f'raw-{index:03d}'
+        path = output_dir / f"{article_id}.txt"
         path.write_text(render_summarizer_raw(article), encoding='utf-8')
         paths.append(path)
     return paths

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from pathlib import Path
 
 from sqlalchemy import select
@@ -36,6 +37,17 @@ def _apply_article_row(model: ArticleModel, row: ArticleIngestRow) -> None:
     model.score_weight = row.score_weight
 
 
+def _can_prune_stale(data_dir: Path) -> bool:
+    manifest_path = data_dir / 'run_manifest.json'
+    if not manifest_path.exists():
+        return False
+    try:
+        payload = json.loads(manifest_path.read_text(encoding='utf-8'))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return bool(payload.get('complete'))
+
+
 def import_summarized_articles(
     session: Session,
     data_dir: Path,
@@ -43,6 +55,7 @@ def import_summarized_articles(
     classifier: ArticleClassifier | None = None,
 ) -> ImportStats:
     rows = load_summarized_articles(data_dir, classifier=classifier)
+    allow_prune_stale = _can_prune_stale(data_dir)
     inserted = 0
     updated = 0
     retained_ids: set[str] = set()
@@ -64,7 +77,7 @@ def import_summarized_articles(
     stale_models = session.scalars(select(ArticleModel).where(ArticleModel.id.like('SUM-%'))).all()
     deleted = 0
     for model in stale_models:
-        if model.id in retained_ids:
+        if model.id in retained_ids or not allow_prune_stale:
             continue
         session.delete(model)
         deleted += 1

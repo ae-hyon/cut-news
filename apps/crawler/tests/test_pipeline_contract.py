@@ -9,6 +9,7 @@ from crawler.schemas import CrawledArticle
 def test_save_raw_articles_writes_summarizer_step1_raw_contract(tmp_path: Path):
     articles = [
         CrawledArticle(
+            article_id='raw-001',
             title='수집된 뉴스 제목',
             date='2026-04-28',
             author='홍길동',
@@ -20,7 +21,7 @@ def test_save_raw_articles_writes_summarizer_step1_raw_contract(tmp_path: Path):
 
     paths = save_raw_articles(articles, tmp_path)
 
-    assert paths == [tmp_path / '001.txt']
+    assert paths == [tmp_path / 'raw-001.txt']
     assert paths[0].read_text(encoding='utf-8') == (
         '제목: 수집된 뉴스 제목\n'
         '날짜: 2026-04-28\n'
