@@ -23,6 +23,10 @@ export interface AuthSessionResponse {
   provider_subject?: string | null
 }
 
+export interface AuthLogoutResponse {
+  ok: boolean
+}
+
 export interface Subcategory {
   id?: number
   slug: string

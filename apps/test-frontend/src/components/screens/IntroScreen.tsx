@@ -7,9 +7,10 @@ interface IntroScreenProps {
   mode: PreferenceMode
   onSelectMode: (mode: PreferenceMode) => void
   onContinue: () => void
+  onBeginKakaoLogin?: () => void
 }
 
-export default function IntroScreen({ loading, mode, onSelectMode, onContinue }: IntroScreenProps) {
+export default function IntroScreen({ loading, mode, onSelectMode, onContinue, onBeginKakaoLogin }: IntroScreenProps) {
   return (
     <section className="screen intro-screen pdf-intro">
       <header className="pdf-topbar intro-topbar">
@@ -21,6 +22,7 @@ export default function IntroScreen({ loading, mode, onSelectMode, onContinue }:
       </header>
 
       <h1 className="pdf-question">관심있는 분야를 최소 3개 이상 선택해서<br />하루에 한번씩 요약해서 받아보세요</h1>
+      <p className="screen-helper-text intro-helper-text">처음 쓰는 분은 관심사부터 고르고, 기존 사용자는 바로 카카오 로그인으로 이어서 볼 수 있어요.</p>
 
       <div className="pdf-progress-row">
         <span>관심사 설정</span>
@@ -38,7 +40,8 @@ export default function IntroScreen({ loading, mode, onSelectMode, onContinue }:
         </button>
       </div>
 
-      <button className="primary-cta pdf-bottom-cta" onClick={onContinue} disabled={loading}>다음</button>
+      <button className="primary-cta pdf-bottom-cta" onClick={onContinue} disabled={loading}>처음 쓰는 분: 관심사 고르기</button>
+      <button className="secondary-cta intro-returning-cta" onClick={onBeginKakaoLogin} disabled={loading || !onBeginKakaoLogin}>기존 사용자는 카카오 로그인</button>
     </section>
   )
 }

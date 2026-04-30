@@ -9,9 +9,10 @@ interface DevPanelProps {
   onRefreshBootstrap: () => void
   onStartDemo: () => void
   onRefreshCurrentState: () => void
+  onLogout?: () => void
 }
 
-export default function DevPanel({ health, session, userId, loading, onRefreshBootstrap, onStartDemo, onRefreshCurrentState }: DevPanelProps) {
+export default function DevPanel({ health, session, userId, loading, onRefreshBootstrap, onStartDemo, onRefreshCurrentState, onLogout }: DevPanelProps) {
   return (
     <details className="dev-panel">
       <summary>debug</summary>
@@ -24,6 +25,7 @@ export default function DevPanel({ health, session, userId, loading, onRefreshBo
         <button onClick={onRefreshBootstrap} disabled={loading}>API</button>
         <button onClick={onStartDemo} disabled={loading}>Demo</button>
         <button onClick={onRefreshCurrentState} disabled={loading || !userId}>Reload</button>
+        <button onClick={onLogout} disabled={loading || !userId}>Logout</button>
       </div>
     </details>
   )

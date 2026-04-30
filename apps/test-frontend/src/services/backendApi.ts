@@ -3,6 +3,7 @@ import type {
   ArchiveDateResponse,
   ArchiveMonthResponse,
   ArticleDetail,
+  AuthLogoutResponse,
   AuthSessionResponse,
   AuthStartResponse,
   Category,
@@ -37,6 +38,10 @@ export function getUserSession(userId: string) {
 
 export function getKakaoStart() {
   return api<AuthStartResponse>('/v1/auth/kakao/start')
+}
+
+export function postLogout() {
+  return api<AuthLogoutResponse>('/v1/auth/logout', { method: 'POST' })
 }
 
 export function getUserPreference(userId: string) {

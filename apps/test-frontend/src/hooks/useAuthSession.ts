@@ -1,7 +1,7 @@
 import React from 'react'
 import { getErrorMessage } from '../lib/api'
 import type { AuthSessionResponse, AuthStartResponse, Category, HealthResponse } from '../lib/types'
-import { getAnonymousSession, getCategories, getHealth, getKakaoStart, getUserSession } from '../services/backendApi'
+import { getAnonymousSession, getCategories, getHealth, getKakaoStart, getUserSession, postLogout } from '../services/backendApi'
 
 export type KakaoAuthStatus = 'idle' | 'waiting' | 'checking' | 'confirmed' | 'not_found' | 'error'
 
@@ -62,6 +62,24 @@ export function useAuthSession() {
     popup.focus()
   }, [kakaoStart])
 
+  const logout = React.useCallback(async () => {
+    const result = await postLogout()
+    setSession({
+      user_id: null,
+      session_state: 'anonymous',
+      onboarding_completed: false,
+      authenticated: false,
+      auth_provider: 'none',
+      provider_subject: null,
+    })
+    setUserId(null)
+    setKakaoAuthStatus('idle')
+    popupRef.current?.close()
+    popupRef.current = null
+    setAuthNotice('로그아웃했어요. 다른 사용자로 다시 테스트할 수 있어요.')
+    return result
+  }, [])
+
   const checkKakaoSession = React.useCallback(async ({ onAuthenticated, silent = false }: CheckKakaoSessionOptions) => {
     try {
       setKakaoAuthStatus('checking')
@@ -115,6 +133,7 @@ export function useAuthSession() {
     loadUserSession,
     refreshAnonymousSession,
     beginKakaoStart,
+    logout,
     checkKakaoSession,
   }
 }

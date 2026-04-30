@@ -8,10 +8,11 @@ interface DetailScreenProps {
   onBack: () => void
   onToggleScrap: (article: ArticleDetail) => void
   onEditPreference?: () => void
+  onLogout?: () => void
   showPreferenceMismatchNotice?: boolean
 }
 
-export default function DetailScreen({ article, onBack, onToggleScrap, onEditPreference, showPreferenceMismatchNotice = false }: DetailScreenProps) {
+export default function DetailScreen({ article, onBack, onToggleScrap, onEditPreference, onLogout, showPreferenceMismatchNotice = false }: DetailScreenProps) {
   return (
     <section className="screen detail-screen">
       <header className="pdf-topbar detail-topbar">
@@ -20,6 +21,7 @@ export default function DetailScreen({ article, onBack, onToggleScrap, onEditPre
           <span>{formatDateLabel()}</span>
         </div>
         <div className="detail-header-actions">
+          <button className="profile-pill profile-pill-muted detail-profile-pill" type="button" aria-label="로그아웃" onClick={onLogout}>로그아웃</button>
           <button className="profile-pill detail-profile-pill" type="button" aria-label="관심 분야 편집" onClick={onEditPreference}>관심 분야 수정</button>
           <button className="detail-close-button" onClick={onBack} aria-label="상세 닫기">×</button>
         </div>
