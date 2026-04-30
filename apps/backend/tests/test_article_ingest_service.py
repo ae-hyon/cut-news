@@ -339,6 +339,92 @@ def test_load_summarized_articles_reuses_cached_classifier_result_without_recall
     assert call_count == 1
 
 
+def test_load_summarized_articles_skips_low_confidence_clean_verification(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / '001.json',
+        {'title': '시장 금리 하락에 증권주 강세', 'date': '2026-04-28', 'url': 'https://example.com/1', 'content': '본문'},
+    )
+    write_json(
+        dataset / 'summarized' / '001.json',
+        {
+            'headline_34': '시장 금리 하락에 증권주 강세',
+            'headline_58': '시장 금리가 하락하면서 증권주가 일제히 강세를 보였다',
+            'headline_89': '시장 금리가 하락하면서 증권주가 일제히 강세를 보였고 투자자들은 정책 변화를 주시하고 있다',
+            'summary': '시장 금리 하락 영향으로 증권주가 강세를 보였습니다.',
+        },
+    )
+    write_json(dataset / 'verified' / '001.json', {'verdict': 'clean', 'confidence': 61, '_article_id': '001', '_title': '시장 금리 하락에 증권주 강세'})
+    write_json(dataset / 'category_map.json', [{'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'}])
+
+    assert load_summarized_articles(dataset) == []
+
+
+def test_load_summarized_articles_skips_summary_with_validation_violations(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / '001.json',
+        {'title': '시장 금리 하락에 증권주 강세', 'date': '2026-04-28', 'url': 'https://example.com/1', 'content': '시장 금리가 하락하면서 증권주가 강세를 보였다는 본문입니다.'},
+    )
+    write_json(
+        dataset / 'summarized' / '001.json',
+        {
+            'headline_34': '시장 금리 하락에 증권주 강세',
+            'headline_58': '시장 금리가 하락하면서 증권주가 일제히 강세를 보였다',
+            'headline_89': '시장 금리가 하락하면서 증권주가 일제히 강세를 보였고 투자자들은 정책 변화를 주시하고 있다',
+            'summary': '시장 금리 하락 영향으로 증권주가 강세를 보였습니다.',
+            '_violations': ['headline_34 too short'],
+        },
+    )
+    write_json(dataset / 'verified' / '001.json', {'verdict': 'clean', 'confidence': 95, '_article_id': '001', '_title': '시장 금리 하락에 증권주 강세'})
+    write_json(dataset / 'category_map.json', [{'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'}])
+
+    assert load_summarized_articles(dataset) == []
+
+
+def test_load_summarized_articles_requires_stricter_confidence_for_description_fallback_articles(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / '001.json',
+        {'title': '시장 금리 하락에 증권주 강세', 'date': '2026-04-28', 'url': 'https://example.com/1', 'content': '본문', 'content_source': 'description'},
+    )
+    write_json(
+        dataset / 'summarized' / '001.json',
+        {
+            'headline_34': '시장 금리 하락에 증권주 강세',
+            'headline_58': '시장 금리가 하락하면서 증권주가 일제히 강세를 보였다',
+            'headline_89': '시장 금리가 하락하면서 증권주가 일제히 강세를 보였고 투자자들은 정책 변화를 주시하고 있다',
+            'summary': '시장 금리 하락 영향으로 증권주가 강세를 보였습니다.',
+        },
+    )
+    write_json(dataset / 'verified' / '001.json', {'verdict': 'clean', 'confidence': 84, '_article_id': '001', '_title': '시장 금리 하락에 증권주 강세'})
+    write_json(dataset / 'category_map.json', [{'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'}])
+
+    assert load_summarized_articles(dataset) == []
+
+
+def test_load_summarized_articles_skips_summary_after_too_many_retries(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / '001.json',
+        {'title': '시장 금리 하락에 증권주 강세', 'date': '2026-04-28', 'url': 'https://example.com/1', 'content': '시장 금리가 하락하면서 증권주가 강세를 보였다는 본문입니다.'},
+    )
+    write_json(
+        dataset / 'summarized' / '001.json',
+        {
+            'headline_34': '시장 금리 하락에 증권주 강세',
+            'headline_58': '시장 금리가 하락하면서 증권주가 일제히 강세를 보였다',
+            'headline_89': '시장 금리가 하락하면서 증권주가 일제히 강세를 보였고 투자자들은 정책 변화를 주시하고 있다',
+            'summary': '시장 금리 하락 영향으로 증권주가 강세를 보였습니다.',
+            '_retry_count': 3,
+        },
+    )
+    write_json(dataset / 'verified' / '001.json', {'verdict': 'clean', 'confidence': 95, '_article_id': '001', '_title': '시장 금리 하락에 증권주 강세'})
+    write_json(dataset / 'category_map.json', [{'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'}])
+
+    assert load_summarized_articles(dataset) == []
+
+
 def test_repo_summarizer_dataset_maps_to_supported_backend_categories():
     rows = load_summarized_articles(Path(__file__).resolve().parents[2] / 'summarizer' / 'data')
 
