@@ -232,15 +232,13 @@ def _json_ready(article: CrawledArticle) -> dict[str, Any]:
     return payload
 
 
-def save_latest_articles(articles: list[CrawledArticle], output_dir: Path, *, query: str) -> tuple[Path, Path]:
+def save_latest_articles(articles: list[CrawledArticle], output_dir: Path, *, query: str) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     payload = [_json_ready(article) for article in articles]
     latest_path = output_dir / 'latest.json'
-    snapshot_path = output_dir / f'{query}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     latest_path.write_text(text, encoding='utf-8')
-    snapshot_path.write_text(text, encoding='utf-8')
-    return latest_path, snapshot_path
+    return latest_path
 
 
 def main() -> None:
@@ -255,10 +253,9 @@ def main() -> None:
         articles = collect_seeded_articles()
     else:
         articles = collect_naver_articles(args.query, args.count)
-    latest_path, snapshot_path = save_latest_articles(articles, args.output_dir, query=args.query)
+    latest_path = save_latest_articles(articles, args.output_dir, query=args.query)
     print(f'collected {len(articles)} articles')
     print(f'latest: {latest_path}')
-    print(f'snapshot: {snapshot_path}')
 
 
 if __name__ == '__main__':

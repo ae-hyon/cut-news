@@ -137,7 +137,7 @@ export default function OnboardingScreen(props: OnboardingScreenProps) {
           <strong>Annoying Cap</strong>
           <span>{formatDateLabel()}</span>
         </div>
-        <div className="pdf-nav"><span>스크랩</span><span>|</span><span>아카이브</span></div>
+        <div className="pdf-nav"><span>스크랩</span></div>
       </header>
 
       <h1 className="pdf-question onboarding-question">{title}<br />{subtitle}</h1>

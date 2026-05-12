@@ -4,7 +4,6 @@ import { DEMO_USER_ID } from '../lib/constants'
 import { clearRememberedDemoUserId, clearRememberedViewContext, getRememberedDemoUserId, getRememberedViewContext, rememberDemoUserId, rememberViewContext } from '../lib/devSession'
 import type { ArticleCard, ArticleDetail, UserPreference } from '../lib/types'
 import { getUserPreference, saveUserPreference } from '../services/backendApi'
-import { useArchiveState } from './useArchiveState'
 import { useAuthSession } from './useAuthSession'
 import { useContentFeed } from './useContentFeed'
 import { usePreferenceSelection } from './usePreferenceSelection'
@@ -17,14 +16,10 @@ export type { AppTab } from './useViewState'
 type LoadUserStateOptions = {
   preferredTab?: AppTab
   reopenDetailArticleId?: string | null
-  preferredArchiveMonth?: string | null
-  preferredArchiveDate?: string | null
 }
 
 type PreferenceEditReturnContext = {
   preferredTab: AppTab
-  preferredArchiveMonth?: string | null
-  preferredArchiveDate?: string | null
   reopenDetailArticleId?: string | null
 }
 
@@ -32,8 +27,6 @@ function toLoadUserStateOptions(rememberedViewContext: ReturnType<typeof getReme
   if (!rememberedViewContext) return undefined
   return {
     preferredTab: rememberedViewContext.tab,
-    preferredArchiveMonth: rememberedViewContext.tab === 'archive' ? rememberedViewContext.archiveMonth ?? null : null,
-    preferredArchiveDate: rememberedViewContext.tab === 'archive' ? rememberedViewContext.archiveDate ?? null : null,
     reopenDetailArticleId: rememberedViewContext.detailArticleId ?? null,
   }
 }
@@ -41,7 +34,6 @@ function toLoadUserStateOptions(rememberedViewContext: ReturnType<typeof getReme
 export function usePrototypeApp() {
   const auth = useAuthSession()
   const content = useContentFeed()
-  const archive = useArchiveState()
   const view = useViewState()
   const preferenceSelection = usePreferenceSelection(auth.categories)
 
@@ -107,7 +99,6 @@ export function usePrototypeApp() {
 
     if (!pref.onboarding_completed) {
       content.clearContent()
-      archive.clearArchive()
       clearRememberedViewContext()
       view.resetToOnboarding()
       return
@@ -115,11 +106,6 @@ export function usePrototypeApp() {
 
     const { feed } = await content.loadContent(nextUserId)
 
-    if (restoredViewContext?.preferredTab === 'archive' && restoredViewContext.preferredArchiveMonth) {
-      await archive.restoreArchiveContext(nextUserId, restoredViewContext.preferredArchiveMonth, restoredViewContext.preferredArchiveDate)
-    } else {
-      await archive.loadArchiveForFirstFeedDate(nextUserId, feed)
-    }
 
     if (restoredViewContext?.reopenDetailArticleId) {
       view.changeTab(restoredViewContext.preferredTab ?? 'home')
@@ -135,9 +121,6 @@ export function usePrototypeApp() {
 
     view.resetToHome()
   }, [
-    archive.clearArchive,
-    archive.loadArchiveForFirstFeedDate,
-    archive.restoreArchiveContext,
     auth.loadUserSession,
     auth.setUserId,
     content.clearContent,
@@ -178,14 +161,10 @@ export function usePrototypeApp() {
     if (view.activeTab === 'onboarding' || view.activeTab === 'onboarding-complete') return
 
     rememberViewContext({
-      tab: view.activeTab === 'scraps' || view.activeTab === 'archive' ? view.activeTab : 'home',
-      archiveMonth: view.activeTab === 'archive' ? archive.archiveMonth : null,
-      archiveDate: view.activeTab === 'archive' ? archive.archiveDateData?.date ?? null : null,
+      tab: view.activeTab === 'scraps' ? view.activeTab : 'home',
       detailArticleId: view.isDetailOpen ? view.detailArticleId : null,
     })
   }, [
-    archive.archiveDateData,
-    archive.archiveMonth,
     auth.userId,
     preference?.onboarding_completed,
     view.activeTab,
@@ -223,12 +202,10 @@ export function usePrototypeApp() {
       setPreferenceEditReturnContext(null)
       clearRememberedViewContext()
       content.clearContent()
-      archive.clearArchive()
       content.setSelectedArticle(null)
       view.resetToOnboarding()
     })
   }, [
-    archive.clearArchive,
     auth,
     content.clearContent,
     content.setSelectedArticle,
@@ -248,9 +225,8 @@ export function usePrototypeApp() {
     setPreferenceEditReturnContext(null)
     content.clearContent()
     content.setSelectedArticle(null)
-    archive.clearArchive()
     view.resetToHome()
-  }, [archive.clearArchive, auth, content.clearContent, content.setSelectedArticle, preferenceSelection, view.resetToHome])
+  }, [auth, content.clearContent, content.setSelectedArticle, preferenceSelection, view.resetToHome])
 
   const logout = React.useCallback(async () => {
     await runWithLoading(async () => {
@@ -263,10 +239,9 @@ export function usePrototypeApp() {
       setPreferenceEditReturnContext(null)
       content.clearContent()
       content.setSelectedArticle(null)
-      archive.clearArchive()
       view.resetToHome()
     })
-  }, [archive.clearArchive, auth, content.clearContent, content.setSelectedArticle, preferenceSelection, runWithLoading, view.resetToHome])
+  }, [auth, content.clearContent, content.setSelectedArticle, preferenceSelection, runWithLoading, view.resetToHome])
 
   const refreshCurrentState = React.useCallback(async () => {
     if (!auth.userId) return
@@ -293,10 +268,9 @@ export function usePrototypeApp() {
     clearRememberedViewContext()
     content.clearContent()
     content.setSelectedArticle(null)
-    archive.clearArchive()
     view.resetToHome()
     auth.beginKakaoStart()
-  }, [archive.clearArchive, auth, content.clearContent, content.setSelectedArticle, preferenceSelection, view.resetToHome])
+  }, [auth, content.clearContent, content.setSelectedArticle, preferenceSelection, view.resetToHome])
 
   React.useEffect(() => {
     const handleKakaoMessage = (event: MessageEvent) => {
@@ -374,23 +348,15 @@ export function usePrototypeApp() {
     await runWithLoading(async () => {
       const preferredTab = view.activeTab
       const reopenDetailArticleId = view.isDetailOpen ? article.id : null
-      const preferredArchiveMonth = view.activeTab === 'archive' ? archive.archiveMonth : null
-      const preferredArchiveDate = view.activeTab === 'archive' ? archive.archiveDateData?.date ?? null : null
       const nextScrapped = !article.is_scrapped
       await content.toggleScrap(auth.userId as string, article)
       content.applyScrapState(article.id, nextScrapped)
-      archive.applyScrapState(article.id, nextScrapped)
       await loadUserState(auth.userId as string, {
         preferredTab,
         reopenDetailArticleId,
-        preferredArchiveMonth,
-        preferredArchiveDate,
       })
     })
   }, [
-    archive.applyScrapState,
-    archive.archiveDateData,
-    archive.archiveMonth,
     auth.userId,
     content.applyScrapState,
     content.toggleScrap,
@@ -399,24 +365,6 @@ export function usePrototypeApp() {
     view.activeTab,
     view.isDetailOpen,
   ])
-
-  const loadArchiveMonth = React.useCallback(async (nextMonth: string) => {
-    if (!auth.userId) return
-    await runWithLoading(async () => {
-      await archive.loadArchiveMonth(auth.userId as string, nextMonth)
-    })
-  }, [archive.loadArchiveMonth, auth.userId, runWithLoading])
-
-  const openArchiveDate = React.useCallback(async (date: string) => {
-    if (!auth.userId) return
-    await runWithLoading(async () => {
-      await archive.openArchiveDate(auth.userId as string, date)
-    })
-  }, [archive.openArchiveDate, auth.userId, runWithLoading])
-
-  const closeArchiveDate = React.useCallback(() => {
-    archive.closeArchiveDate()
-  }, [archive.closeArchiveDate])
 
   const changeTab = React.useCallback((tab: typeof view.activeTab) => {
     content.setSelectedArticle(null)
@@ -427,12 +375,10 @@ export function usePrototypeApp() {
     setIsEditingCompletedPreference(true)
     setPreferenceEditReturnContext({
       preferredTab: view.activeTab,
-      preferredArchiveMonth: view.activeTab === 'archive' ? archive.archiveMonth : null,
-      preferredArchiveDate: view.activeTab === 'archive' ? archive.archiveDateData?.date ?? null : null,
       reopenDetailArticleId: view.isDetailOpen ? view.detailArticleId : null,
     })
     view.resetToOnboarding()
-  }, [archive.archiveDateData, archive.archiveMonth, view.activeTab, view.detailArticleId, view.isDetailOpen, view.resetToOnboarding])
+  }, [view.activeTab, view.detailArticleId, view.isDetailOpen, view.resetToOnboarding])
 
   const showOnboardingScreen = Boolean(auth.userId) && (!preference?.onboarding_completed || view.activeTab === 'onboarding')
   const showOnboardingCompleteScreen = Boolean(auth.userId) && Boolean(preference?.onboarding_completed) && view.activeTab === 'onboarding-complete'
@@ -447,9 +393,6 @@ export function usePrototypeApp() {
     preference,
     feed: content.feed,
     scraps: content.scraps,
-    archiveMonth: archive.archiveMonth,
-    archiveMonthData: archive.archiveMonthData,
-    archiveDateData: archive.archiveDateData,
     selectedArticle,
     activeTab: view.activeTab,
     isDetailOpen: view.isDetailOpen,
@@ -460,7 +403,6 @@ export function usePrototypeApp() {
     kakaoAuthPending: auth.kakaoAuthPending,
     loading,
     error,
-    archiveMonthOptions: [archive.archiveMonth],
     showOnboardingScreen,
     showOnboardingCompleteScreen,
     readyForFeed,
@@ -477,9 +419,6 @@ export function usePrototypeApp() {
     openArticle,
     closeArticle,
     toggleScrap,
-    loadArchiveMonth,
-    openArchiveDate,
-    closeArchiveDate,
     changeTab,
   }
 }

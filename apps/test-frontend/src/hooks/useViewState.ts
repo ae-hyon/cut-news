@@ -1,6 +1,6 @@
 import React from 'react'
 
-export type AppTab = 'home' | 'onboarding' | 'onboarding-complete' | 'scraps' | 'archive'
+export type AppTab = 'home' | 'onboarding' | 'onboarding-complete' | 'scraps'
 
 interface ViewState {
   activeTab: AppTab

@@ -17,8 +17,6 @@ def test_root_compose_runs_backend_crawler_summarizer_without_frontend():
     assert 'apps/crawler/Dockerfile' in compose_text
     assert 'apps/summarizer/data:/app/apps/summarizer/data' in compose_text
     assert 'AI_NEWS_GENERATION_TIME: "08:30:00"' in compose_text
-    assert 'NEWS_PUBLISH_BEFORE_TIME: "03:08:59"' in compose_text
-    assert 'NEWS_PUBLISH_AFTER_NEXT_DAY_TIME: "09:02:59"' in compose_text
     assert 'FRONTEND_APP_URL' not in compose_text
     assert 'test-frontend:' not in compose_text
     assert 'frontend:' not in compose_text

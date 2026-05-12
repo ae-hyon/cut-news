@@ -1,7 +1,5 @@
 import { api } from '../lib/api'
 import type {
-  ArchiveDateResponse,
-  ArchiveMonthResponse,
   ArticleDetail,
   AuthLogoutResponse,
   AuthSessionResponse,
@@ -76,10 +74,3 @@ export function removeScrap(userId: string, articleId: string) {
   return api<void>(`/v1/users/${userId}/scraps/${articleId}`, { method: 'DELETE' })
 }
 
-export function getArchiveMonth(userId: string, month: string) {
-  return api<ArchiveMonthResponse>(`/v1/users/${userId}/archives?month=${month}`)
-}
-
-export function getArchiveDate(userId: string, date: string) {
-  return api<ArchiveDateResponse>(`/v1/users/${userId}/archives/${date}`)
-}

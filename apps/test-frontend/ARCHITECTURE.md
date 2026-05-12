@@ -26,7 +26,6 @@ src/
     useViewState.ts            # tab/detail 화면 전환 reducer
     useAuthSession.ts          # health/session/Kakao bootstrap 상태
     useContentFeed.ts          # feed/detail/scrap 상태
-    useArchiveState.ts         # archive month/date 상태
     usePreferenceSelection.ts  # wide/narrow 선택 상태 + payload 변환
   services/
     backendApi.ts              # typed backend endpoint 함수
@@ -37,7 +36,7 @@ src/
     navigation/
       BottomNav.tsx            # 하단 탭 네비게이션
     common/
-      NewsCard.tsx             # 홈/스크랩/아카이브 공통 카드
+      NewsCard.tsx             # 홈/스크랩 공통 카드
       SectionHeader.tsx        # 피드 블록 헤더 공통
     screens/
       IntroScreen.tsx          # 시작 화면
@@ -45,7 +44,6 @@ src/
       HomeScreen.tsx           # 홈 피드
       DetailScreen.tsx         # 기사 상세
       ScrapsScreen.tsx         # 스크랩 목록
-      ArchiveScreen.tsx        # 아카이브
   styles/
     tokens.css                 # 색상/토큰/전역 기초
     layout.css                 # 앱/프레임/네비 구조
@@ -66,7 +64,6 @@ src/
 - `useViewState.ts`는 tab/detail 화면 전환 reducer를 맡는다.
 - `useAuthSession.ts`는 health/session/Kakao bootstrap, popup 시작, focus/visibility 복귀 후 session 재확인 상태를 맡는다.
 - `useContentFeed.ts`는 feed/detail/scrap 상태와 content refresh를 맡는다.
-- `useArchiveState.ts`는 archive month/date 상태를 맡는다.
 - `usePreferenceSelection.ts`는 wide/narrow 선택 상태, subcategory map, preference payload 변환을 맡는다.
 
 ### 3. `services/`
@@ -100,7 +97,6 @@ src/
 `NewsCard`는 다음 화면에서 재사용한다.
 - HomeScreen
 - ScrapsScreen
-- ArchiveScreen
 
 이렇게 해서 제목/요약/스크랩 버튼/상세 버튼 구조를 한 군데에서 유지한다.
 
@@ -118,7 +114,6 @@ src/
 5. PDF 완성도 polish를 하더라도 구조는 더 평평하게 만들지 말고, 공통성과 조합 계층을 유지한다.
 
 ## 현재 남은 구조적 개선 후보
-- `NewsCard`의 variant(system)와 archive 전용 action 표시 규칙을 더 일반화 가능
 - Kakao callback 완료 후 popup/focus 기반 session 재확인 UX는 구현됨; 실제 Kakao 계정 E2E는 별도 수동 검증 필요
 - 실제 모바일/PWA 설치 검증 필요
 

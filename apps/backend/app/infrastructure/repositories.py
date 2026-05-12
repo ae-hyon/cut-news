@@ -136,10 +136,6 @@ class SqlAlchemyArticleRepository:
         ).all()
         return [_to_article(row) for row in rows]
 
-    def list_by_month(self, month: str) -> list[Article]:
-        rows = self.db.scalars(select(ArticleModel).where(ArticleModel.published_at.startswith(month)).order_by(ArticleModel.published_at, ArticleModel.id)).all()
-        return [_to_article(row) for row in rows]
-
     def list_by_date(self, archive_date: str) -> list[Article]:
         rows = self.db.scalars(select(ArticleModel).where(ArticleModel.published_at == archive_date).order_by(ArticleModel.id)).all()
         return [_to_article(row) for row in rows]

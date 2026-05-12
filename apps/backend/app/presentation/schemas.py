@@ -181,36 +181,6 @@ class ScrapListResponseSchema(BaseModel):
         return cls(user_id=user_id, items=[ArticleCardResponseSchema.from_entity(item, True) for item in entities])
 
 
-class ArchiveDayResponseSchema(BaseModel):
-    date: str
-    items: list[ArticleCardResponseSchema]
-
-
-class ArchiveMonthResponseSchema(BaseModel):
-    user_id: str
-    month: str
-    days: list[ArchiveDayResponseSchema]
-
-    @classmethod
-    def from_payload(cls, user_id: str, month: str, payload: dict[str, list[Article]], service) -> 'ArchiveMonthResponseSchema':
-        scrapped_ids = {item.id for item in service.list_scraps(user_id)}
-        days = []
-        for date, items in payload.items():
-            days.append(ArchiveDayResponseSchema(date=date, items=[ArticleCardResponseSchema.from_entity(item, item.id in scrapped_ids) for item in items]))
-        return cls(user_id=user_id, month=month, days=days)
-
-
-class ArchiveDateResponseSchema(BaseModel):
-    user_id: str
-    date: str
-    items: list[ArticleCardResponseSchema]
-
-    @classmethod
-    def from_entities(cls, user_id: str, archive_date: str, entities: list[Article], service) -> 'ArchiveDateResponseSchema':
-        scrapped_ids = {item.id for item in service.list_scraps(user_id)}
-        return cls(user_id=user_id, date=archive_date, items=[ArticleCardResponseSchema.from_entity(item, item.id in scrapped_ids) for item in entities])
-
-
 class SummaryArticleInputSchema(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
 

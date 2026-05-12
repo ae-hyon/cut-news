@@ -5,8 +5,6 @@ from app.application.services.user_service import UserPreferenceService
 from app.domain.exceptions import ValidationError
 from app.presentation.api.dependencies import get_feed_service, get_user_preference_service
 from app.presentation.schemas import (
-    ArchiveDateResponseSchema,
-    ArchiveMonthResponseSchema,
     FeedResponseSchema,
     ScrapListResponseSchema,
     ScrapToggleResponseSchema,
@@ -45,13 +43,3 @@ def get_user_feed(user_id: str, service: FeedService = Depends(get_feed_service)
 @router.get('/users/{user_id}/scraps', response_model=ScrapListResponseSchema)
 def get_user_scraps(user_id: str, service: FeedService = Depends(get_feed_service)):
     return ScrapListResponseSchema.from_entities(user_id, service.list_scraps(user_id), service)
-
-
-@router.get('/users/{user_id}/archives', response_model=ArchiveMonthResponseSchema)
-def get_archive_month(user_id: str, month: str, service: FeedService = Depends(get_feed_service)):
-    return ArchiveMonthResponseSchema.from_payload(user_id, month, service.list_archive_month(user_id, month), service)
-
-
-@router.get('/users/{user_id}/archives/{archive_date}', response_model=ArchiveDateResponseSchema)
-def get_archive_date(user_id: str, archive_date: str, service: FeedService = Depends(get_feed_service)):
-    return ArchiveDateResponseSchema.from_entities(user_id, archive_date, service.list_archive_date(user_id, archive_date), service)

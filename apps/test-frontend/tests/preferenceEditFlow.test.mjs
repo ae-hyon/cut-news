@@ -10,7 +10,6 @@ test('editing completed preferences marks the flow as an edit, captures return c
 
   assert.match(source, /const \[isEditingCompletedPreference, setIsEditingCompletedPreference\] = React\.useState\(false\)/)
   assert.match(source, /const \[preferenceEditReturnContext, setPreferenceEditReturnContext\] = React\.useState<PreferenceEditReturnContext \| null>\(null\)/)
-  assert.match(source, /const editCompletedPreferences = React\.useCallback\(\(\) => \{\s*setIsEditingCompletedPreference\(true\)\s*setPreferenceEditReturnContext\(\{\s*preferredTab: view\.activeTab,\s*preferredArchiveMonth: view\.activeTab === 'archive' \? archive\.archiveMonth : null,\s*preferredArchiveDate: view\.activeTab === 'archive' \? archive\.archiveDateData\?\.date \?\? null : null,\s*reopenDetailArticleId: view\.isDetailOpen \? view\.detailArticleId : null,\s*\}\)\s*view\.resetToOnboarding\(\)/s)
 })
 
 test('submitting edited preferences reloads live user state into the saved return context instead of resetting home', async () => {

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from difflib import SequenceMatcher
 import re
 
@@ -180,12 +179,3 @@ class FeedService:
 
     def remove_scrap(self, user_id: str, article_id: str) -> None:
         self.scrap_repository.remove(user_id, article_id)
-
-    def list_archive_month(self, user_id: str, month: str) -> dict[str, list[Article]]:
-        grouped: dict[str, list[Article]] = defaultdict(list)
-        for article in self._filter_articles_for_user(user_id, self.article_repository.list_by_month(month)):
-            grouped[article.published_at].append(article)
-        return dict(sorted(grouped.items()))
-
-    def list_archive_date(self, user_id: str, archive_date: str) -> list[Article]:
-        return self._filter_articles_for_user(user_id, self.article_repository.list_by_date(archive_date))

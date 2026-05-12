@@ -47,43 +47,15 @@ def parse_import_observability(output: str) -> dict[str, dict[str, int]]:
     if not match:
         return {
             'quality_gate_skip_counts': {},
-            'classification_source_counts': {},
-            'dropped_reason_counts': {},
         }
     try:
         payload = json.loads(match.group('payload'))
     except json.JSONDecodeError:
         return {
             'quality_gate_skip_counts': {},
-            'classification_source_counts': {},
-            'dropped_reason_counts': {},
         }
     return {
         'quality_gate_skip_counts': dict(payload.get('quality_gate_skip_counts') or {}),
-        'classification_source_counts': dict(payload.get('classification_source_counts') or {}),
-        'dropped_reason_counts': dict(payload.get('dropped_reason_counts') or {}),
-    }
-
-
-def _count_files(directory: Path, pattern: str) -> int:
-    if not directory.exists():
-        return 0
-    return sum(1 for _ in directory.glob(pattern))
-
-
-def collect_artifact_counts(data_dir: Path) -> dict[str, int]:
-    summarized_errors = _count_files(data_dir / 'summarized', '*_error.json')
-    verified_errors = _count_files(data_dir / 'verified', '*_error.json')
-    summarized_total = _count_files(data_dir / 'summarized', '*.json')
-    verified_total = _count_files(data_dir / 'verified', '*.json')
-    return {
-        'raw': _count_files(data_dir / 'raw', '*.txt'),
-        'json': _count_files(data_dir / 'json', '*.json'),
-        'scored': _count_files(data_dir / 'scored', '*.json'),
-        'summarized': max(0, summarized_total - summarized_errors),
-        'summarized_errors': summarized_errors,
-        'verified': max(0, verified_total - verified_errors),
-        'verified_errors': verified_errors,
     }
 
 
@@ -170,6 +142,10 @@ def _pipeline_steps(repo_root: Path, *, source: str, query: str, count: int) -> 
 def _serialize_step(step: StepExecutionResult) -> dict[str, object]:
     payload = asdict(step)
     payload['command'] = ' '.join(step.command)
+    payload.pop('stdout', None)
+    payload.pop('stderr', None)
+    if step.status != 'success' and step.stderr:
+        payload['error_tail'] = step.stderr[-1000:]
     return payload
 
 
@@ -183,8 +159,6 @@ def _schedule_metadata() -> dict[str, str]:
     return {
         'timezone': os.environ.get('NEWS_SCHEDULE_TIMEZONE', 'Asia/Seoul'),
         'ai_news_generation_time': os.environ.get('AI_NEWS_GENERATION_TIME', '08:30:00'),
-        'source_publish_before_time': os.environ.get('NEWS_PUBLISH_BEFORE_TIME', '03:08:59'),
-        'source_publish_after_next_day_time': os.environ.get('NEWS_PUBLISH_AFTER_NEXT_DAY_TIME', '09:02:59'),
     }
 
 
@@ -208,8 +182,6 @@ def run_pipeline_job(
     import_stats = {'inserted': 0, 'updated': 0, 'deleted': 0, 'skipped': 0}
     import_observability = {
         'quality_gate_skip_counts': {},
-        'classification_source_counts': {},
-        'dropped_reason_counts': {},
     }
     status = 'success'
     failed_step: str | None = None
@@ -237,9 +209,8 @@ def run_pipeline_job(
         'count': count,
         'schedule': _schedule_metadata(),
         'steps': steps_payload,
-        'artifact_counts': collect_artifact_counts(data_dir),
         'import_stats': import_stats,
-        'import_observability': import_observability,
+        'quality_gate_skip_counts': import_observability['quality_gate_skip_counts'],
         'report_path': str(report_path),
     }
     write_run_report(report_path, payload)

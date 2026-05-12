@@ -26,7 +26,7 @@ export default function OnboardingCompleteScreen({ loading, mode, preference, ca
           <strong>Annoying Cap</strong>
           <span>{formatDateLabel()}</span>
         </div>
-        <div className="pdf-nav"><span>스크랩</span><span>|</span><span>아카이브</span></div>
+        <div className="pdf-nav"><span>스크랩</span></div>
       </header>
 
       <h1 className="pdf-question complete-question">관심있는 분야를 최소 3개 이상 선택해서<br />하루에 한번씩 요약해서 받아보세요</h1>
