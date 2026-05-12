@@ -7,8 +7,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.application.services.article_classifier_service import build_article_classifier
-from app.application.services.article_ingest_service import ArticleClassifier, ArticleIngestRow, load_summarized_articles_report
+from app.application.services.article_ingest_service import ArticleIngestRow, load_summarized_articles_report
 from app.common.config import settings
 from app.infrastructure.database import SessionLocal, run_migrations
 from app.infrastructure.models import ArticleModel
@@ -29,8 +28,6 @@ class ImportStats:
 @dataclass(frozen=True)
 class ImportObservability:
     quality_gate_skip_counts: dict[str, int]
-    classification_source_counts: dict[str, int]
-    dropped_reason_counts: dict[str, int]
 
 
 @dataclass(frozen=True)
@@ -84,10 +81,8 @@ def _can_prune_stale(data_dir: Path) -> bool:
 def import_summarized_articles(
     session: Session,
     data_dir: Path,
-    *,
-    classifier: ArticleClassifier | None = None,
 ) -> ImportResult:
-    rows, report = load_summarized_articles_report(data_dir, classifier=classifier)
+    rows, report = load_summarized_articles_report(data_dir)
     allow_prune_stale = _can_prune_stale(data_dir)
     inserted = 0
     updated = 0
@@ -119,19 +114,16 @@ def import_summarized_articles(
     stats = ImportStats(inserted=inserted, updated=updated, deleted=deleted, skipped=0)
     observability = ImportObservability(
         quality_gate_skip_counts=dict(report.get('quality_gate_skip_counts', {})),
-        classification_source_counts=dict(report.get('classification_source_counts', {})),
-        dropped_reason_counts=dict(report.get('dropped_reason_counts', {})),
     )
     return ImportResult(stats=stats, observability=observability)
 
 
 def main() -> None:
     data_dir = settings.news_summarizer_dir / 'data'
-    classifier = build_article_classifier(settings)
     if settings.migrate_on_startup:
         run_migrations()
     with SessionLocal() as session:
-        result = import_summarized_articles(session, data_dir, classifier=classifier)
+        result = import_summarized_articles(session, data_dir)
     stats = result.stats
     print(
         'summarizer article import complete: '
@@ -141,8 +133,6 @@ def main() -> None:
         'summarizer article import observability: ' + json.dumps(
             {
                 'quality_gate_skip_counts': result.observability.quality_gate_skip_counts,
-                'classification_source_counts': result.observability.classification_source_counts,
-                'dropped_reason_counts': result.observability.dropped_reason_counts,
             },
             ensure_ascii=False,
             separators=(',', ':'),

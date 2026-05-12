@@ -62,21 +62,3 @@ test('detail screen matches PDF summary-card plus action-row structure', async (
   assert.match(css, /\.detail-action-row/)
   assert.match(css, /\.detail-preference-mismatch/)
 })
-
-test('archive screen renders PDF calendar first and date-specific board as a dismissible panel', async () => {
-  const archive = await source('src/components/screens/ArchiveScreen.tsx')
-  const css = await source('src/styles/screens.css')
-
-  assert.match(archive, /나의 뉴스 아카이브/)
-  assert.match(archive, /월간 이력/)
-  assert.match(archive, /archive-calendar-grid/)
-  assert.match(archive, /archive-date-panel/)
-  assert.match(archive, /archive-date-close/)
-  assert.match(archive, /archive-empty-state/)
-  assert.match(archive, /선택한 관심사에 맞는 아카이브 뉴스가 아직 없어요\./)
-  assert.match(archive, /이 날짜에는 관심사에 맞는 아카이브 뉴스가 없어요\./)
-  assert.match(archive, /pdf-card-board archive-date-board/)
-  assert.match(css, /\.archive-calendar-grid/)
-  assert.match(css, /\.calendar-day\.has-items/)
-  assert.match(css, /\.archive-date-panel/)
-})

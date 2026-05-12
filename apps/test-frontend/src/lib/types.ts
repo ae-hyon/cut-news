@@ -85,20 +85,3 @@ export interface ScrapResponse {
   items: ArticleCard[]
 }
 
-export interface ArchiveDay {
-  date: string
-  count?: number
-  items: ArticleCard[]
-}
-
-export interface ArchiveMonthResponse {
-  user_id: string
-  month: string
-  days: ArchiveDay[]
-}
-
-export interface ArchiveDateResponse {
-  user_id: string
-  date: string
-  items: ArticleCard[]
-}

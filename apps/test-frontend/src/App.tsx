@@ -10,7 +10,6 @@ import OnboardingCompleteScreen from './components/screens/OnboardingCompleteScr
 import HomeScreen from './components/screens/HomeScreen'
 import DetailScreen from './components/screens/DetailScreen'
 import ScrapsScreen from './components/screens/ScrapsScreen'
-import ArchiveScreen from './components/screens/ArchiveScreen'
 
 import type { AppTab } from './hooks/usePrototypeApp'
 import type { ArticleDetail } from './lib/types'
@@ -25,7 +24,6 @@ interface ScreenLabelInput {
 function getScreenLabel({ selectedArticle, activeTab, showOnboardingScreen, readyForFeed }: ScreenLabelInput): string {
   if (selectedArticle) return '뉴스 상세'
   if (activeTab === 'scraps') return '스크랩'
-  if (activeTab === 'archive') return '아카이브'
   if (showOnboardingScreen) return '관심사'
   if (activeTab === 'onboarding-complete') return '온보딩 완료'
   if (readyForFeed) return '뉴스홈'
@@ -113,18 +111,6 @@ export default function App() {
               scraps={app.scraps}
               onOpenArticle={app.openArticle}
               onToggleScrap={app.toggleScrap}
-            />
-          )}
-          {app.activeTab === 'archive' && (
-            <ArchiveScreen
-              archiveMonth={app.archiveMonth}
-              archiveMonthOptions={app.archiveMonthOptions}
-              archiveMonthData={app.archiveMonthData}
-              archiveDateData={app.archiveDateData}
-              onLoadArchiveMonth={app.loadArchiveMonth}
-              onOpenArchiveDate={app.openArchiveDate}
-              onCloseArchiveDate={app.closeArchiveDate}
-              onOpenArticle={app.openArticle}
             />
           )}
         </>

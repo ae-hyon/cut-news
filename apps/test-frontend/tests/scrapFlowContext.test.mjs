@@ -9,7 +9,6 @@ test('scrap toggle preserves the current tab context instead of forcing home rel
   const source = await readFile(path.join(projectRoot, 'src/hooks/usePrototypeApp.ts'), 'utf8')
 
   assert.match(source, /const preferredTab = view\.activeTab/)
-  assert.match(source, /await loadUserState\(auth\.userId as string, \{\s*preferredTab,\s*reopenDetailArticleId,\s*preferredArchiveMonth,\s*preferredArchiveDate,\s*\}\)/s)
   assert.match(source, /if \(restoredViewContext\?\.preferredTab && restoredViewContext\.preferredTab !== 'home'\) \{\s*view\.changeTab\(restoredViewContext\.preferredTab\)\s*return\s*\}/s)
 })
 

@@ -129,8 +129,6 @@ AUTH_COOKIE_SAMESITE=lax
 - 현재 startup 시 `SEED_ON_STARTUP=true`이면 seed 데이터가 idempotent 하게 주입됩니다.
 - `NEWS_SUMMARIZER_DIR/data`에 요약 결과가 있으면 그 데이터를 우선 주입하고, 없으면 backend fallback seed를 사용합니다.
 - 서버 기동 후 요약 결과를 다시 반영하려면 `PYTHONPATH=. python3.11 -m app.scripts.import_articles_from_summarizer`를 실행합니다. 같은 id 또는 같은 `original_url`은 새로 추가하지 않고 update 합니다.
-- 애매한 경제 기사에 대해 LLM fallback 분류를 켜려면 `ARTICLE_CLASSIFIER_ENABLED=true`, `ARTICLE_CLASSIFIER_PROVIDER=hermit`, `ARTICLE_CLASSIFIER_COMMAND=hermit`를 설정하세요. 기본값은 `~/.hermit/settings.json`의 `providers.z.ai` / `model`을 읽어 Hermit one-line CLI로 직접 분류를 호출합니다. 필요하면 `ARTICLE_CLASSIFIER_HERMIT_PROVIDER_NAME`, `ARTICLE_CLASSIFIER_MODEL`, `ARTICLE_CLASSIFIER_BASE_URL`, `ARTICLE_CLASSIFIER_API_KEY`로 override 할 수 있습니다. backend는 비-TTY subprocess에서도 동작하도록 `script -q /dev/null hermit ...` 래퍼를 사용합니다. fallback 결과는 `NEWS_SUMMARIZER_DIR/data/classification_cache.json`에 캐시됩니다.
-
 ## Install
 
 현재 환경에 필요한 주요 패키지:
@@ -242,8 +240,6 @@ curl http://127.0.0.1:8000/health
 - `PUT /v1/users/{user_id}/scraps/{article_id}`
 - `DELETE /v1/users/{user_id}/scraps/{article_id}`
 - `GET /v1/users/{user_id}/scraps`
-- `GET /v1/users/{user_id}/archives?month=YYYY-MM`
-- `GET /v1/users/{user_id}/archives/{archive_date}`
 - `POST /v1/summaries`
 
 ## Example requests
@@ -344,7 +340,7 @@ curl -X POST http://127.0.0.1:8000/v1/summaries \
 - `/v1/summaries`가 `../summarizer` 연동으로 정상 동작 확인
 - domain dataclass 제거, Pydantic 기반 모델로 통일 완료
 - onboarding validation: wide/narrow 규칙 및 중복 금지 contract 테스트로 검증
-- feed weighting: 선호 순서 보존, block weight 하향, article 점수+최신성 혼합 정렬, wide 4개 노출, narrow same-primary fallback 검증
+- feed weighting: 선호 순서 보존, block weight 하향, article 중요도 점수 단독 정렬, wide 4개 노출, narrow same-primary fallback 검증
 
 ## Tests
 

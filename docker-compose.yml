@@ -18,8 +18,6 @@ services:
       JWT_SECRET_KEY: annoyingcap-dev-jwt-secret-key-32chars
       AI_NEWS_GENERATION_TIME: "08:30:00"
       NEWS_SCHEDULE_TIMEZONE: Asia/Seoul
-      NEWS_PUBLISH_BEFORE_TIME: "03:08:59"
-      NEWS_PUBLISH_AFTER_NEXT_DAY_TIME: "09:02:59"
     ports:
       - "8000:8000"
     volumes:
@@ -71,8 +69,6 @@ services:
       PIPELINE_CODEX_REASONING_EFFORT: ${PIPELINE_CODEX_REASONING_EFFORT:-low}
       AI_NEWS_GENERATION_TIME: "08:30:00"
       NEWS_SCHEDULE_TIMEZONE: Asia/Seoul
-      NEWS_PUBLISH_BEFORE_TIME: "03:08:59"
-      NEWS_PUBLISH_AFTER_NEXT_DAY_TIME: "09:02:59"
       RUN_ON_STARTUP: ${RUN_ON_STARTUP:-false}
       TZ: Asia/Seoul
     volumes:

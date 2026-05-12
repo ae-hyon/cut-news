@@ -23,6 +23,4 @@ test('prototype toggleScrap applies optimistic scrap state before triggering ful
   assert.match(source, /const nextScrapped = !article\.is_scrapped/)
   assert.match(source, /await content\.toggleScrap\(auth\.userId as string, article\)/)
   assert.match(source, /content\.applyScrapState\(article\.id, nextScrapped\)/)
-  assert.match(source, /archive\.applyScrapState\(article\.id, nextScrapped\)/)
-  assert.match(source, /await loadUserState\(auth\.userId as string, \{\s*preferredTab,\s*reopenDetailArticleId,\s*preferredArchiveMonth,\s*preferredArchiveDate,\s*\}\)/s)
 })

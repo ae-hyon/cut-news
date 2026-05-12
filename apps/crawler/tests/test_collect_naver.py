@@ -105,7 +105,7 @@ def test_collect_naver_articles_dedupes_same_original_article_and_keeps_stable_a
     assert articles[0].article_id == 'bc5a6db53ff4'
 
 
-def test_save_latest_articles_writes_stable_pipeline_input_and_timestamped_copy(tmp_path: Path):
+def test_save_latest_articles_writes_stable_pipeline_input(tmp_path: Path):
     articles = collect_naver_articles(
         '사회',
         1,
@@ -120,13 +120,9 @@ def test_save_latest_articles_writes_stable_pipeline_input_and_timestamped_copy(
         fetch_html=lambda url: '',
     )
 
-    latest_path, snapshot_path = save_latest_articles(articles, tmp_path, query='사회')
+    latest_path = save_latest_articles(articles, tmp_path, query='사회')
 
     assert latest_path == tmp_path / 'latest.json'
-    assert snapshot_path.name.startswith('사회_')
-    assert snapshot_path.suffix == '.json'
     latest_payload = json.loads(latest_path.read_text(encoding='utf-8'))
-    snapshot_payload = json.loads(snapshot_path.read_text(encoding='utf-8'))
-    assert latest_payload == snapshot_payload
     assert latest_payload[0]['title'] == '저장 테스트 기사'
     assert latest_payload[0]['url'] == 'https://example.com/original/1'

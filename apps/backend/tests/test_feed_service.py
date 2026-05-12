@@ -38,10 +38,6 @@ class StubArticleRepository:
     def list_by_primary_and_subcategories(self, primary: str, subs: list[str]):
         return list(self.by_primary_and_subcategories.get((primary, tuple(subs)), []))
 
-    def list_by_month(self, month: str):
-        return [article for article in self.all_articles if article.published_at.startswith(month)]
-
-    def list_by_date(self, archive_date: str):
         return [article for article in self.all_articles if article.published_at == archive_date]
 
 
@@ -99,7 +95,7 @@ def test_wide_feed_preserves_preference_order_and_descending_weights():
     assert [block['weight'] for block in payload['blocks']] == [1.0, 0.85, 0.7]
 
 
-def test_wide_feed_prefers_recent_articles_when_scores_are_close():
+def test_wide_feed_sorts_articles_by_importance_score_without_recency_boost():
     service = build_service(
         UserPreference(
             user_id='demo-user',
@@ -112,7 +108,7 @@ def test_wide_feed_prefers_recent_articles_when_scores_are_close():
 
     payload = service.get_feed('demo-user')
 
-    assert [article.id for article in payload['blocks'][0]['articles']] == ['A5', 'A2', 'A7', 'A1']
+    assert [article.id for article in payload['blocks'][0]['articles']] == ['A2', 'A5', 'A7', 'A1']
 
 
 def test_narrow_feed_fills_same_primary_articles_when_selected_subcategories_are_short():
@@ -204,7 +200,7 @@ def test_wide_feed_excludes_articles_below_minimum_score_threshold():
 
     payload = service.get_feed('demo-user')
 
-    assert [article.id for article in payload['blocks'][0]['articles']] == ['A5', 'A2', 'A7']
+    assert [article.id for article in payload['blocks'][0]['articles']] == ['A2', 'A5', 'A7']
 
 
 def test_narrow_feed_does_not_backfill_with_articles_below_minimum_score_threshold():
@@ -241,39 +237,6 @@ def test_narrow_feed_does_not_backfill_with_articles_below_minimum_score_thresho
 
     assert [article.id for article in payload['blocks'][0]['articles']] == ['A2', 'A5', 'A7']
 
-
-def test_archive_month_respects_wide_primary_category_preferences():
-    service = build_service(
-        UserPreference(
-            user_id='demo-user',
-            mode=PreferenceMode.WIDE,
-            primary_categories=['tech', 'economy'],
-            subcategories=[],
-            onboarding_completed=True,
-        )
-    )
-
-    payload = service.list_archive_month('demo-user', '2026-04')
-
-    assert list(payload) == ['2026-04-13', '2026-04-14', '2026-04-15']
-    assert [article.id for article in payload['2026-04-14']] == ['A1', 'A2']
-    assert [article.id for article in payload['2026-04-15']] == ['A4', 'A5', 'A7']
-
-
-def test_archive_date_respects_narrow_subcategory_preferences():
-    service = build_service(
-        UserPreference(
-            user_id='demo-user',
-            mode=PreferenceMode.NARROW,
-            primary_categories=['economy'],
-            subcategories=['real-estate'],
-            onboarding_completed=True,
-        )
-    )
-
-    payload = service.list_archive_date('demo-user', '2026-04-14')
-
-    assert [article.id for article in payload] == ['A2']
 
 
 def test_scraps_remain_available_even_when_current_preference_would_filter_them_out():

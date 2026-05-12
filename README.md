@@ -74,8 +74,6 @@ RUN_ON_STARTUP=true docker compose up --build
 스케줄 기본값:
 
 - AI 뉴스 생성: 매일 `08:30:00` (`NEWS_SCHEDULE_TIMEZONE=Asia/Seoul`)
-- 뉴스 발행 기준: `NEWS_PUBLISH_BEFORE_TIME=03:08:59`
-- 다음 발행 기준: `NEWS_PUBLISH_AFTER_NEXT_DAY_TIME=09:02:59`
 - 수동 즉시 실행 smoke: `RUN_ON_STARTUP=true docker compose up --build`
 
 자체 뉴스 홈 데이터는 다음 계약으로 이어집니다.

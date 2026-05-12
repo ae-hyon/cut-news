@@ -5,7 +5,6 @@ const TABS: Array<{ key: AppTab; icon: string; label: string }> = [
   { key: 'home', icon: '⌂', label: '홈' },
   { key: 'onboarding', icon: '◎', label: '관심사' },
   { key: 'scraps', icon: '★', label: '스크랩' },
-  { key: 'archive', icon: '▦', label: '아카이브' },
 ]
 
 interface BottomNavProps {

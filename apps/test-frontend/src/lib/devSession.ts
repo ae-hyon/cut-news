@@ -1,12 +1,10 @@
 const DEV_DEMO_USER_STORAGE_KEY = 'annoyingcap.dev-demo-user-id'
 const VIEW_CONTEXT_STORAGE_KEY = 'annoyingcap.view-context'
 
-type RememberedTab = 'home' | 'scraps' | 'archive'
+type RememberedTab = 'home' | 'scraps'
 
 export type RememberedViewContext = {
   tab: RememberedTab
-  archiveMonth?: string | null
-  archiveDate?: string | null
   detailArticleId?: string | null
 }
 
@@ -50,7 +48,7 @@ export function getRememberedViewContext(): RememberedViewContext | null {
   if (!raw) return null
   try {
     const parsed = JSON.parse(raw) as RememberedViewContext
-    if (parsed.tab !== 'home' && parsed.tab !== 'scraps' && parsed.tab !== 'archive') return null
+    if (parsed.tab !== 'home' && parsed.tab !== 'scraps') return null
     return parsed
   } catch {
     return null

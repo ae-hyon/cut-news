@@ -23,13 +23,11 @@ def test_parse_import_stats_extracts_counters_from_stdout():
 def test_parse_import_observability_extracts_json_payload_from_stdout():
     output = (
         'noise\n'
-        'summarizer article import observability: {"quality_gate_skip_counts":{"low_confidence":2},"classification_source_counts":{"reliable_source":1},"dropped_reason_counts":{"quality_gate_low_confidence":2}}\n'
+        'summarizer article import observability: {"quality_gate_skip_counts":{"low_confidence":2}}\n'
     )
 
     assert run_news_pipeline_job.parse_import_observability(output) == {
         'quality_gate_skip_counts': {'low_confidence': 2},
-        'classification_source_counts': {'reliable_source': 1},
-        'dropped_reason_counts': {'quality_gate_low_confidence': 2},
     }
 
 
@@ -53,7 +51,7 @@ def test_run_pipeline_job_writes_success_report_with_step_results(tmp_path: Path
         if step_name == 'import':
             stdout = (
                 'summarizer article import complete: inserted=1 updated=2 deleted=0 skipped=3\n'
-                'summarizer article import observability: {"quality_gate_skip_counts":{"violations":1},"classification_source_counts":{"keyword":2},"dropped_reason_counts":{"quality_gate_violations":1}}\n'
+                'summarizer article import observability: {"quality_gate_skip_counts":{"violations":1}}\n'
             )
         return run_news_pipeline_job.StepExecutionResult(
             name=step_name,
@@ -79,27 +77,18 @@ def test_run_pipeline_job_writes_success_report_with_step_results(tmp_path: Path
     assert calls == ['collect', 'export_raw', 'summarize', 'import']
     assert report['status'] == 'success'
     assert report['failed_step'] is None
-    assert report['artifact_counts']['raw'] == 1
-    assert report['artifact_counts']['summarized'] == 1
-    assert report['artifact_counts']['summarized_errors'] == 1
-    assert report['artifact_counts']['verified'] == 1
     assert report['import_stats'] == {'inserted': 1, 'updated': 2, 'deleted': 0, 'skipped': 3}
-    assert report['import_observability'] == {
-        'quality_gate_skip_counts': {'violations': 1},
-        'classification_source_counts': {'keyword': 2},
-        'dropped_reason_counts': {'quality_gate_violations': 1},
-    }
+    assert report['quality_gate_skip_counts'] == {'violations': 1}
     assert report['schedule'] == {
         'timezone': 'Asia/Seoul',
         'ai_news_generation_time': '08:30:00',
-        'source_publish_before_time': '03:08:59',
-        'source_publish_after_next_day_time': '09:02:59',
     }
     assert report_path.exists()
     persisted = json.loads(report_path.read_text(encoding='utf-8'))
     assert persisted['status'] == 'success'
     assert persisted['steps'][-1]['name'] == 'import'
     assert persisted['schedule']['ai_news_generation_time'] == '08:30:00'
+    assert 'stdout' not in persisted['steps'][-1]
 
 
 def test_run_pipeline_job_stops_on_failed_step_and_records_failure(tmp_path: Path):
@@ -143,12 +132,8 @@ def test_run_pipeline_job_stops_on_failed_step_and_records_failure(tmp_path: Pat
     assert report['status'] == 'failed'
     assert report['failed_step'] == 'summarize'
     assert [step['name'] for step in report['steps']] == ['collect', 'export_raw', 'summarize']
-    assert report['steps'][-1]['stderr'] == 'boom'
+    assert report['steps'][-1]['error_tail'] == 'boom'
     assert report['import_stats'] == {'inserted': 0, 'updated': 0, 'deleted': 0, 'skipped': 0}
-    assert report['import_observability'] == {
-        'quality_gate_skip_counts': {},
-        'classification_source_counts': {},
-        'dropped_reason_counts': {},
-    }
+    assert report['quality_gate_skip_counts'] == {}
     persisted = json.loads(report_path.read_text(encoding='utf-8'))
     assert persisted['failed_step'] == 'summarize'

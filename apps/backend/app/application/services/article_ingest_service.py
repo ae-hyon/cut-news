@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -23,32 +21,9 @@ class ArticleIngestRow(BaseModel):
     score_weight: float = 1.0
 
 
-class ArticleClassificationDecision(BaseModel):
-    keep: bool
-    primary_category: str | None = None
-    subcategory: str | None = None
-    confidence: float = Field(ge=0.0, le=1.0)
-    reason: str = ''
-
-
 class ArticleDerivedCategory(BaseModel):
     primary_category: str
     subcategory: str
-    source: str
-
-
-class ArticleClassifier(Protocol):
-    def __call__(
-        self,
-        *,
-        article_id: str,
-        title: str,
-        summary: str,
-        content: str,
-        original_url: str,
-        raw_primary: str,
-        raw_subcategory: str,
-    ) -> ArticleClassificationDecision | None: ...
 
 
 PRIMARY_CATEGORY_ALIASES = {
@@ -262,96 +237,7 @@ def _has_economic_title_signal(title: str) -> bool:
     return bool(ECONOMIC_TITLE_SIGNAL_PATTERN.search(title))
 
 
-def _is_supported_pair(primary: str | None, subcategory: str | None) -> bool:
-    if not primary or not subcategory:
-        return False
-    return subcategory in SUPPORTED_SUBCATEGORIES.get(primary, set())
-
-
-def _classifier_cache_path(data_dir: Path) -> Path:
-    return data_dir / 'classification_cache.json'
-
-
-def _classifier_cache_key(*, article_id: str, title: str, summary: str, content: str, original_url: str) -> str:
-    digest = hashlib.sha256(f'{article_id}\n{original_url}\n{title}\n{summary}\n{content}'.encode('utf-8')).hexdigest()
-    return digest
-
-
-def _load_classifier_cache(data_dir: Path) -> dict[str, dict]:
-    path = _classifier_cache_path(data_dir)
-    if not path.exists():
-        return {}
-    payload = _read_json(path)
-    if not isinstance(payload, dict):
-        return {}
-    return {str(key): value for key, value in payload.items() if isinstance(value, dict)}
-
-
-def _store_classifier_cache(data_dir: Path, cache: dict[str, dict]) -> None:
-    _write_json(_classifier_cache_path(data_dir), cache)
-
-
-def _maybe_classify_with_fallback(
-    *,
-    data_dir: Path,
-    classifier: ArticleClassifier | None,
-    classifier_cache: dict[str, dict],
-    article_id: str,
-    title: str,
-    summary: str,
-    content: str,
-    original_url: str,
-    raw_primary: str,
-    raw_subcategory: str,
-    min_confidence: float,
-) -> tuple[str, str] | None:
-    if classifier is None:
-        return None
-
-    cache_key = _classifier_cache_key(
-        article_id=article_id,
-        title=title,
-        summary=summary,
-        content=content,
-        original_url=original_url,
-    )
-    cached_payload = classifier_cache.get(cache_key)
-    if cached_payload is not None:
-        decision = ArticleClassificationDecision.model_validate(cached_payload)
-    else:
-        decision = classifier(
-            article_id=article_id,
-            title=title,
-            summary=summary,
-            content=content,
-            original_url=original_url,
-            raw_primary=raw_primary,
-            raw_subcategory=raw_subcategory,
-        )
-        if decision is None:
-            return None
-        classifier_cache[cache_key] = decision.model_dump()
-        _store_classifier_cache(data_dir, classifier_cache)
-
-    if not decision.keep or decision.confidence < min_confidence:
-        return None
-    if not _is_supported_pair(decision.primary_category, decision.subcategory):
-        return None
-    return decision.primary_category, decision.subcategory
-
-
-def _derive_categories(
-    article_payload: dict,
-    category_payload: dict,
-    *,
-    data_dir: Path,
-    classifier: ArticleClassifier | None,
-    classifier_cache: dict[str, dict],
-    article_id: str,
-    summary: str,
-    original_url: str,
-    min_confidence: float,
-) -> ArticleDerivedCategory | None:
+def _derive_categories(article_payload: dict, category_payload: dict) -> ArticleDerivedCategory | None:
     title = str(article_payload.get('title') or '')
     content = str(article_payload.get('content') or '')
     raw_primary = str(category_payload.get('primary_category') or '')
@@ -366,76 +252,48 @@ def _derive_categories(
 
     reliable_pair = RELIABLE_SOURCE_CATEGORY_BY_SUBCATEGORY.get(raw_subcategory)
     if reliable_pair:
-        return ArticleDerivedCategory(primary_category=reliable_pair[0], subcategory=reliable_pair[1], source='reliable_source')
+        return ArticleDerivedCategory(primary_category=reliable_pair[0], subcategory=reliable_pair[1])
 
     classified = _classify_from_keywords(title, content)
     if classified:
-        return ArticleDerivedCategory(primary_category=classified[0], subcategory=classified[1], source='keyword')
+        return ArticleDerivedCategory(primary_category=classified[0], subcategory=classified[1])
 
-    fallback = _maybe_classify_with_fallback(
-        data_dir=data_dir,
-        classifier=classifier,
-        classifier_cache=classifier_cache,
-        article_id=article_id,
-        title=title,
-        summary=summary,
-        content=content,
-        original_url=original_url,
-        raw_primary=raw_primary,
-        raw_subcategory=raw_subcategory,
-        min_confidence=min_confidence,
-    )
-    if fallback is None:
-        return None
-    return ArticleDerivedCategory(primary_category=fallback[0], subcategory=fallback[1], source='classifier_fallback')
+    return None
 
 
 def _increment(counter: dict[str, int], key: str) -> None:
     counter[key] = counter.get(key, 0) + 1
 
 
-def load_summarized_articles_report(
-    data_dir: Path,
-    *,
-    classifier: ArticleClassifier | None = None,
-    classifier_min_confidence: float = 0.75,
-) -> tuple[list[ArticleIngestRow], dict[str, dict[str, int]]]:
+def load_summarized_articles_report(data_dir: Path) -> tuple[list[ArticleIngestRow], dict[str, dict[str, int]]]:
     json_dir = data_dir / 'json'
     summarized_dir = data_dir / 'summarized'
     verified_dir = data_dir / 'verified'
     empty_report = {
         'quality_gate_skip_counts': {},
-        'classification_source_counts': {},
-        'dropped_reason_counts': {},
     }
     if not json_dir.exists() or not summarized_dir.exists() or not verified_dir.exists():
         return [], empty_report
 
     categories = _category_index(data_dir)
     scores = _score_index(data_dir)
-    classifier_cache = _load_classifier_cache(data_dir)
     rows: list[ArticleIngestRow] = []
     quality_gate_skip_counts: dict[str, int] = {}
-    classification_source_counts: dict[str, int] = {}
-    dropped_reason_counts: dict[str, int] = {}
     for article_path in sorted(json_dir.glob('*.json')):
         article_id = article_path.stem
         summary_path = summarized_dir / f'{article_id}.json'
         verification_path = verified_dir / f'{article_id}.json'
         if not summary_path.exists() or not verification_path.exists():
-            _increment(dropped_reason_counts, 'missing_summary_or_verification')
             continue
 
         article_payload = _read_json(article_path)
         summary_payload = _read_json(summary_path)
         verification_payload = _read_json(verification_path)
         if not isinstance(article_payload, dict) or not isinstance(summary_payload, dict) or not isinstance(verification_payload, dict):
-            _increment(dropped_reason_counts, 'invalid_payload')
             continue
         quality_gate_reason = _quality_gate_failure_reason(article_payload, summary_payload, verification_payload)
         if quality_gate_reason is not None:
             _increment(quality_gate_skip_counts, quality_gate_reason)
-            _increment(dropped_reason_counts, f'quality_gate_{quality_gate_reason}')
             continue
 
         summary = str(summary_payload.get('summary') or '').strip()
@@ -444,25 +302,15 @@ def load_summarized_articles_report(
         original_url = str(article_payload.get('url') or '').strip()
         published_at = _published_at(article_payload)
         if not (summary and title and content and original_url and published_at):
-            _increment(dropped_reason_counts, 'missing_required_fields')
             continue
 
         category_payload = categories.get(article_id, {})
         derived = _derive_categories(
             article_payload,
             category_payload,
-            data_dir=data_dir,
-            classifier=classifier,
-            classifier_cache=classifier_cache,
-            article_id=article_id,
-            summary=summary,
-            original_url=original_url,
-            min_confidence=classifier_min_confidence,
         )
         if derived is None:
-            _increment(dropped_reason_counts, 'category_unresolved')
             continue
-        _increment(classification_source_counts, derived.source)
         score_weight = _score_weight(scores.get(article_id, {}))
         rows.append(
             ArticleIngestRow(
@@ -479,20 +327,9 @@ def load_summarized_articles_report(
         )
     return rows, {
         'quality_gate_skip_counts': quality_gate_skip_counts,
-        'classification_source_counts': classification_source_counts,
-        'dropped_reason_counts': dropped_reason_counts,
     }
 
 
-def load_summarized_articles(
-    data_dir: Path,
-    *,
-    classifier: ArticleClassifier | None = None,
-    classifier_min_confidence: float = 0.75,
-) -> list[ArticleIngestRow]:
-    rows, _report = load_summarized_articles_report(
-        data_dir,
-        classifier=classifier,
-        classifier_min_confidence=classifier_min_confidence,
-    )
+def load_summarized_articles(data_dir: Path) -> list[ArticleIngestRow]:
+    rows, _report = load_summarized_articles_report(data_dir)
     return rows

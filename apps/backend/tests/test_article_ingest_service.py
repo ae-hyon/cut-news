@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 from app.application.services.article_ingest_service import (
-    ArticleClassificationDecision,
     load_summarized_articles,
     load_summarized_articles_report,
 )
@@ -250,96 +249,6 @@ def test_load_summarized_articles_skips_social_accident_article_even_if_title_me
     assert load_summarized_articles(dataset) == []
 
 
-def test_load_summarized_articles_uses_classifier_fallback_for_ambiguous_economic_article(tmp_path: Path):
-    dataset = tmp_path
-    write_json(
-        dataset / 'json' / '055.json',
-        {
-            'title': '동남아 물류 재편에 해운 운임 변동성 확대',
-            'date': '2026-04-24',
-            'author': '최기자',
-            'url': 'https://example.com/economy/055',
-            'content': '동남아 생산기지 이전과 항만 적체 완화로 물류 경로가 재편되고 해운 운임 변동성이 커졌다는 분석이다.',
-        },
-    )
-    write_json(
-        dataset / 'summarized' / '055.json',
-        {
-            'headline_34': '동남아 물류 재편에 해운 운임 변동성 확대',
-            'headline_58': '동남아 생산기지 이동으로 해운 운임 변동성이 커지고 있다',
-            'headline_89': '동남아 생산기지 이동과 항만 적체 완화로 해운 운임 변동성이 커지며 공급망 재편 압력이 확대되고 있다',
-            'summary': '동남아 생산기지 이동으로 공급망과 해운 운임 변동성이 커지고 있다.',
-        },
-    )
-    write_json(dataset / 'verified' / '055.json', {'verdict': 'clean', '_article_id': '055', '_title': '동남아 물류 재편에 해운 운임 변동성 확대'})
-    write_json(dataset / 'category_map.json', [{'article_id': '055', 'primary_category': '경제', 'subcategory': '일반'}])
-
-    calls: list[tuple[str, str]] = []
-
-    def classifier(*, article_id: str, title: str, summary: str, **_kwargs) -> ArticleClassificationDecision:
-        calls.append((article_id, title))
-        assert summary == '동남아 생산기지 이동으로 공급망과 해운 운임 변동성이 커지고 있다.'
-        return ArticleClassificationDecision(
-            keep=True,
-            primary_category='economy',
-            subcategory='economy-trade',
-            confidence=0.92,
-            reason='공급망/해운 운임 기사',
-        )
-
-    rows = load_summarized_articles(dataset, classifier=classifier)
-
-    assert calls == [('055', '동남아 물류 재편에 해운 운임 변동성 확대')]
-    assert len(rows) == 1
-    assert rows[0].primary_category == 'economy'
-    assert rows[0].subcategory == 'economy-trade'
-
-
-def test_load_summarized_articles_reuses_cached_classifier_result_without_recalling_classifier(tmp_path: Path):
-    dataset = tmp_path
-    write_json(
-        dataset / 'json' / '056.json',
-        {
-            'title': '새로운 경영 지표 놓고 기업 대응 분주',
-            'date': '2026-04-24',
-            'author': '박기자',
-            'url': 'https://example.com/economy/056',
-            'content': '기업들이 새로운 경영 지표와 외부 환경 변화에 대응하고 있다는 기사다.',
-        },
-    )
-    write_json(
-        dataset / 'summarized' / '056.json',
-        {
-            'headline_34': '새로운 경영 지표 놓고 기업 대응 분주',
-            'headline_58': '기업들이 새로운 경영 지표와 환경 변화에 대응하고 있다',
-            'headline_89': '기업들이 새로운 경영 지표와 외부 환경 변화에 맞춰 사업 전략을 재조정하고 있다',
-            'summary': '기업들이 새로운 경영 지표와 환경 변화에 대응하고 있다.',
-        },
-    )
-    write_json(dataset / 'verified' / '056.json', {'verdict': 'clean', '_article_id': '056', '_title': '새로운 경영 지표 놓고 기업 대응 분주'})
-    write_json(dataset / 'category_map.json', [{'article_id': '056', 'primary_category': '경제', 'subcategory': '일반'}])
-
-    call_count = 0
-
-    def classifier(**_kwargs) -> ArticleClassificationDecision:
-        nonlocal call_count
-        call_count += 1
-        return ArticleClassificationDecision(
-            keep=True,
-            primary_category='economy',
-            subcategory='economy-trade',
-            confidence=0.88,
-            reason='공급망 기사',
-        )
-
-    first_rows = load_summarized_articles(dataset, classifier=classifier)
-    second_rows = load_summarized_articles(dataset, classifier=classifier)
-
-    assert len(first_rows) == 1
-    assert len(second_rows) == 1
-    assert call_count == 1
-
-
 def test_load_summarized_articles_skips_low_confidence_clean_verification(tmp_path: Path):
     dataset = tmp_path
     write_json(
@@ -426,7 +335,7 @@ def test_load_summarized_articles_skips_summary_after_too_many_retries(tmp_path:
     assert load_summarized_articles(dataset) == []
 
 
-def test_load_summarized_articles_report_tracks_quality_gate_skips_and_classification_provenance(tmp_path: Path):
+def test_load_summarized_articles_report_tracks_quality_gate_skips(tmp_path: Path):
     dataset = tmp_path
     write_json(
         dataset / 'json' / '001.json',
@@ -446,7 +355,7 @@ def test_load_summarized_articles_report_tracks_quality_gate_skips_and_classific
 
     write_json(
         dataset / 'json' / '002.json',
-        {'title': '동남아 물류 재편에 해운 운임 변동성 확대', 'date': '2026-04-28', 'url': 'https://example.com/2', 'content': '동남아 생산기지 이동과 항만 적체 완화로 해운 운임 변동성이 커지고 있다.'},
+        {'title': '동남아 물류 재편에 해운 운임 변동성 확대', 'date': '2026-04-28', 'url': 'https://example.com/2', 'content': '동남아 생산기지 이동과 항만 적체 완화로 공급망과 해운 운임 변동성이 커지고 있다.'},
     )
     write_json(
         dataset / 'summarized' / '002.json',
@@ -463,22 +372,11 @@ def test_load_summarized_articles_report_tracks_quality_gate_skips_and_classific
         {'article_id': '002', 'primary_category': '경제', 'subcategory': '일반'},
     ])
 
-    def classifier(**_kwargs) -> ArticleClassificationDecision:
-        return ArticleClassificationDecision(
-            keep=True,
-            primary_category='economy',
-            subcategory='economy-trade',
-            confidence=0.92,
-            reason='공급망 기사',
-        )
-
-    rows, report = load_summarized_articles_report(dataset, classifier=classifier)
+    rows, report = load_summarized_articles_report(dataset)
 
     assert len(rows) == 1
     assert rows[0].id == 'SUM-002'
     assert report['quality_gate_skip_counts'] == {'low_confidence': 1}
-    assert report['classification_source_counts'] == {'classifier_fallback': 1}
-    assert report['dropped_reason_counts'] == {'quality_gate_low_confidence': 1}
 
 
 def test_repo_summarizer_dataset_maps_to_supported_backend_categories():

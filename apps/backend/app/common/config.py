@@ -20,15 +20,6 @@ class Settings(BaseSettings):
     seed_on_startup: bool = True
     database_url: str = 'postgresql+psycopg://annoyingcap:annoyingcap@localhost:54329/annoyingcap'
     news_summarizer_dir: Path = (Path(__file__).resolve().parents[3] / 'summarizer').resolve()
-    article_classifier_enabled: bool = False
-    article_classifier_provider: str = 'hermit'
-    article_classifier_command: str = 'hermit'
-    article_classifier_model: str | None = None
-    article_classifier_base_url: str | None = None
-    article_classifier_api_key: str | None = None
-    article_classifier_hermit_provider_name: str | None = 'z.ai'
-    article_classifier_hermit_settings_path: Path = Field(default_factory=lambda: (Path.home() / '.hermit' / 'settings.json'))
-    article_classifier_timeout_seconds: float = 30.0
     kakao_rest_api_key: str = 'local-kakao-rest-key'
     kakao_redirect_uri: str = 'http://127.0.0.1:8000/v1/auth/kakao/callback'
     kakao_client_secret: str | None = None

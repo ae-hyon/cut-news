@@ -4,7 +4,7 @@ React + Vite + TypeScript 기반의 모바일/PWA 지향 프론트엔드 프로�
 
 목적
 - `어노잉캡-Flow.pdf`의 톤과 핵심 화면 구조를 430px 고정 모바일 캔버스에 맞춰 재현
-- `core-backend` API에 실제로 붙여서 온보딩/세션/피드/상세/스크랩/아카이브 흐름을 브라우저에서 검증
+- `core-backend` API에 실제로 붙여서 온보딩/세션/피드/상세/스크랩 흐름을 브라우저에서 검증
 - 스크랩은 현재 관심 분야 필터와 별개로 유지되는 개인 저장 목록으로 취급
 - 백엔드는 API-only, 프론트는 session/resource 상태 기반으로 화면 전환
 
@@ -22,7 +22,6 @@ PWA/화면 기준
 - 홈 피드
 - 기사 상세
 - 스크랩
-- 아카이브
 - Kakao 시작 CTA + popup/focus 복귀 후 session 재확인 UX
 
 실행
@@ -51,8 +50,6 @@ PWA/화면 기준
   - health/session/Kakao bootstrap 상태.
 - `src/hooks/useContentFeed.ts`
   - feed/detail/scrap 상태.
-- `src/hooks/useArchiveState.ts`
-  - archive month/date 상태.
 - `src/hooks/usePreferenceSelection.ts`
   - wide/narrow 선택 상태, subcategory map, preference payload 변환.
 - `src/services/backendApi.ts`
@@ -60,7 +57,7 @@ PWA/화면 기준
 - `src/lib/api.ts`
   - fetch wrapper.
 - `src/lib/constants.ts`
-  - 데모 사용자, 아카이브 월, 카드 tone, 카테고리 한글 라벨 상수.
+  - 데모 사용자, 카드 tone, 카테고리 한글 라벨 상수.
 - `src/lib/types.ts`
   - 백엔드 API 응답과 프론트 도메인 타입.
 - `src/components/layout/*`
@@ -70,7 +67,7 @@ PWA/화면 기준
 - `src/components/common/*`
   - 여러 화면에서 재사용되는 `NewsCard`, `SectionHeader`, `DevPanel` (`?debug=1`에서만 표시).
 - `src/components/screens/*`
-  - `IntroScreen`, `OnboardingScreen`, `HomeScreen`, `DetailScreen`, `ScrapsScreen`, `ArchiveScreen`.
+  - `IntroScreen`, `OnboardingScreen`, `HomeScreen`, `DetailScreen`, `ScrapsScreen`.
 - `src/styles/*`
   - `tokens.css`, `layout.css`, `screens.css`, `index.css`.
 
@@ -87,7 +84,7 @@ PWA/화면 기준
 - `SectionHeader`
   - 피드 블록 헤더 공통 사용
 - `BottomNav`
-  - 홈/온보딩/스크랩/아카이브 전환 공통 사용
+  - 홈/온보딩/스크랩 전환 공통 사용
 
 주의
 - Kakao 시작 UX는 popup/focus 복귀 후 session 재확인까지 구현되어 있습니다. 단, 실제 Kakao 계정 E2E는 로컬 브라우저 자동화에서 완료 검증하지 않았습니다.

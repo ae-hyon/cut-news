@@ -19,8 +19,6 @@ export default function TopBar({ activeTab, onNavigate, onProfileClick, onLogout
       </button>
       <nav className="pdf-nav" aria-label="주요 화면">
         <button className={activeTab === 'scraps' ? 'active' : ''} onClick={() => onNavigate('scraps')}>스크랩</button>
-        <span>|</span>
-        <button className={activeTab === 'archive' ? 'active' : ''} onClick={() => onNavigate('archive')}>아카이브</button>
       </nav>
       <div className="topbar-actions">
         <button className="profile-pill profile-pill-muted" type="button" aria-label="로그아웃" onClick={onLogout}>로그아웃</button>
