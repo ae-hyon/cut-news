@@ -185,16 +185,24 @@ def _sync_categories(session: Session) -> None:
                 sub_model.description = sub['description']
 
 
-def _seed_articles(session: Session) -> None:
-    has_articles = session.scalar(select(ArticleModel.id)) is not None
-    if has_articles:
-        return
+def _article_seed_rows() -> list[dict]:
+    summarized_seed = [row.model_dump() for row in load_summarized_articles(settings.news_summarizer_dir / 'data')]
+    if not summarized_seed:
+        return list(ARTICLE_SEED)
 
-    article_seed = [row.model_dump() for row in load_summarized_articles(settings.news_summarizer_dir / 'data')]
-    if not article_seed:
-        article_seed = ARTICLE_SEED
-    for article in article_seed:
+    # Keep the committed summarizer output as the primary demo dataset, but always
+    # include the small handcrafted mock set too so a fresh Docker DB has enough
+    # cross-category content even when the summarizer sample is sparse or filtered.
+    return [*summarized_seed, *ARTICLE_SEED]
+
+
+def _seed_articles(session: Session) -> None:
+    existing_ids = set(session.scalars(select(ArticleModel.id)).all())
+    for article in _article_seed_rows():
+        if article['id'] in existing_ids:
+            continue
         session.add(ArticleModel(**article))
+        existing_ids.add(article['id'])
 
 
 def _sync_demo_user(session: Session) -> None:
