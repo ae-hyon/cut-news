@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import KakaoCallbackHandler from '@/components/KakaoCallbackHandler'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -21,7 +22,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        <KakaoCallbackHandler />
+        {children}
+      </body>
     </html>
   )
 }
