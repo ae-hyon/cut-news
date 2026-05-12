@@ -1,0 +1,109 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: annoyingcap-backend
+    environment:
+      APP_ENV: development
+      APP_NAME: Annoying Cap Core Backend
+      APP_VERSION: 0.1.0
+      API_PREFIX: /v1
+      DEBUG: "true"
+      MIGRATE_ON_STARTUP: "true"
+      SEED_ON_STARTUP: "true"
+      DATABASE_URL: postgresql+psycopg://annoyingcap:annoyingcap@db:5432/annoyingcap
+      NEWS_SUMMARIZER_DIR: /app/apps/summarizer
+      KAKAO_REDIRECT_URI: http://127.0.0.1:8000/v1/auth/kakao/callback
+      JWT_SECRET_KEY: annoyingcap-dev-jwt-secret-key-32chars
+      AI_NEWS_GENERATION_TIME: "08:30:00"
+      NEWS_SCHEDULE_TIMEZONE: Asia/Seoul
+      NEWS_PUBLISH_BEFORE_TIME: "03:08:59"
+      NEWS_PUBLISH_AFTER_NEXT_DAY_TIME: "09:02:59"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/summarizer/data:/app/apps/summarizer/data
+      - ./apps/crawler/output:/app/apps/crawler/output
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  crawler:
+    build:
+      context: .
+      dockerfile: apps/crawler/Dockerfile
+    container_name: annoyingcap-crawler
+    environment:
+      NEWS_SOURCE: ${NEWS_SOURCE:-seeded}
+      NEWS_QUERY: ${NEWS_QUERY:-경제}
+      NEWS_COUNT: ${NEWS_COUNT:-20}
+      TZ: Asia/Seoul
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./apps/crawler/output:/app/apps/crawler/output
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=2)\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  news-scheduler:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: annoyingcap-news-scheduler
+    command: ["/app/docker/news-scheduler.sh"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://annoyingcap:annoyingcap@db:5432/annoyingcap
+      NEWS_SUMMARIZER_DIR: /app/apps/summarizer
+      NEWS_SOURCE: ${NEWS_SOURCE:-seeded}
+      NEWS_QUERY: ${NEWS_QUERY:-경제}
+      NEWS_COUNT: ${NEWS_COUNT:-20}
+      PIPELINE_LLM_BACKEND: ${PIPELINE_LLM_BACKEND:-codex_exec}
+      PIPELINE_MODEL: ${PIPELINE_MODEL:-gpt-5.4-mini}
+      PIPELINE_CODEX_REASONING_EFFORT: ${PIPELINE_CODEX_REASONING_EFFORT:-low}
+      AI_NEWS_GENERATION_TIME: "08:30:00"
+      NEWS_SCHEDULE_TIMEZONE: Asia/Seoul
+      NEWS_PUBLISH_BEFORE_TIME: "03:08:59"
+      NEWS_PUBLISH_AFTER_NEXT_DAY_TIME: "09:02:59"
+      RUN_ON_STARTUP: ${RUN_ON_STARTUP:-false}
+      TZ: Asia/Seoul
+    volumes:
+      - ./apps/summarizer/data:/app/apps/summarizer/data
+      - ./apps/crawler/output:/app/apps/crawler/output
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+      crawler:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: annoyingcap-postgres
+    environment:
+      POSTGRES_DB: annoyingcap
+      POSTGRES_USER: annoyingcap
+      POSTGRES_PASSWORD: annoyingcap
+      TZ: Asia/Seoul
+    ports:
+      - "54329:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U annoyingcap -d annoyingcap"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  postgres_data:

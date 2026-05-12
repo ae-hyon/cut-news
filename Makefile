@@ -4,7 +4,7 @@
 .PHONY: format format-backend format-crawler
 .PHONY: type-check type-check-backend type-check-crawler type-check-frontend
 .PHONY: test test-backend test-crawler test-summarizer test-test-frontend build-test-frontend
-.PHONY: crawler-collect crawler-export-raw pipeline-summarizer import-articles pipeline-news clean
+.PHONY: crawler-collect crawler-export-raw pipeline-summarizer import-articles pipeline-news compose-up compose-down clean
 
 NEWS_SOURCE ?= seeded
 NEWS_QUERY ?= 경제
@@ -39,6 +39,8 @@ help:
 	@echo "  make build-test-frontend - Build API test frontend"
 	@echo ""
 	@echo "Pipeline:"
+	@echo "  make compose-up         - Run backend+crawler+summarizer scheduler+Postgres with Docker Compose (no frontend)"
+	@echo "  make compose-down       - Stop Docker Compose services"
 	@echo "  make crawler-collect NEWS_SOURCE=seeded|naver-search NEWS_QUERY=사회 NEWS_COUNT=20 - Collect real news into apps/crawler/output/latest.json"
 	@echo "  make pipeline-summarizer - Run summarizer pipeline over data/raw"
 	@echo "  make import-articles    - Import summarizer data into backend DB"
@@ -149,6 +151,12 @@ import-articles:
 
 pipeline-news:
 	cd apps/backend && NEWS_SOURCE=$(NEWS_SOURCE) NEWS_QUERY="$(NEWS_QUERY)" NEWS_COUNT=$(NEWS_COUNT) DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" PIPELINE_LLM_BACKEND=$(PIPELINE_LLM_BACKEND) PIPELINE_MODEL=$(PIPELINE_MODEL) PIPELINE_CODEX_REASONING_EFFORT=$(PIPELINE_CODEX_REASONING_EFFORT) PYTHONPATH=. python3.11 -m app.scripts.run_news_pipeline_job
+
+compose-up:
+	docker compose up --build
+
+compose-down:
+	docker compose down
 
 # Cleanup
 clean:
