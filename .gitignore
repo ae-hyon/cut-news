@@ -96,3 +96,5 @@ apps/crawler/output/
 .cafibot/
 .agents/
 .codex-channels/
+.playwright-mcp/
+.omc/
