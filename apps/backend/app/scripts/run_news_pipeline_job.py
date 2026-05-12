@@ -179,6 +179,15 @@ def _clear_category_map(repo_root: Path) -> None:
         category_map_path.unlink()
 
 
+def _schedule_metadata() -> dict[str, str]:
+    return {
+        'timezone': os.environ.get('NEWS_SCHEDULE_TIMEZONE', 'Asia/Seoul'),
+        'ai_news_generation_time': os.environ.get('AI_NEWS_GENERATION_TIME', '08:30:00'),
+        'source_publish_before_time': os.environ.get('NEWS_PUBLISH_BEFORE_TIME', '03:08:59'),
+        'source_publish_after_next_day_time': os.environ.get('NEWS_PUBLISH_AFTER_NEXT_DAY_TIME', '09:02:59'),
+    }
+
+
 def write_run_report(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -226,6 +235,7 @@ def run_pipeline_job(
         'source': source,
         'query': query,
         'count': count,
+        'schedule': _schedule_metadata(),
         'steps': steps_payload,
         'artifact_counts': collect_artifact_counts(data_dir),
         'import_stats': import_stats,

@@ -56,6 +56,28 @@ make install-frontend
 
 ## 데이터 파이프라인
 
+프론트엔드를 제외한 운영/검증 구성은 루트 `docker-compose.yml` 하나로 실행합니다.
+
+```bash
+# backend + crawler + summarizer scheduler + Postgres
+make compose-up
+# 또는
+RUN_ON_STARTUP=true docker compose up --build
+```
+
+- `api`: backend API (`http://127.0.0.1:8000`)
+- `crawler`: crawler API (`http://127.0.0.1:8001`)
+- `news-scheduler`: crawler 수집 → summarizer step2~5 → backend import를 매일 실행
+- `db`: Postgres 16
+- 프론트엔드 서비스는 compose에 포함하지 않습니다.
+
+스케줄 기본값:
+
+- AI 뉴스 생성: 매일 `08:30:00` (`NEWS_SCHEDULE_TIMEZONE=Asia/Seoul`)
+- 뉴스 발행 기준: `NEWS_PUBLISH_BEFORE_TIME=03:08:59`
+- 다음 발행 기준: `NEWS_PUBLISH_AFTER_NEXT_DAY_TIME=09:02:59`
+- 수동 즉시 실행 smoke: `RUN_ON_STARTUP=true docker compose up --build`
+
 자체 뉴스 홈 데이터는 다음 계약으로 이어집니다.
 
 1. `apps/crawler`

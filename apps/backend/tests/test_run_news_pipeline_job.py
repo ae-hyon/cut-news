@@ -89,10 +89,17 @@ def test_run_pipeline_job_writes_success_report_with_step_results(tmp_path: Path
         'classification_source_counts': {'keyword': 2},
         'dropped_reason_counts': {'quality_gate_violations': 1},
     }
+    assert report['schedule'] == {
+        'timezone': 'Asia/Seoul',
+        'ai_news_generation_time': '08:30:00',
+        'source_publish_before_time': '03:08:59',
+        'source_publish_after_next_day_time': '09:02:59',
+    }
     assert report_path.exists()
     persisted = json.loads(report_path.read_text(encoding='utf-8'))
     assert persisted['status'] == 'success'
     assert persisted['steps'][-1]['name'] == 'import'
+    assert persisted['schedule']['ai_news_generation_time'] == '08:30:00'
 
 
 def test_run_pipeline_job_stops_on_failed_step_and_records_failure(tmp_path: Path):
