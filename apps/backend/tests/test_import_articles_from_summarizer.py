@@ -62,8 +62,8 @@ def test_import_summarized_articles_inserts_rows_into_existing_database(tmp_path
     assert article is not None
     assert article.title == '첫 번째 제목'
     assert article.summary == '첫 번째 요약'
-    assert article.primary_category == 'assets'
-    assert article.subcategory == 'domestic-stocks'
+    assert article.primary_category == 'stock'
+    assert article.subcategory == 'stock-domestic'
 
 
 def test_import_summarized_articles_skips_non_clean_verifications(tmp_path: Path):

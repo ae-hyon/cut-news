@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -16,43 +18,119 @@ from app.infrastructure.models import (
 
 CATEGORY_SEED = [
     {
-        'slug': 'sectors',
-        'name': '산업 섹터',
-        'description': '반도체·모빌리티·바이오처럼 업종별 핵심 흐름',
+        'slug': 'stock',
+        'name': '주식시장',
+        'description': '코스피·나스닥·S&P500 등 주식시장 주요 흐름',
+        'keywords': ['코스피', '나스닥', 'S&P500'],
         'subcategories': [
-            {'slug': 'semiconductor', 'name': '반도체', 'description': '메모리·파운드리·장비 기업 이슈'},
-            {'slug': 'mobility', 'name': '모빌리티', 'description': '완성차·배터리·전기차 공급망'},
-            {'slug': 'bio', 'name': '바이오', 'description': '제약·헬스케어·임상 업데이트'},
+            {'slug': 'stock-domestic', 'name': '국내주식', 'description': '국내 상장사·코스피·코스닥 이슈'},
+            {'slug': 'stock-overseas', 'name': '해외주식', 'description': '미국·글로벌 증시와 해외 종목'},
+            {'slug': 'stock-etf', 'name': 'ETF', 'description': 'ETF 상품과 패시브 투자 흐름'},
+            {'slug': 'stock-unlisted', 'name': '비상장주식', 'description': 'IPO 전 기업과 장외시장 이슈'},
         ],
     },
     {
-        'slug': 'macro',
-        'name': '거시경제',
-        'description': '환율·금리·원자재·글로벌 경기 흐름',
+        'slug': 'crypto',
+        'name': '가상자산',
+        'description': '비트코인·이더리움·알트코인 등 디지털 자산 흐름',
+        'keywords': ['비트코인', '이더리움', '알트코인'],
         'subcategories': [
-            {'slug': 'rates-fx', 'name': '환율·금리', 'description': '환율·채권·기준금리 변동'},
-            {'slug': 'energy', 'name': '에너지', 'description': '원유·가스·전력 가격과 수급'},
-            {'slug': 'supply-chain', 'name': '공급망', 'description': '무역·물류·원자재 공급망 변화'},
+            {'slug': 'crypto-bitcoin', 'name': '비트코인', 'description': '비트코인 가격·ETF·채굴 생태계'},
+            {'slug': 'crypto-altcoin', 'name': '알트코인', 'description': '이더리움 외 주요 알트코인'},
+            {'slug': 'crypto-defi', 'name': 'DeFi', 'description': '탈중앙 금융 프로토콜과 온체인 유동성'},
+            {'slug': 'crypto-nft', 'name': 'NFT', 'description': 'NFT·디지털 컬렉터블·게임 자산'},
         ],
     },
     {
-        'slug': 'assets',
-        'name': '투자 자산',
-        'description': '주식·해외자산·부동산처럼 바로 투자 판단에 닿는 자산군',
+        'slug': 'realestate',
+        'name': '부동산',
+        'description': '아파트·청약·전세 등 부동산 시장 흐름',
+        'keywords': ['아파트', '청약', '전세'],
         'subcategories': [
-            {'slug': 'domestic-stocks', 'name': '국내 증시', 'description': '코스피·코스닥·상장사 이슈'},
-            {'slug': 'global-stocks', 'name': '해외 자산', 'description': '미국 증시·ETF·글로벌 자금 흐름'},
-            {'slug': 'real-estate', 'name': '부동산', 'description': '주택·전세·분양·리츠 흐름'},
+            {'slug': 'realestate-apt', 'name': '아파트', 'description': '아파트 매매·분양·가격 동향'},
+            {'slug': 'realestate-subscription', 'name': '청약', 'description': '청약 제도와 분양 일정'},
+            {'slug': 'realestate-lease', 'name': '전세/월세', 'description': '전월세 가격과 임대차 시장'},
+            {'slug': 'realestate-commercial', 'name': '상업용', 'description': '오피스·상가·물류센터 등 상업용 부동산'},
         ],
     },
     {
-        'slug': 'policy',
-        'name': '정책·규제',
-        'description': '정부·중앙은행·감독당국 결정이 시장에 주는 영향',
+        'slug': 'politics',
+        'name': '정치',
+        'description': '국회·대통령·정당 중심의 정치 뉴스',
+        'keywords': ['국회', '대통령', '정당'],
         'subcategories': [
-            {'slug': 'fiscal', 'name': '정부 정책', 'description': '예산·세제·산업 지원 정책'},
-            {'slug': 'central-bank', 'name': '통화정책', 'description': '한은·연준·기준금리 메시지'},
-            {'slug': 'regulation', 'name': '규제', 'description': '금융위·금감원·공시·감독 이슈'},
+            {'slug': 'politics-domestic', 'name': '국내정치', 'description': '국회·정당·선거 등 국내 정치'},
+            {'slug': 'politics-diplomacy', 'name': '외교', 'description': '외교·안보·정상회담 이슈'},
+            {'slug': 'politics-policy', 'name': '정책', 'description': '정부 정책과 입법 이슈'},
+        ],
+    },
+    {
+        'slug': 'economy',
+        'name': '경제',
+        'description': '금리·환율·GDP 등 경제 지표와 금융시장',
+        'keywords': ['금리', '환율', 'GDP'],
+        'subcategories': [
+            {'slug': 'economy-macro', 'name': '거시경제', 'description': '물가·성장률·경기 사이클'},
+            {'slug': 'economy-finance', 'name': '금융', 'description': '은행·채권·금리·환율'},
+            {'slug': 'economy-trade', 'name': '무역', 'description': '수출입·관세·공급망'},
+        ],
+    },
+    {
+        'slug': 'tech',
+        'name': 'IT/테크',
+        'description': 'AI·반도체·스타트업 등 기술 산업',
+        'keywords': ['AI', '반도체', '스타트업'],
+        'subcategories': [
+            {'slug': 'tech-ai', 'name': 'AI', 'description': 'AI 모델·서비스·인프라'},
+            {'slug': 'tech-semiconductor', 'name': '반도체', 'description': '메모리·파운드리·장비'},
+            {'slug': 'tech-startup', 'name': '스타트업', 'description': '창업·투자·신규 서비스'},
+            {'slug': 'tech-bigtech', 'name': '빅테크', 'description': '글로벌 플랫폼과 대형 IT 기업'},
+        ],
+    },
+    {
+        'slug': 'entertainment',
+        'name': '연예',
+        'description': 'K-POP·드라마·영화 등 엔터테인먼트',
+        'keywords': ['K-POP', '드라마', '영화'],
+        'subcategories': [
+            {'slug': 'entertainment-kpop', 'name': 'K-POP', 'description': '아이돌·음반·공연'},
+            {'slug': 'entertainment-drama', 'name': '드라마', 'description': '방송·OTT 드라마'},
+            {'slug': 'entertainment-movie', 'name': '영화', 'description': '영화 개봉·흥행·산업'},
+        ],
+    },
+    {
+        'slug': 'sports',
+        'name': '스포츠',
+        'description': '축구·야구·NBA 등 스포츠 주요 뉴스',
+        'keywords': ['축구', '야구', 'NBA'],
+        'subcategories': [
+            {'slug': 'sports-soccer', 'name': '축구', 'description': '국내외 축구 경기와 이적'},
+            {'slug': 'sports-baseball', 'name': '야구', 'description': 'KBO·MLB 야구 소식'},
+            {'slug': 'sports-basketball', 'name': '농구', 'description': 'KBL·NBA 농구 소식'},
+            {'slug': 'sports-esports', 'name': 'e스포츠', 'description': 'e스포츠 리그와 게임 대회'},
+        ],
+    },
+    {
+        'slug': 'global',
+        'name': '국제',
+        'description': '미국·중국·EU 등 글로벌 주요 이슈',
+        'keywords': ['미국', '중국', 'EU'],
+        'subcategories': [
+            {'slug': 'global-us', 'name': '미국', 'description': '미국 정치·경제·사회'},
+            {'slug': 'global-china', 'name': '중국', 'description': '중국 정치·경제·사회'},
+            {'slug': 'global-europe', 'name': '유럽', 'description': 'EU·유럽 국가 이슈'},
+            {'slug': 'global-asia', 'name': '아시아', 'description': '아시아 주요 국가 이슈'},
+        ],
+    },
+    {
+        'slug': 'lifestyle',
+        'name': '라이프',
+        'description': '건강·여행·맛집 등 생활 관심사',
+        'keywords': ['건강', '여행', '맛집'],
+        'subcategories': [
+            {'slug': 'lifestyle-health', 'name': '건강', 'description': '건강관리·의료·웰니스'},
+            {'slug': 'lifestyle-travel', 'name': '여행', 'description': '국내외 여행지와 항공'},
+            {'slug': 'lifestyle-food', 'name': '맛집', 'description': '외식·맛집·식음료 트렌드'},
         ],
     },
 ]
@@ -60,85 +138,128 @@ CATEGORY_SEED = [
 ARTICLE_SEED = [
     {
         'id': 'A001',
-        'title': '요즘 집 구할 때 노룩 전세가 늘어났다',
-        'summary': '서울 아파트 전세가 상승과 매물 부족으로 집을 보지 않고 계약하는 사례가 늘고 있다.',
-        'content': '서울 아파트 전세가 변동률이 작년보다 5배 이상 가파르게 상승하며, 매물 부족으로 집도 안 보고 계약하는 현상이 확산되고 있다.',
-        'primary_category': 'assets',
-        'subcategory': 'real-estate',
+        'title': '코스피, 반도체 대형주 강세에 상승 마감',
+        'summary': '외국인 매수세가 유입되며 코스피가 상승했고 반도체 업종이 지수를 이끌었다.',
+        'content': '국내 증시는 반도체 대형주 실적 기대와 원화 안정 흐름에 힘입어 상승 마감했다.',
+        'primary_category': 'stock',
+        'subcategory': 'stock-domestic',
         'published_at': '2026-04-14',
         'original_url': 'https://example.com/articles/A001',
         'score_weight': 0.95,
     },
     {
         'id': 'A002',
-        'title': '주택시장 격차 확대 전망',
-        'summary': '전문가들은 매매보다 전세 가격 상승 폭이 커지며 지역 간 격차가 먼저 확대될 것으로 본다.',
-        'content': '2026년 주택시장은 금리 인하 기대와 공급 부족이 겹치며 가격보다 격차 확대가 먼저 나타날 수 있다는 전망이 나왔다.',
-        'primary_category': 'assets',
-        'subcategory': 'real-estate',
+        'title': '나스닥, AI 투자 기대감에 사상 최고치 근접',
+        'summary': '미국 기술주가 AI 인프라 투자 확대 기대를 반영하며 강세를 보였다.',
+        'content': 'S&P500과 나스닥은 빅테크 실적 전망과 AI 서버 투자 확대 기대 속에 동반 상승했다.',
+        'primary_category': 'stock',
+        'subcategory': 'stock-overseas',
         'published_at': '2026-04-14',
         'original_url': 'https://example.com/articles/A002',
         'score_weight': 0.91,
     },
     {
         'id': 'A003',
-        'title': '전국 매매 0.05%·전세 0.09% 상승',
-        'summary': '전국 주간 주택 가격이 소폭 상승했고 전세 상승률이 매매를 웃돌았다.',
-        'content': '한국부동산원 집계 결과 전국 매매가격은 0.05%, 전세가격은 0.09% 상승했다.',
-        'primary_category': 'macro',
-        'subcategory': 'rates-fx',
+        'title': '비트코인 현물 ETF 자금 유입 재개',
+        'summary': '기관 자금 유입이 회복되며 비트코인 가격이 다시 반등했다.',
+        'content': '비트코인 현물 ETF에는 순유입이 재개됐고 이더리움과 주요 알트코인도 동반 상승했다.',
+        'primary_category': 'crypto',
+        'subcategory': 'crypto-bitcoin',
         'published_at': '2026-04-14',
         'original_url': 'https://example.com/articles/A003',
         'score_weight': 0.84,
     },
     {
         'id': 'A004',
-        'title': '부동산감독원 설립 및 청년 주거지원 강화',
-        'summary': '정부가 부동산감독원 설립과 청년 주거지원 강화를 포함한 대책을 검토 중이다.',
-        'content': '정부는 시장 교란 행위 대응과 청년층 주거 안정을 위해 감독 기능 강화와 지원책 확대를 추진하고 있다.',
-        'primary_category': 'policy',
-        'subcategory': 'regulation',
+        'title': '서울 아파트 전세 매물 부족 심화',
+        'summary': '서울 주요 지역에서 전세 매물이 줄고 가격 상승 압력이 커지고 있다.',
+        'content': '아파트 입주 물량 감소와 금리 인하 기대가 겹치며 전세와 월세 시장의 불안이 이어지고 있다.',
+        'primary_category': 'realestate',
+        'subcategory': 'realestate-lease',
         'published_at': '2026-04-14',
         'original_url': 'https://example.com/articles/A004',
         'score_weight': 0.78,
     },
     {
         'id': 'A005',
-        'title': '국토부, 공동주택 공시가격 열람 및 의견 청취',
-        'summary': '국토부가 공동주택 공시가격(안) 열람과 의견 제출을 받고 있다.',
-        'content': '국토교통부는 공동주택 공시가격에 대한 국민 의견을 청취하기 위해 열람 기간을 운영한다.',
-        'primary_category': 'policy',
-        'subcategory': 'fiscal',
+        'title': '국회, 청년 주거지원 확대 법안 논의',
+        'summary': '여야가 청년층 주거비 부담 완화를 위한 정책 패키지를 논의하고 있다.',
+        'content': '국회 상임위는 전세 보증과 월세 세액공제 확대 등 주거 지원 정책을 검토했다.',
+        'primary_category': 'politics',
+        'subcategory': 'politics-policy',
         'published_at': '2026-04-14',
         'original_url': 'https://example.com/articles/A005',
         'score_weight': 0.72,
     },
     {
         'id': 'A006',
-        'title': '삼성전자·SK하이닉스, HBM 증설 경쟁 본격화',
-        'summary': 'HBM 수요 확대에 맞춰 메모리 업계의 증설 경쟁이 빨라지고 있다.',
-        'content': 'AI 서버 투자 확대와 고대역폭 메모리 수요 증가로 국내 반도체 업계의 설비 투자와 고객사 확보 경쟁이 심화하고 있다.',
-        'primary_category': 'sectors',
-        'subcategory': 'semiconductor',
+        'title': '환율 안정에도 기준금리 경로 불확실',
+        'summary': '달러-원 환율은 안정됐지만 물가와 성장률 전망이 금리 결정을 어렵게 하고 있다.',
+        'content': '한국은행은 물가 둔화와 GDP 성장률, 금융시장 변동성을 함께 보며 통화정책을 조정할 전망이다.',
+        'primary_category': 'economy',
+        'subcategory': 'economy-finance',
         'published_at': '2026-04-15',
         'original_url': 'https://example.com/articles/A006',
         'score_weight': 0.88,
     },
     {
         'id': 'A007',
-        'title': '현대차, 중국 전략 전기차 공개',
-        'summary': '현대차가 중국 시장 맞춤형 전기차를 공개하며 판매 반등을 노린다.',
-        'content': '중국 전기차 경쟁 심화 속에서 현대차가 현지 전략 모델과 배터리 공급망 최적화를 통해 판매 회복을 추진하고 있다.',
-        'primary_category': 'sectors',
-        'subcategory': 'mobility',
+        'title': 'AI 반도체 스타트업 투자 경쟁 확대',
+        'summary': '빅테크와 벤처캐피털이 AI 반도체 스타트업 투자에 속도를 내고 있다.',
+        'content': 'AI 추론 수요가 늘면서 반도체 설계 스타트업과 데이터센터 인프라 기업에 자금이 몰리고 있다.',
+        'primary_category': 'tech',
+        'subcategory': 'tech-ai',
         'published_at': '2026-04-15',
         'original_url': 'https://example.com/articles/A007',
         'score_weight': 0.83,
     },
+    {
+        'id': 'A008',
+        'title': 'K-POP 월드투어, 북미 공연 추가 매진',
+        'summary': 'K-POP 대표 그룹의 월드투어 북미 추가 공연이 빠르게 매진됐다.',
+        'content': '음반 판매와 공연 수익이 함께 늘며 엔터테인먼트 기업 실적 기대가 커지고 있다.',
+        'primary_category': 'entertainment',
+        'subcategory': 'entertainment-kpop',
+        'published_at': '2026-04-15',
+        'original_url': 'https://example.com/articles/A008',
+        'score_weight': 0.80,
+    },
+    {
+        'id': 'A009',
+        'title': '프로야구 개막 효과에 스포츠 중계권 경쟁 가열',
+        'summary': '야구 흥행과 온라인 시청 증가로 스포츠 중계권 가치가 높아지고 있다.',
+        'content': '프로야구와 축구, e스포츠를 포함한 스포츠 콘텐츠 플랫폼 경쟁이 치열해지고 있다.',
+        'primary_category': 'sports',
+        'subcategory': 'sports-baseball',
+        'published_at': '2026-04-15',
+        'original_url': 'https://example.com/articles/A009',
+        'score_weight': 0.79,
+    },
+    {
+        'id': 'A010',
+        'title': '미국과 중국, EU 관세 협상 앞두고 신경전',
+        'summary': '미국·중국·EU가 무역 협상을 앞두고 관세와 공급망 이슈를 조율하고 있다.',
+        'content': '글로벌 무역 갈등은 아시아 수출 기업과 유럽 제조업에도 영향을 줄 수 있다는 전망이 나온다.',
+        'primary_category': 'global',
+        'subcategory': 'global-us',
+        'published_at': '2026-04-15',
+        'original_url': 'https://example.com/articles/A010',
+        'score_weight': 0.82,
+    },
+    {
+        'id': 'A011',
+        'title': '건강 여행 결합한 웰니스 상품 인기',
+        'summary': '건강 관리와 여행 경험을 결합한 웰니스 상품 수요가 늘고 있다.',
+        'content': '여행업계는 맛집, 숙박, 헬스케어 서비스를 묶은 라이프스타일 상품을 확대하고 있다.',
+        'primary_category': 'lifestyle',
+        'subcategory': 'lifestyle-travel',
+        'published_at': '2026-04-15',
+        'original_url': 'https://example.com/articles/A011',
+        'score_weight': 0.77,
+    },
 ]
 
-DEFAULT_PRIMARY = ['sectors', 'macro', 'assets', 'policy']
-
+DEFAULT_PRIMARY = ['stock', 'crypto', 'realestate', 'economy', 'tech']
 
 def _sync_categories(session: Session) -> None:
     desired = {category['slug']: category for category in CATEGORY_SEED}
@@ -153,12 +274,18 @@ def _sync_categories(session: Session) -> None:
     for slug, category in desired.items():
         category_model = existing.get(slug)
         if category_model is None:
-            category_model = CategoryModel(slug=slug, name=category['name'], description=category['description'])
+            category_model = CategoryModel(
+                slug=slug,
+                name=category['name'],
+                description=category['description'],
+                keywords_json=json.dumps(category.get('keywords', []), ensure_ascii=False),
+            )
             session.add(category_model)
             session.flush()
         else:
             category_model.name = category['name']
             category_model.description = category['description']
+            category_model.keywords_json = json.dumps(category.get('keywords', []), ensure_ascii=False)
 
         existing_subs = {sub.slug: sub for sub in category_model.subcategories}
         desired_subs = {sub['slug']: sub for sub in category['subcategories']}

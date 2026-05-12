@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
@@ -26,7 +28,7 @@ def test_seed_database_reconciles_existing_categories_and_demo_user_defaults(mon
     monkeypatch.setattr('app.infrastructure.seed.load_summarized_articles', lambda *_args, **_kwargs: [])
     session = make_session()
 
-    old_category = CategoryModel(slug='economy', name='경제', description='old')
+    old_category = CategoryModel(slug='legacy', name='레거시', description='old')
     session.add(old_category)
     session.flush()
     session.add(SubcategoryModel(category_id=old_category.id, slug='stocks', name='주식시장', description='old sub'))
@@ -37,8 +39,22 @@ def test_seed_database_reconciles_existing_categories_and_demo_user_defaults(mon
     seed_database(session)
 
     categories = session.scalars(select(CategoryModel).order_by(CategoryModel.slug)).all()
-    assert [category.slug for category in categories] == ['assets', 'macro', 'policy', 'sectors']
-    assert session.scalar(select(CategoryModel.id).where(CategoryModel.slug == 'economy')) is None
+    assert [category.slug for category in categories] == [
+        'crypto',
+        'economy',
+        'entertainment',
+        'global',
+        'lifestyle',
+        'politics',
+        'realestate',
+        'sports',
+        'stock',
+        'tech',
+    ]
+    assert session.scalar(select(CategoryModel.id).where(CategoryModel.slug == 'legacy')) is None
+    stock = session.scalar(select(CategoryModel).where(CategoryModel.slug == 'stock'))
+    assert stock is not None
+    assert json.loads(stock.keywords_json) == ['코스피', '나스닥', 'S&P500']
 
     demo_user = session.get(UserPreferenceModel, 'demo-user')
     assert demo_user is not None
@@ -65,8 +81,8 @@ def test_seed_database_includes_committed_summarizer_rows_and_mock_fallback(monk
         'title': '환율 급등에 수출기업 비용 부담 확대',
         'summary': '원화 약세로 원자재 수입 비용과 환헤지 비용이 동시에 늘고 있다.',
         'content': '환율 변동성이 커지며 수출입 기업의 자금 운용 부담이 확대되고 있다.',
-        'primary_category': 'macro',
-        'subcategory': 'rates-fx',
+        'primary_category': 'economy',
+        'subcategory': 'economy-finance',
         'published_at': '2026-04-24',
         'original_url': 'https://example.com/summarizer/001',
         'score_weight': 0.97,

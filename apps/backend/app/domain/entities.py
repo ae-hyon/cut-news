@@ -28,6 +28,7 @@ class Category(DomainModel):
     slug: str
     name: str
     description: str
+    keywords: list[str] = Field(default_factory=list)
     subcategories: list[Subcategory] = Field(default_factory=list)
 
 

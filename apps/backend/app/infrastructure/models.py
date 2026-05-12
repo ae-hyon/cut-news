@@ -15,6 +15,7 @@ class CategoryModel(Base):
     slug: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(100))
     description: Mapped[str] = mapped_column(String(255), default='')
+    keywords_json: Mapped[str] = mapped_column(Text, default='[]')
 
     subcategories: Mapped[list['SubcategoryModel']] = relationship(back_populates='category', cascade='all, delete-orphan')
 

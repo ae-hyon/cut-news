@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 
 from sqlalchemy import delete, select
@@ -30,12 +31,23 @@ def _to_subcategory(model: SubcategoryModel, category_slug: str) -> Subcategory:
     )
 
 
+def _category_keywords(model: CategoryModel) -> list[str]:
+    try:
+        payload = json.loads(model.keywords_json or '[]')
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(payload, list):
+        return []
+    return [str(item) for item in payload]
+
+
 def _to_category(model: CategoryModel) -> Category:
     return Category(
         id=model.id,
         slug=model.slug,
         name=model.name,
         description=model.description,
+        keywords=_category_keywords(model),
         subcategories=[_to_subcategory(sub, model.slug) for sub in sorted(model.subcategories, key=lambda item: item.id)],
     )
 

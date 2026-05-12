@@ -42,6 +42,7 @@ class CategoryResponseSchema(BaseModel):
     slug: str
     name: str
     description: str
+    keywords: list[str]
     subcategories: list[SubcategoryResponseSchema]
 
     @classmethod
@@ -51,6 +52,7 @@ class CategoryResponseSchema(BaseModel):
             slug=entity.slug,
             name=entity.name,
             description=entity.description,
+            keywords=entity.keywords,
             subcategories=[SubcategoryResponseSchema.from_entity(item) for item in entity.subcategories],
         )
 

@@ -116,7 +116,7 @@ class FeedService:
     def _resolve_preference(self, user_id: str) -> tuple[PreferenceMode, list[str], list[str]]:
         preference = self.preference_repository.get(user_id)
         if not preference:
-            return PreferenceMode.WIDE, ['sectors', 'macro', 'assets', 'policy'], []
+            return PreferenceMode.WIDE, ['stock', 'crypto', 'realestate', 'economy', 'tech'], []
         return preference.mode, preference.primary_categories, preference.subcategories
 
     @staticmethod
