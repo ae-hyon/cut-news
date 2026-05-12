@@ -37,7 +37,7 @@ def test_hermit_cli_article_classifier_parses_structured_response(tmp_path: Path
         return subprocess.CompletedProcess(
             args=args,
             returncode=0,
-            stdout='^D\b\b{"keep": true, "primary_category": "macro", "subcategory": "supply-chain", "confidence": 0.91, "reason": "공급망 재편 기사"}\n',
+            stdout='^D\b\b{"keep": true, "primary_category": "economy", "subcategory": "economy-trade", "confidence": 0.91, "reason": "공급망 재편 기사"}\n',
             stderr='',
         )
 
@@ -67,8 +67,8 @@ def test_hermit_cli_article_classifier_parses_structured_response(tmp_path: Path
     assert 'glm-5.1' in captured_args
     assert decision == ArticleClassificationDecision(
         keep=True,
-        primary_category='macro',
-        subcategory='supply-chain',
+        primary_category='economy',
+        subcategory='economy-trade',
         confidence=0.91,
         reason='공급망 재편 기사',
     )

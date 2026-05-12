@@ -136,18 +136,64 @@ AUTH_COOKIE_SAMESITE=lax
 현재 환경에 필요한 주요 패키지:
 
 ```bash
+uv sync --all-extras
+```
+
+수동 설치가 필요한 경우:
+
+```bash
 python3.11 -m pip install \
-  'fastapi>=0.101,<0.102' \
-  'uvicorn>=0.23,<1' \
-  'httpx>=0.24,<0.25' \
+  'fastapi>=0.115,<0.116' \
+  'uvicorn[standard]>=0.32,<1' \
+  'httpx>=0.28,<0.29' \
   'sqlalchemy>=2,<3' \
   'psycopg[binary]>=3.2,<4' \
-  'pydantic-settings>=2,<3' \
+  'pydantic-settings>=2.6,<3' \
   'alembic>=1.13,<2' \
   'PyJWT>=2.8,<3'
 ```
 
-## Run locally
+## Run locally with Docker
+
+새 환경에서는 Docker Compose만으로 Postgres와 backend API를 함께 실행할 수 있습니다.
+
+```bash
+cd apps/backend
+docker compose up --build
+```
+
+검증:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/openapi.json
+curl 'http://127.0.0.1:8000/v1/users/demo-user/feed'
+curl 'http://127.0.0.1:8000/v1/users/demo-user/scraps'
+```
+
+`docker compose up --build`로 뜨는 DB는 startup migration 이후 seed가 자동 실행됩니다.
+프론트 테스트용으로 별도 크롤링/수집 작업을 실행하지 않아도 바로 사용할 수 있습니다.
+기본 seed에는 git에 포함된 `apps/summarizer/data` 샘플 기사와 backend 내장 mock 기사, `demo-user` 관심사, 예시 스크랩 2개가 포함됩니다.
+
+Swagger UI:
+
+```bash
+open http://127.0.0.1:8000/docs
+```
+
+중지:
+
+```bash
+docker compose down
+```
+
+DB volume까지 초기화하려면:
+
+```bash
+docker compose down -v
+```
+
+## Run locally without Docker
 
 1) Postgres 실행
 

@@ -47,8 +47,8 @@ def test_load_summarized_articles_builds_backend_article_rows_from_summarizer_ou
     assert rows[0].title == '시장 금리 하락에 증권주 강세'
     assert rows[0].summary == '시장 금리 하락 영향으로 증권주가 강세를 보였습니다.'
     assert rows[0].content.startswith('시장 금리가 하락하면서')
-    assert rows[0].primary_category == 'assets'
-    assert rows[0].subcategory == 'domestic-stocks'
+    assert rows[0].primary_category == 'stock'
+    assert rows[0].subcategory == 'stock-domestic'
     assert rows[0].published_at == '2026-04-28'
     assert rows[0].original_url == 'https://example.com/economy/1'
     assert rows[0].score_weight == 0.82
@@ -192,8 +192,8 @@ def test_load_summarized_articles_prefers_trade_category_map_over_loose_energy_k
     rows = load_summarized_articles(dataset)
 
     assert len(rows) == 1
-    assert rows[0].primary_category == 'macro'
-    assert rows[0].subcategory == 'supply-chain'
+    assert rows[0].primary_category == 'economy'
+    assert rows[0].subcategory == 'economy-trade'
 
 
 def test_load_summarized_articles_skips_economy_it_snapshot_without_market_or_industry_signal(tmp_path: Path):
@@ -281,8 +281,8 @@ def test_load_summarized_articles_uses_classifier_fallback_for_ambiguous_economi
         assert summary == '동남아 생산기지 이동으로 공급망과 해운 운임 변동성이 커지고 있다.'
         return ArticleClassificationDecision(
             keep=True,
-            primary_category='macro',
-            subcategory='supply-chain',
+            primary_category='economy',
+            subcategory='economy-trade',
             confidence=0.92,
             reason='공급망/해운 운임 기사',
         )
@@ -291,8 +291,8 @@ def test_load_summarized_articles_uses_classifier_fallback_for_ambiguous_economi
 
     assert calls == [('055', '동남아 물류 재편에 해운 운임 변동성 확대')]
     assert len(rows) == 1
-    assert rows[0].primary_category == 'macro'
-    assert rows[0].subcategory == 'supply-chain'
+    assert rows[0].primary_category == 'economy'
+    assert rows[0].subcategory == 'economy-trade'
 
 
 def test_load_summarized_articles_reuses_cached_classifier_result_without_recalling_classifier(tmp_path: Path):
@@ -300,23 +300,23 @@ def test_load_summarized_articles_reuses_cached_classifier_result_without_recall
     write_json(
         dataset / 'json' / '056.json',
         {
-            'title': '원자재 조달선 다변화에 제조사 대응 분주',
+            'title': '새로운 경영 지표 놓고 기업 대응 분주',
             'date': '2026-04-24',
             'author': '박기자',
             'url': 'https://example.com/economy/056',
-            'content': '제조사들이 원자재 조달선을 다변화하며 공급망 리스크에 대응하고 있다는 기사다.',
+            'content': '기업들이 새로운 경영 지표와 외부 환경 변화에 대응하고 있다는 기사다.',
         },
     )
     write_json(
         dataset / 'summarized' / '056.json',
         {
-            'headline_34': '원자재 조달선 다변화에 제조사 대응 분주',
-            'headline_58': '제조사들이 원자재 조달선 다변화에 나서고 있다',
-            'headline_89': '제조사들이 원자재 조달선 다변화와 재고 재조정으로 공급망 리스크에 대응하고 있다',
-            'summary': '제조사들이 원자재 조달선 다변화로 공급망 리스크에 대응하고 있다.',
+            'headline_34': '새로운 경영 지표 놓고 기업 대응 분주',
+            'headline_58': '기업들이 새로운 경영 지표와 환경 변화에 대응하고 있다',
+            'headline_89': '기업들이 새로운 경영 지표와 외부 환경 변화에 맞춰 사업 전략을 재조정하고 있다',
+            'summary': '기업들이 새로운 경영 지표와 환경 변화에 대응하고 있다.',
         },
     )
-    write_json(dataset / 'verified' / '056.json', {'verdict': 'clean', '_article_id': '056', '_title': '원자재 조달선 다변화에 제조사 대응 분주'})
+    write_json(dataset / 'verified' / '056.json', {'verdict': 'clean', '_article_id': '056', '_title': '새로운 경영 지표 놓고 기업 대응 분주'})
     write_json(dataset / 'category_map.json', [{'article_id': '056', 'primary_category': '경제', 'subcategory': '일반'}])
 
     call_count = 0
@@ -326,8 +326,8 @@ def test_load_summarized_articles_reuses_cached_classifier_result_without_recall
         call_count += 1
         return ArticleClassificationDecision(
             keep=True,
-            primary_category='macro',
-            subcategory='supply-chain',
+            primary_category='economy',
+            subcategory='economy-trade',
             confidence=0.88,
             reason='공급망 기사',
         )
@@ -466,8 +466,8 @@ def test_load_summarized_articles_report_tracks_quality_gate_skips_and_classific
     def classifier(**_kwargs) -> ArticleClassificationDecision:
         return ArticleClassificationDecision(
             keep=True,
-            primary_category='macro',
-            subcategory='supply-chain',
+            primary_category='economy',
+            subcategory='economy-trade',
             confidence=0.92,
             reason='공급망 기사',
         )
@@ -485,10 +485,16 @@ def test_repo_summarizer_dataset_maps_to_supported_backend_categories():
     rows = load_summarized_articles(Path(__file__).resolve().parents[2] / 'summarizer' / 'data')
 
     supported = {
-        'sectors': {'semiconductor', 'mobility', 'bio'},
-        'macro': {'rates-fx', 'energy', 'supply-chain'},
-        'assets': {'domestic-stocks', 'global-stocks', 'real-estate'},
-        'policy': {'fiscal', 'central-bank', 'regulation'},
+        'stock': {'stock-domestic', 'stock-overseas', 'stock-etf', 'stock-unlisted'},
+        'crypto': {'crypto-bitcoin', 'crypto-altcoin', 'crypto-defi', 'crypto-nft'},
+        'realestate': {'realestate-apt', 'realestate-subscription', 'realestate-lease', 'realestate-commercial'},
+        'politics': {'politics-domestic', 'politics-diplomacy', 'politics-policy'},
+        'economy': {'economy-macro', 'economy-finance', 'economy-trade'},
+        'tech': {'tech-ai', 'tech-semiconductor', 'tech-startup', 'tech-bigtech'},
+        'entertainment': {'entertainment-kpop', 'entertainment-drama', 'entertainment-movie'},
+        'sports': {'sports-soccer', 'sports-baseball', 'sports-basketball', 'sports-esports'},
+        'global': {'global-us', 'global-china', 'global-europe', 'global-asia'},
+        'lifestyle': {'lifestyle-health', 'lifestyle-travel', 'lifestyle-food'},
     }
     for row in rows:
         assert row.primary_category in supported
