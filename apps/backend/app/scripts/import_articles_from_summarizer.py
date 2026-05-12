@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.application.services.article_classifier_service import build_article_classifier
-from app.application.services.article_ingest_service import ArticleClassifier, ArticleIngestRow, load_summarized_articles
+from app.application.services.article_ingest_service import ArticleClassifier, ArticleIngestRow, load_summarized_articles_report
 from app.common.config import settings
 from app.infrastructure.database import SessionLocal, run_migrations
 from app.infrastructure.models import ArticleModel
@@ -24,6 +24,39 @@ class ImportStats:
     @property
     def total(self) -> int:
         return self.inserted + self.updated + self.deleted + self.skipped
+
+
+@dataclass(frozen=True)
+class ImportObservability:
+    quality_gate_skip_counts: dict[str, int]
+    classification_source_counts: dict[str, int]
+    dropped_reason_counts: dict[str, int]
+
+
+@dataclass(frozen=True)
+class ImportResult:
+    stats: ImportStats
+    observability: ImportObservability
+
+    @property
+    def inserted(self) -> int:
+        return self.stats.inserted
+
+    @property
+    def updated(self) -> int:
+        return self.stats.updated
+
+    @property
+    def deleted(self) -> int:
+        return self.stats.deleted
+
+    @property
+    def skipped(self) -> int:
+        return self.stats.skipped
+
+    @property
+    def total(self) -> int:
+        return self.stats.total
 
 
 def _apply_article_row(model: ArticleModel, row: ArticleIngestRow) -> None:
@@ -53,8 +86,8 @@ def import_summarized_articles(
     data_dir: Path,
     *,
     classifier: ArticleClassifier | None = None,
-) -> ImportStats:
-    rows = load_summarized_articles(data_dir, classifier=classifier)
+) -> ImportResult:
+    rows, report = load_summarized_articles_report(data_dir, classifier=classifier)
     allow_prune_stale = _can_prune_stale(data_dir)
     inserted = 0
     updated = 0
@@ -83,7 +116,13 @@ def import_summarized_articles(
         deleted += 1
 
     session.commit()
-    return ImportStats(inserted=inserted, updated=updated, deleted=deleted, skipped=0)
+    stats = ImportStats(inserted=inserted, updated=updated, deleted=deleted, skipped=0)
+    observability = ImportObservability(
+        quality_gate_skip_counts=dict(report.get('quality_gate_skip_counts', {})),
+        classification_source_counts=dict(report.get('classification_source_counts', {})),
+        dropped_reason_counts=dict(report.get('dropped_reason_counts', {})),
+    )
+    return ImportResult(stats=stats, observability=observability)
 
 
 def main() -> None:
@@ -92,10 +131,22 @@ def main() -> None:
     if settings.migrate_on_startup:
         run_migrations()
     with SessionLocal() as session:
-        stats = import_summarized_articles(session, data_dir, classifier=classifier)
+        result = import_summarized_articles(session, data_dir, classifier=classifier)
+    stats = result.stats
     print(
         'summarizer article import complete: '
         f'inserted={stats.inserted} updated={stats.updated} deleted={stats.deleted} skipped={stats.skipped}'
+    )
+    print(
+        'summarizer article import observability: ' + json.dumps(
+            {
+                'quality_gate_skip_counts': result.observability.quality_gate_skip_counts,
+                'classification_source_counts': result.observability.classification_source_counts,
+                'dropped_reason_counts': result.observability.dropped_reason_counts,
+            },
+            ensure_ascii=False,
+            separators=(',', ':'),
+        )
     )
 
 

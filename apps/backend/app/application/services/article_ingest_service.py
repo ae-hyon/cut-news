@@ -31,6 +31,12 @@ class ArticleClassificationDecision(BaseModel):
     reason: str = ''
 
 
+class ArticleDerivedCategory(BaseModel):
+    primary_category: str
+    subcategory: str
+    source: str
+
+
 class ArticleClassifier(Protocol):
     def __call__(
         self,
@@ -186,10 +192,10 @@ def _published_at(article_payload: dict) -> str:
     return str(article_payload.get('date') or '').strip()[:10]
 
 
-def _passes_quality_gate(article_payload: dict, summary_payload: dict, verification_payload: dict) -> bool:
+def _quality_gate_failure_reason(article_payload: dict, summary_payload: dict, verification_payload: dict) -> str | None:
     verdict = str(verification_payload.get('verdict') or '').strip().lower()
     if verdict != 'clean':
-        return False
+        return 'verdict_not_clean'
 
     confidence = verification_payload.get('confidence')
     if not isinstance(confidence, int | float):
@@ -198,16 +204,18 @@ def _passes_quality_gate(article_payload: dict, summary_payload: dict, verificat
     if str(article_payload.get('content_source') or '').strip().lower() == 'description':
         min_confidence = MIN_DESCRIPTION_SOURCE_VERIFICATION_CONFIDENCE
     if float(confidence) < min_confidence:
-        return False
+        if min_confidence == MIN_DESCRIPTION_SOURCE_VERIFICATION_CONFIDENCE:
+            return 'description_low_confidence'
+        return 'low_confidence'
 
     violations = summary_payload.get('_violations')
     if isinstance(violations, list) and any(str(item).strip() for item in violations):
-        return False
+        return 'violations'
 
     retry_count = summary_payload.get('_retry_count')
     if isinstance(retry_count, int | float) and int(retry_count) > MAX_SUMMARY_RETRY_COUNT:
-        return False
-    return True
+        return 'too_many_retries'
+    return None
 
 
 def _classify_from_keywords(title: str, content: str) -> tuple[str, str] | None:
@@ -311,7 +319,7 @@ def _derive_categories(
     summary: str,
     original_url: str,
     min_confidence: float,
-) -> tuple[str, str] | None:
+) -> ArticleDerivedCategory | None:
     title = str(article_payload.get('title') or '')
     content = str(article_payload.get('content') or '')
     raw_primary = str(category_payload.get('primary_category') or '')
@@ -321,19 +329,18 @@ def _derive_categories(
         return None
 
     primary = _normalise_primary(raw_primary)
-    subcategory = _normalise_subcategory(raw_subcategory, primary)
     if primary not in SUPPORTED_SUBCATEGORIES:
         return None
 
     reliable_pair = RELIABLE_SOURCE_CATEGORY_BY_SUBCATEGORY.get(raw_subcategory)
     if reliable_pair:
-        return reliable_pair
+        return ArticleDerivedCategory(primary_category=reliable_pair[0], subcategory=reliable_pair[1], source='reliable_source')
 
     classified = _classify_from_keywords(title, content)
     if classified:
-        return classified
+        return ArticleDerivedCategory(primary_category=classified[0], subcategory=classified[1], source='keyword')
 
-    return _maybe_classify_with_fallback(
+    fallback = _maybe_classify_with_fallback(
         data_dir=data_dir,
         classifier=classifier,
         classifier_cache=classifier_cache,
@@ -346,37 +353,57 @@ def _derive_categories(
         raw_subcategory=raw_subcategory,
         min_confidence=min_confidence,
     )
+    if fallback is None:
+        return None
+    return ArticleDerivedCategory(primary_category=fallback[0], subcategory=fallback[1], source='classifier_fallback')
 
 
-def load_summarized_articles(
+def _increment(counter: dict[str, int], key: str) -> None:
+    counter[key] = counter.get(key, 0) + 1
+
+
+def load_summarized_articles_report(
     data_dir: Path,
     *,
     classifier: ArticleClassifier | None = None,
     classifier_min_confidence: float = 0.75,
-) -> list[ArticleIngestRow]:
+) -> tuple[list[ArticleIngestRow], dict[str, dict[str, int]]]:
     json_dir = data_dir / 'json'
     summarized_dir = data_dir / 'summarized'
     verified_dir = data_dir / 'verified'
+    empty_report = {
+        'quality_gate_skip_counts': {},
+        'classification_source_counts': {},
+        'dropped_reason_counts': {},
+    }
     if not json_dir.exists() or not summarized_dir.exists() or not verified_dir.exists():
-        return []
+        return [], empty_report
 
     categories = _category_index(data_dir)
     scores = _score_index(data_dir)
     classifier_cache = _load_classifier_cache(data_dir)
     rows: list[ArticleIngestRow] = []
+    quality_gate_skip_counts: dict[str, int] = {}
+    classification_source_counts: dict[str, int] = {}
+    dropped_reason_counts: dict[str, int] = {}
     for article_path in sorted(json_dir.glob('*.json')):
         article_id = article_path.stem
         summary_path = summarized_dir / f'{article_id}.json'
         verification_path = verified_dir / f'{article_id}.json'
         if not summary_path.exists() or not verification_path.exists():
+            _increment(dropped_reason_counts, 'missing_summary_or_verification')
             continue
 
         article_payload = _read_json(article_path)
         summary_payload = _read_json(summary_path)
         verification_payload = _read_json(verification_path)
         if not isinstance(article_payload, dict) or not isinstance(summary_payload, dict) or not isinstance(verification_payload, dict):
+            _increment(dropped_reason_counts, 'invalid_payload')
             continue
-        if not _passes_quality_gate(article_payload, summary_payload, verification_payload):
+        quality_gate_reason = _quality_gate_failure_reason(article_payload, summary_payload, verification_payload)
+        if quality_gate_reason is not None:
+            _increment(quality_gate_skip_counts, quality_gate_reason)
+            _increment(dropped_reason_counts, f'quality_gate_{quality_gate_reason}')
             continue
 
         summary = str(summary_payload.get('summary') or '').strip()
@@ -385,6 +412,7 @@ def load_summarized_articles(
         original_url = str(article_payload.get('url') or '').strip()
         published_at = _published_at(article_payload)
         if not (summary and title and content and original_url and published_at):
+            _increment(dropped_reason_counts, 'missing_required_fields')
             continue
 
         category_payload = categories.get(article_id, {})
@@ -400,8 +428,9 @@ def load_summarized_articles(
             min_confidence=classifier_min_confidence,
         )
         if derived is None:
+            _increment(dropped_reason_counts, 'category_unresolved')
             continue
-        primary, subcategory = derived
+        _increment(classification_source_counts, derived.source)
         score_weight = _score_weight(scores.get(article_id, {}))
         rows.append(
             ArticleIngestRow(
@@ -409,11 +438,29 @@ def load_summarized_articles(
                 title=title,
                 summary=summary,
                 content=content,
-                primary_category=primary,
-                subcategory=subcategory,
+                primary_category=derived.primary_category,
+                subcategory=derived.subcategory,
                 published_at=published_at,
                 original_url=original_url,
                 score_weight=score_weight,
             )
         )
+    return rows, {
+        'quality_gate_skip_counts': quality_gate_skip_counts,
+        'classification_source_counts': classification_source_counts,
+        'dropped_reason_counts': dropped_reason_counts,
+    }
+
+
+def load_summarized_articles(
+    data_dir: Path,
+    *,
+    classifier: ArticleClassifier | None = None,
+    classifier_min_confidence: float = 0.75,
+) -> list[ArticleIngestRow]:
+    rows, _report = load_summarized_articles_report(
+        data_dir,
+        classifier=classifier,
+        classifier_min_confidence=classifier_min_confidence,
+    )
     return rows

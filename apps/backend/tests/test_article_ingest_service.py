@@ -6,6 +6,7 @@ from pathlib import Path
 from app.application.services.article_ingest_service import (
     ArticleClassificationDecision,
     load_summarized_articles,
+    load_summarized_articles_report,
 )
 
 
@@ -423,6 +424,61 @@ def test_load_summarized_articles_skips_summary_after_too_many_retries(tmp_path:
     write_json(dataset / 'category_map.json', [{'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'}])
 
     assert load_summarized_articles(dataset) == []
+
+
+def test_load_summarized_articles_report_tracks_quality_gate_skips_and_classification_provenance(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / '001.json',
+        {'title': '시장 금리 하락에 증권주 강세', 'date': '2026-04-28', 'url': 'https://example.com/1', 'content': '본문'},
+    )
+    write_json(
+        dataset / 'summarized' / '001.json',
+        {
+            'headline_34': '시장 금리 하락에 증권주 강세',
+            'headline_58': '시장 금리가 하락하면서 증권주가 일제히 강세를 보였다',
+            'headline_89': '시장 금리가 하락하면서 증권주가 일제히 강세를 보였고 투자자들은 정책 변화를 주시하고 있다',
+            'summary': '시장 금리 하락 영향으로 증권주가 강세를 보였습니다.',
+        },
+    )
+    write_json(dataset / 'verified' / '001.json', {'verdict': 'clean', 'confidence': 61, '_article_id': '001', '_title': '시장 금리 하락에 증권주 강세'})
+    write_json(dataset / 'category_map.json', [{'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'}])
+
+    write_json(
+        dataset / 'json' / '002.json',
+        {'title': '동남아 물류 재편에 해운 운임 변동성 확대', 'date': '2026-04-28', 'url': 'https://example.com/2', 'content': '동남아 생산기지 이동과 항만 적체 완화로 해운 운임 변동성이 커지고 있다.'},
+    )
+    write_json(
+        dataset / 'summarized' / '002.json',
+        {
+            'headline_34': '동남아 물류 재편에 해운 운임 변동성 확대',
+            'headline_58': '동남아 생산기지 이동으로 해운 운임 변동성이 커지고 있다',
+            'headline_89': '동남아 생산기지 이동과 항만 적체 완화로 해운 운임 변동성이 커지며 공급망 재편 압력이 확대되고 있다',
+            'summary': '동남아 생산기지 이동으로 공급망과 해운 운임 변동성이 커지고 있다.',
+        },
+    )
+    write_json(dataset / 'verified' / '002.json', {'verdict': 'clean', 'confidence': 96, '_article_id': '002', '_title': '동남아 물류 재편에 해운 운임 변동성 확대'})
+    write_json(dataset / 'category_map.json', [
+        {'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'},
+        {'article_id': '002', 'primary_category': '경제', 'subcategory': '일반'},
+    ])
+
+    def classifier(**_kwargs) -> ArticleClassificationDecision:
+        return ArticleClassificationDecision(
+            keep=True,
+            primary_category='macro',
+            subcategory='supply-chain',
+            confidence=0.92,
+            reason='공급망 기사',
+        )
+
+    rows, report = load_summarized_articles_report(dataset, classifier=classifier)
+
+    assert len(rows) == 1
+    assert rows[0].id == 'SUM-002'
+    assert report['quality_gate_skip_counts'] == {'low_confidence': 1}
+    assert report['classification_source_counts'] == {'classifier_fallback': 1}
+    assert report['dropped_reason_counts'] == {'quality_gate_low_confidence': 1}
 
 
 def test_repo_summarizer_dataset_maps_to_supported_backend_categories():

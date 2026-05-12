@@ -17,6 +17,7 @@ REPORT_PATH = DATA_DIR / 'run_report.json'
 IMPORT_STATS_PATTERN = re.compile(
     r'inserted=(?P<inserted>\d+)\s+updated=(?P<updated>\d+)\s+deleted=(?P<deleted>\d+)\s+skipped=(?P<skipped>\d+)'
 )
+IMPORT_OBSERVABILITY_PATTERN = re.compile(r'summarizer article import observability:\s*(?P<payload>\{.*\})')
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,29 @@ def parse_import_stats(output: str) -> dict[str, int]:
     if not match:
         return {'inserted': 0, 'updated': 0, 'deleted': 0, 'skipped': 0}
     return {key: int(value) for key, value in match.groupdict().items()}
+
+
+def parse_import_observability(output: str) -> dict[str, dict[str, int]]:
+    match = IMPORT_OBSERVABILITY_PATTERN.search(output)
+    if not match:
+        return {
+            'quality_gate_skip_counts': {},
+            'classification_source_counts': {},
+            'dropped_reason_counts': {},
+        }
+    try:
+        payload = json.loads(match.group('payload'))
+    except json.JSONDecodeError:
+        return {
+            'quality_gate_skip_counts': {},
+            'classification_source_counts': {},
+            'dropped_reason_counts': {},
+        }
+    return {
+        'quality_gate_skip_counts': dict(payload.get('quality_gate_skip_counts') or {}),
+        'classification_source_counts': dict(payload.get('classification_source_counts') or {}),
+        'dropped_reason_counts': dict(payload.get('dropped_reason_counts') or {}),
+    }
 
 
 def _count_files(directory: Path, pattern: str) -> int:
@@ -173,6 +197,11 @@ def run_pipeline_job(
     started_at = time.strftime('%Y-%m-%dT%H:%M:%S%z')
     steps_payload: list[dict[str, object]] = []
     import_stats = {'inserted': 0, 'updated': 0, 'deleted': 0, 'skipped': 0}
+    import_observability = {
+        'quality_gate_skip_counts': {},
+        'classification_source_counts': {},
+        'dropped_reason_counts': {},
+    }
     status = 'success'
     failed_step: str | None = None
 
@@ -183,6 +212,7 @@ def run_pipeline_job(
             _clear_category_map(repo_root)
         if step_name == 'import':
             import_stats = parse_import_stats(result.stdout)
+            import_observability = parse_import_observability(result.stdout)
         if result.status != 'success':
             status = 'failed'
             failed_step = step_name
@@ -199,6 +229,7 @@ def run_pipeline_job(
         'steps': steps_payload,
         'artifact_counts': collect_artifact_counts(data_dir),
         'import_stats': import_stats,
+        'import_observability': import_observability,
         'report_path': str(report_path),
     }
     write_run_report(report_path, payload)
