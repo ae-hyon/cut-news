@@ -6,12 +6,16 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/backend/:path*',
-        destination: 'http://localhost:8000/:path*',
+        source: '/v1/:path*',
+        destination: 'http://127.0.0.1:8000/v1/:path*',
+      },
+      {
+        source: '/health',
+        destination: 'http://127.0.0.1:8000/health',
       },
       {
         source: '/api/crawler/:path*',
-        destination: 'http://localhost:8001/:path*',
+        destination: 'http://127.0.0.1:8001/:path*',
       },
     ]
   },

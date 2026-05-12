@@ -1,9 +1,14 @@
 'use client'
 
+import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'motion/react'
 import { useOnboardingStore } from '@/stores/onboarding'
+import { useKakaoLogin } from '@/hooks/useKakaoLogin'
+import { saveUserPreference } from '@/services/authApi'
 import { CATEGORIES } from '@/constants/categories'
+import { showToast } from '@/components/Toast'
+import type { PreferenceMode } from '@/lib/types'
 
 export default function OnboardingComplete() {
   const router = useRouter()
@@ -16,6 +21,31 @@ export default function OnboardingComplete() {
 
   const isWide = userType === 'wide'
 
+  const handleLoginSuccess = useCallback(
+    async (userId: string) => {
+      try {
+        const payload = {
+          mode: (userType ?? 'wide') as PreferenceMode,
+          primary_categories: isWide
+            ? selectedCategories
+            : narrowMainCategory
+              ? [narrowMainCategory]
+              : [],
+          subcategories: isWide ? [] : selectedSubCategories,
+        }
+        await saveUserPreference(userId, payload)
+        router.push('/')
+      } catch {
+        showToast('설정 저장에 실패했어요. 다시 시도해주세요.')
+      }
+    },
+    [userType, isWide, selectedCategories, narrowMainCategory, selectedSubCategories, router]
+  )
+
+  const { startLogin, status, error, isLoading } = useKakaoLogin({
+    onSuccess: handleLoginSuccess,
+  })
+
   const selectedNames = isWide
     ? selectedCategories.map(
         (id) => CATEGORIES.find((c) => c.id === id)?.name ?? id
@@ -24,18 +54,12 @@ export default function OnboardingComplete() {
         const main = CATEGORIES.find((c) => c.id === narrowMainCategory)
         if (!main) return []
         const subNames = selectedSubCategories.map(
-          (id) =>
-            main.subcategories?.find((s) => s.id === id)?.name ?? id
+          (id) => main.subcategories?.find((s) => s.id === id)?.name ?? id
         )
         return [main.name, ...subNames]
       })()
 
   const editRoute = isWide ? '/onboarding/wide' : '/onboarding/narrow'
-
-  const handleKakaoLogin = () => {
-    // TODO: 카카오 SDK 연동
-    router.push('/')
-  }
 
   return (
     <>
@@ -87,6 +111,17 @@ export default function OnboardingComplete() {
 
       <div className="flex-1" />
 
+      {/* Error message */}
+      {error && status === 'error' && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-red-400 text-sm text-center mb-4"
+        >
+          {error}
+        </motion.p>
+      )}
+
       {/* Kakao Login CTA */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -95,18 +130,25 @@ export default function OnboardingComplete() {
         className="pb-4"
       >
         <button
-          onClick={handleKakaoLogin}
-          className="w-full py-4 rounded-lg text-base font-bold bg-[#FEE500] text-[#191919] hover:brightness-95 transition-all duration-200 flex items-center justify-center gap-2"
+          onClick={startLogin}
+          disabled={isLoading}
+          className="w-full py-4 rounded-lg text-base font-bold bg-[#FEE500] text-[#191919] hover:brightness-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M9 0.6C4.029 0.6 0 3.713 0 7.551c0 2.467 1.639 4.633 4.104 5.862l-1.04 3.858c-.09.334.291.6.564.395l4.624-3.074c.247.02.498.03.748.03 4.971 0 9-3.113 9-6.951S13.971.6 9 .6z"
-              fill="#191919"
-            />
-          </svg>
-          카카오 로그인하고 매일 블록 받아보기
+          {isLoading ? (
+            <span>로그인 중...</span>
+          ) : (
+            <>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M9 0.6C4.029 0.6 0 3.713 0 7.551c0 2.467 1.639 4.633 4.104 5.862l-1.04 3.858c-.09.334.291.6.564.395l4.624-3.074c.247.02.498.03.748.03 4.971 0 9-3.113 9-6.951S13.971.6 9 .6z"
+                  fill="#191919"
+                />
+              </svg>
+              카카오 로그인하고 매일 블록 받아보기
+            </>
+          )}
         </button>
       </motion.div>
     </>
