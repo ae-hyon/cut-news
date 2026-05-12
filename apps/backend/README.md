@@ -344,7 +344,7 @@ curl -X POST http://127.0.0.1:8000/v1/summaries \
 - `/v1/summaries`가 `../summarizer` 연동으로 정상 동작 확인
 - domain dataclass 제거, Pydantic 기반 모델로 통일 완료
 - onboarding validation: wide/narrow 규칙 및 중복 금지 contract 테스트로 검증
-- feed weighting: 선호 순서 보존, block weight 하향, article 점수+최신성 혼합 정렬, wide 4개 노출, narrow same-primary fallback 검증
+- feed weighting: 선호 순서 보존, block weight 하향, article 중요도 점수 단독 정렬, wide 4개 노출, narrow same-primary fallback 검증
 
 ## Tests
 

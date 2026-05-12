@@ -99,7 +99,7 @@ def test_wide_feed_preserves_preference_order_and_descending_weights():
     assert [block['weight'] for block in payload['blocks']] == [1.0, 0.85, 0.7]
 
 
-def test_wide_feed_prefers_recent_articles_when_scores_are_close():
+def test_wide_feed_sorts_articles_by_importance_score_without_recency_boost():
     service = build_service(
         UserPreference(
             user_id='demo-user',
@@ -112,7 +112,7 @@ def test_wide_feed_prefers_recent_articles_when_scores_are_close():
 
     payload = service.get_feed('demo-user')
 
-    assert [article.id for article in payload['blocks'][0]['articles']] == ['A5', 'A2', 'A7', 'A1']
+    assert [article.id for article in payload['blocks'][0]['articles']] == ['A2', 'A5', 'A7', 'A1']
 
 
 def test_narrow_feed_fills_same_primary_articles_when_selected_subcategories_are_short():
@@ -204,7 +204,7 @@ def test_wide_feed_excludes_articles_below_minimum_score_threshold():
 
     payload = service.get_feed('demo-user')
 
-    assert [article.id for article in payload['blocks'][0]['articles']] == ['A5', 'A2', 'A7']
+    assert [article.id for article in payload['blocks'][0]['articles']] == ['A2', 'A5', 'A7']
 
 
 def test_narrow_feed_does_not_backfill_with_articles_below_minimum_score_threshold():

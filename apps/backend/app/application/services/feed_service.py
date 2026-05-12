@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date, datetime
 from difflib import SequenceMatcher
 import re
 
@@ -12,9 +11,6 @@ from app.domain.repositories import ArticleRepository, ScrapRepository, UserPref
 
 
 class FeedService:
-    SCORE_WEIGHT_FACTOR = 0.85
-    RECENCY_WEIGHT_FACTOR = 0.15
-    RECENCY_WINDOW_DAYS = 7
     WIDE_BLOCK_ARTICLE_LIMIT = 4
     NARROW_BLOCK_ARTICLE_TARGET = 4
     DUPLICATE_TITLE_SIMILARITY = 0.72
@@ -31,39 +27,11 @@ class FeedService:
             raise NotFoundError('Article not found')
         return article
 
-    @classmethod
-    def _published_date(cls, article: Article) -> date:
-        try:
-            return datetime.strptime(article.published_at, '%Y-%m-%d').date()
-        except ValueError:
-            return date.min
-
-    @classmethod
-    def _recency_weight(cls, article: Article, newest_date: date) -> float:
-        published_date = cls._published_date(article)
-        if published_date is date.min or newest_date is date.min:
-            return 0.0
-        age_days = max((newest_date - published_date).days, 0)
-        bounded_age_days = min(age_days, cls.RECENCY_WINDOW_DAYS)
-        return round(1.0 - (bounded_age_days / cls.RECENCY_WINDOW_DAYS), 4)
-
-    @classmethod
-    def _ranking_weight(cls, article: Article, newest_date: date) -> float:
-        return round(
-            (article.score_weight * cls.SCORE_WEIGHT_FACTOR)
-            + (cls._recency_weight(article, newest_date) * cls.RECENCY_WEIGHT_FACTOR),
-            4,
-        )
-
-    @classmethod
-    def _sort_articles(cls, articles: list[Article]) -> list[Article]:
-        if not articles:
-            return []
-        newest_date = max((cls._published_date(article) for article in articles), default=date.min)
+    @staticmethod
+    def _sort_articles(articles: list[Article]) -> list[Article]:
         return sorted(
             articles,
             key=lambda article: (
-                cls._ranking_weight(article, newest_date),
                 article.score_weight,
                 article.published_at,
                 article.id,
