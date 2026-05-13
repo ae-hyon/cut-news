@@ -10,9 +10,13 @@ router = APIRouter(tags=['articles'])
 
 
 @router.get('/articles/{article_id}', response_model=ArticleDetailResponseSchema)
-def get_article(article_id: str, service: FeedService = Depends(get_feed_service)):
+def get_article(
+    article_id: str,
+    session: AuthSession = Depends(require_current_user),
+    service: FeedService = Depends(get_feed_service),
+):
     try:
-        return ArticleDetailResponseSchema.from_entity(service.get_article(article_id), service, None)
+        return ArticleDetailResponseSchema.from_entity(service.get_article(article_id), service, session.user_id)
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 

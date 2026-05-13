@@ -48,7 +48,25 @@ def build_client(session: AuthSession = CURRENT_SESSION) -> TestClient:
     return TestClient(app)
 
 
-def test_public_article_detail_does_not_include_user_scrap_state():
+def test_article_detail_requires_authenticated_user():
+    client = build_client(
+        AuthSession(
+            user_id=None,
+            session_state='anonymous',
+            onboarding_completed=False,
+            authenticated=False,
+            auth_provider='none',
+            provider_subject=None,
+        )
+    )
+
+    response = client.get('/v1/articles/A1')
+
+    assert response.status_code == 401
+    assert response.json()['detail'] == 'Authentication required'
+
+
+def test_article_detail_includes_current_users_scrap_state():
     client = build_client()
 
     response = client.get('/v1/articles/A1')
@@ -57,17 +75,6 @@ def test_public_article_detail_does_not_include_user_scrap_state():
     body = response.json()
     assert body['id'] == 'A1'
     assert body['content'] == 'full content'
-    assert body['is_scrapped'] is False
-
-
-def test_me_article_detail_includes_current_users_scrap_state():
-    client = build_client()
-
-    response = client.get('/v1/me/articles/A1')
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body['id'] == 'A1'
     assert body['is_scrapped'] is True
 
 
