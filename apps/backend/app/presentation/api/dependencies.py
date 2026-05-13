@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import Depends
+from fastapi import Cookie, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.application.auth.query_service import AuthQueryService
@@ -20,6 +20,8 @@ from app.infrastructure.repositories import (
     SqlAlchemyScrapRepository,
     SqlAlchemyUserPreferenceRepository,
 )
+from app.domain.entities import AuthSession
+from app.common.config import settings
 
 
 def get_catalog_service(db: Session = Depends(get_db)) -> CatalogService:
@@ -52,6 +54,19 @@ def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
             token_service=token_service,
         ),
     )
+
+
+def get_current_session(
+    annoyingcap_access_token: str | None = Cookie(default=None),
+    service: AuthService = Depends(get_auth_service),
+) -> AuthSession:
+    return service.resolve_session(access_token=annoyingcap_access_token)
+
+
+def require_current_user(session: AuthSession = Depends(get_current_session)) -> AuthSession:
+    if not session.user_id or not session.authenticated:
+        raise HTTPException(status_code=401, detail='Authentication required')
+    return session
 
 
 def get_summary_gateway_service() -> SummaryGatewayService:

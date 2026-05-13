@@ -6,10 +6,10 @@ from app.application.services.summary_service import SummaryGatewayService
 from app.presentation.api.dependencies import get_summary_gateway_service
 from app.presentation.schemas import ErrorResponseSchema, SummaryRequestSchema, SummaryResponseSchema
 
-router = APIRouter(tags=['summaries'])
+router = APIRouter(tags=['internal'])
 
 
-@router.post('/summaries', response_model=SummaryResponseSchema, responses={502: {'model': ErrorResponseSchema}})
+@router.post('/internal/summaries', response_model=SummaryResponseSchema, responses={502: {'model': ErrorResponseSchema}})
 def summarize(payload: SummaryRequestSchema, service: SummaryGatewayService = Depends(get_summary_gateway_service)):
     try:
         result = service.summarize(payload)

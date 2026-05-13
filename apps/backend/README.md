@@ -10,12 +10,12 @@ Annoying Cap의 메인 서비스 백엔드입니다.
 - sibling 프로젝트 `../summarizer`의 `data/json`, `data/summarized`, `data/category_map.json`를 읽어 뉴스 홈 데이터를 seed
 - summarizer ingest는 경제성 title signal 또는 신뢰 가능한 source subcategory가 있는 기사만 backend taxonomy로 매핑하고, 최신 import 결과에 없는 기존 `SUM-*` 기사는 stale 데이터로 정리함
 - summary gateway가 API schema -> summarizer schema typed boundary를 거치도록 정리됨
-- `/v1/auth/session`, `/v1/auth/kakao/start`, `/v1/auth/kakao/callback`, `/v1/auth/refresh`, `/v1/auth/logout` API 경계 제공
+- RESTful API 경계 제공: `/v1/me`, `/v1/me/*`, `/v1/auth/oauth/kakao/*`, `/v1/auth/token/refresh`, `DELETE /v1/auth/session`
 - Kakao `provider_subject -> internal user_id` 매핑 저장소가 추가됨
 - Kakao OAuth state는 JWT 서명 토큰으로 발급/검증함
 - access token은 JWT, refresh token은 DB 저장소 기반으로 운용
 - refresh token 원문은 DB에 저장하지 않고 SHA-256 hash + session metadata로 관리
-- `GET /v1/auth/kakao/callback`은 인증 완료 후 `FRONTEND_APP_URL/?auth=kakao`로 302 redirect하고 HttpOnly 쿠키를 설정함
+- `GET /v1/auth/oauth/kakao/callback`은 인증 완료 후 `FRONTEND_APP_URL/?auth=kakao`로 302 redirect하고 HttpOnly 쿠키를 설정함
 - 프론트는 `session_state` (`authenticated` / `onboarded`)와 저장된 preference를 보고 자체 라우팅하면 됨
 - 온보딩 validation은 backend가 보장: wide=대분류 3~5개/중복 금지/subcategory 금지, narrow=대분류 1개 + subcategory 1개 이상/중복 금지
 - 피드 블록 정책은 Flow.pdf 기준으로 backend가 보장: wide=선택 순서대로 블록 구성 + 가중치 1.0/0.85/0.70... + 블록당 최대 4개 기사, narrow=단일 focus block weight 1.0 + 선택 subcategory 부족 시 같은 primary 기사로 4개까지 fallback 채움 + 같은 날짜/같은 대분류의 유사 제목 기사는 중복 제거 + score_weight 0.65 미만 기사는 feed에서 제외
@@ -101,7 +101,7 @@ SEED_ON_STARTUP=true
 DATABASE_URL=postgresql+psycopg://annoyingcap:annoyingcap@localhost:54329/annoyingcap
 NEWS_SUMMARIZER_DIR=../summarizer
 KAKAO_REST_API_KEY=...
-KAKAO_REDIRECT_URI=http://127.0.0.1:8000/v1/auth/kakao/callback
+KAKAO_REDIRECT_URI=http://127.0.0.1:8000/v1/auth/oauth/kakao/callback
 KAKAO_CLIENT_SECRET=...
 KAKAO_TOKEN_URL=https://kauth.kakao.com/oauth/token
 KAKAO_USERINFO_URL=https://kapi.kakao.com/v2/user/me
@@ -165,8 +165,8 @@ docker compose up --build
 ```bash
 curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/openapi.json
-curl 'http://127.0.0.1:8000/v1/users/demo-user/feed'
-curl 'http://127.0.0.1:8000/v1/users/demo-user/scraps'
+curl http://127.0.0.1:8000/v1/categories
+curl --cookie 'annoyingcap_access_token=...' 'http://127.0.0.1:8000/v1/me/feed'
 ```
 
 `docker compose up --build`로 뜨는 DB는 startup migration 이후 seed가 자동 실행됩니다.
@@ -225,22 +225,30 @@ curl http://127.0.0.1:8000/health
 
 ## Main APIs
 
+Public/catalog:
 - `GET /health`
 - `GET /v1/categories`
 - `GET /v1/categories/{slug}`
-- `GET /v1/auth/session`
-- `GET /v1/auth/kakao/start`
-- `GET /v1/auth/kakao/callback`
-- `POST /v1/auth/refresh`
-- `POST /v1/auth/logout`
-- `GET /v1/users/{user_id}/preferences`
-- `PUT /v1/users/{user_id}/preferences`
-- `GET /v1/users/{user_id}/feed`
 - `GET /v1/articles/{article_id}`
-- `PUT /v1/users/{user_id}/scraps/{article_id}`
-- `DELETE /v1/users/{user_id}/scraps/{article_id}`
-- `GET /v1/users/{user_id}/scraps`
-- `POST /v1/summaries`
+
+Auth:
+- `POST /v1/auth/oauth/kakao/authorization`
+- `GET /v1/auth/oauth/kakao/callback`
+- `POST /v1/auth/token/refresh`
+- `DELETE /v1/auth/session`
+
+Current user:
+- `GET /v1/me`
+- `GET /v1/me/preference`
+- `PUT /v1/me/preference`
+- `GET /v1/me/feed`
+- `GET /v1/me/articles/{article_id}`
+- `GET /v1/me/scraps`
+- `PUT /v1/me/scraps/{article_id}`
+- `DELETE /v1/me/scraps/{article_id}`
+
+Internal:
+- `POST /v1/internal/summaries`
 
 ## Example requests
 
@@ -250,18 +258,16 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/v1/categories
 ```
 
-인증 상태 확인:
+현재 사용자/인증 상태 확인:
 
 ```bash
-curl 'http://127.0.0.1:8000/v1/auth/session?user_id=demo-user'
-curl 'http://127.0.0.1:8000/v1/auth/session?provider=kakao&provider_subject=runtime-kakao-001'
-curl --cookie 'annoyingcap_access_token=...' 'http://127.0.0.1:8000/v1/auth/session'
+curl --cookie 'annoyingcap_access_token=...' 'http://127.0.0.1:8000/v1/me'
 ```
 
 Kakao 로그인 시작 URL 생성:
 
 ```bash
-curl 'http://127.0.0.1:8000/v1/auth/kakao/start'
+curl -X POST 'http://127.0.0.1:8000/v1/auth/oauth/kakao/authorization'
 ```
 
 Kakao callback 처리 확인:
@@ -275,19 +281,19 @@ Kakao callback 처리 확인:
 토큰 재발급:
 
 ```bash
-curl -X POST --cookie 'annoyingcap_refresh_token=...' http://127.0.0.1:8000/v1/auth/refresh
+curl -X POST --cookie 'annoyingcap_refresh_token=...' http://127.0.0.1:8000/v1/auth/token/refresh
 ```
 
 로그아웃:
 
 ```bash
-curl -X POST --cookie 'annoyingcap_refresh_token=...' http://127.0.0.1:8000/v1/auth/logout
+curl -X DELETE --cookie 'annoyingcap_refresh_token=...' http://127.0.0.1:8000/v1/auth/session
 ```
 
 사용자 선호 업데이트:
 
 ```bash
-curl -X PUT http://127.0.0.1:8000/v1/users/demo-user/preferences \
+curl -X PUT http://127.0.0.1:8000/v1/me/preference \
   -H 'Content-Type: application/json' \
   -d '{
     "mode": "narrow",
@@ -304,7 +310,7 @@ curl -X PUT http://127.0.0.1:8000/v1/users/demo-user/preferences \
 요약 생성:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/v1/summaries \
+curl -X POST http://127.0.0.1:8000/v1/internal/summaries \
   -H 'Content-Type: application/json' \
   -d '{
     "article": {
@@ -329,15 +335,15 @@ curl -X POST http://127.0.0.1:8000/v1/summaries \
 - `PYTHONPATH=. python3.11 -m pytest tests -q` 통과
 - `python3.11 -m alembic upgrade head` 통과
 - 실제 주요 엔드포인트 200 응답 확인
-- `GET /v1/auth/kakao/start` authorization URL 응답 확인
-- `GET /v1/auth/session`의 anonymous / onboarded / authenticated 상태 확인
-- JWT access cookie 기반 `GET /v1/auth/session` authenticated 상태 확인
-- `POST /v1/auth/refresh` access/refresh cookie rotation 확인
-- `POST /v1/auth/logout` cookie clear 확인
-- `GET /v1/auth/kakao/callback` JSON 응답 + `HttpOnly` cookie 동작은 TestClient로 검증
+- `POST /v1/auth/oauth/kakao/authorization` authorization URL 응답 확인
+- `GET /v1/me`의 anonymous / authenticated / onboarded 상태 확인
+- JWT access cookie 기반 `GET /v1/me` authenticated 상태 확인
+- `POST /v1/auth/token/refresh` access/refresh cookie rotation 확인
+- `DELETE /v1/auth/session` cookie clear 확인
+- `GET /v1/auth/oauth/kakao/callback` redirect + `HttpOnly` cookie 동작은 TestClient로 검증
 - `external_identities`, `refresh_sessions` migration 및 DB-backed auth 검증 확인
 - refresh token hash 저장 및 `issued_at` / `last_used_at` / `revoked_at` metadata migration 확인
-- `/v1/summaries`가 `../summarizer` 연동으로 정상 동작 확인
+- `/v1/internal/summaries`가 `../summarizer` 연동으로 정상 동작 확인
 - domain dataclass 제거, Pydantic 기반 모델로 통일 완료
 - onboarding validation: wide/narrow 규칙 및 중복 금지 contract 테스트로 검증
 - feed weighting: 선호 순서 보존, block weight 하향, article 중요도 점수 단독 정렬, wide 4개 노출, narrow same-primary fallback 검증

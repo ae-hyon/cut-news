@@ -339,3 +339,32 @@ def test_resolve_session_returns_onboarded_for_authenticated_kakao_user_after_pr
     assert session.session_state == 'onboarded'
     assert session.authenticated is True
     assert session.onboarding_completed is True
+
+
+
+def test_resolve_session_refreshes_onboarding_state_for_stale_access_token():
+    preference_repo = StubUserPreferenceRepository(
+        existing=UserPreference(
+            user_id='user-kakao-123',
+            mode=PreferenceMode.WIDE,
+            primary_categories=['economy', 'politics', 'tech'],
+            subcategories=[],
+            onboarding_completed=True,
+        )
+    )
+    service = AuthService(
+        oauth_client=StubKakaoOAuthClient(),
+        identity_repository=StubExternalIdentityRepository(
+            existing=ExternalIdentity(provider='kakao', provider_subject='kakao-123', user_id='user-kakao-123')
+        ),
+        preference_repository=preference_repo,
+        refresh_session_repository=StubRefreshSessionRepository(),
+    )
+    issued = service.issue_tokens('user-kakao-123', 'kakao', 'kakao-123', onboarding_completed=False)
+
+    session = service.resolve_session(access_token=issued.access_token)
+
+    assert session.user_id == 'user-kakao-123'
+    assert session.session_state == 'onboarded'
+    assert session.onboarding_completed is True
+    assert session.authenticated is True

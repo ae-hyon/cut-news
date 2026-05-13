@@ -15,7 +15,7 @@ services:
       SEED_ON_STARTUP: "true"
       DATABASE_URL: postgresql+psycopg://annoyingcap:annoyingcap@db:5432/annoyingcap
       NEWS_SUMMARIZER_DIR: /app/apps/summarizer
-      KAKAO_REDIRECT_URI: http://127.0.0.1:8000/v1/auth/kakao/callback
+      KAKAO_REDIRECT_URI: http://127.0.0.1:8000/v1/auth/oauth/kakao/callback
       JWT_SECRET_KEY: annoyingcap-dev-jwt-secret-key-32chars
     ports:
       - "8000:8000"

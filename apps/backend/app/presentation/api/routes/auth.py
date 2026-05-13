@@ -5,7 +5,8 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.application.services.auth_service import AuthError, AuthService
 from app.common.config import settings
-from app.presentation.api.dependencies import get_auth_service
+from app.domain.entities import AuthSession
+from app.presentation.api.dependencies import get_auth_service, get_current_session
 from app.presentation.schemas import AuthLogoutResponseSchema, AuthSessionResponseSchema, AuthStartResponseSchema
 
 router = APIRouter(tags=['auth'])
@@ -33,12 +34,12 @@ def _kakao_callback_completion_response(result: dict) -> RedirectResponse:
     return response
 
 
-@router.get('/auth/kakao/start', response_model=AuthStartResponseSchema)
-def start_kakao_auth(service: AuthService = Depends(get_auth_service)):
+@router.post('/auth/oauth/kakao/authorization', response_model=AuthStartResponseSchema)
+def create_kakao_authorization(service: AuthService = Depends(get_auth_service)):
     return AuthStartResponseSchema.model_validate(service.start_kakao_auth())
 
 
-@router.get('/auth/kakao/callback')
+@router.get('/auth/oauth/kakao/callback')
 def kakao_callback(code: str, state: str, service: AuthService = Depends(get_auth_service)):
     try:
         result = service.complete_kakao_callback(code=code, state=state)
@@ -53,26 +54,13 @@ def kakao_callback(code: str, state: str, service: AuthService = Depends(get_aut
     return _kakao_callback_completion_response(result)
 
 
-@router.get('/auth/session', response_model=AuthSessionResponseSchema)
-def get_auth_session(
-    user_id: str | None = None,
-    provider: str | None = None,
-    provider_subject: str | None = None,
-    annoyingcap_access_token: str | None = Cookie(default=None),
-    service: AuthService = Depends(get_auth_service),
-):
-    result = service.resolve_session(
-        user_id=user_id,
-        provider=provider,
-        provider_subject=provider_subject,
-        access_token=None if user_id or (provider and provider_subject) else annoyingcap_access_token,
-    )
-    if hasattr(result, 'model_dump'):
-        result = result.model_dump()
-    return AuthSessionResponseSchema.model_validate(result)
+@router.get('/me', response_model=AuthSessionResponseSchema, tags=['me'])
+def get_me(session: AuthSession = Depends(get_current_session)):
+    payload = session.model_dump() if hasattr(session, 'model_dump') else session
+    return AuthSessionResponseSchema.model_validate(payload)
 
 
-@router.post('/auth/refresh', response_model=AuthSessionResponseSchema)
+@router.post('/auth/token/refresh', response_model=AuthSessionResponseSchema)
 def refresh_auth_session(
     annoyingcap_refresh_token: str | None = Cookie(default=None),
     service: AuthService = Depends(get_auth_service),
@@ -105,8 +93,8 @@ def refresh_auth_session(
     return response
 
 
-@router.post('/auth/logout', response_model=AuthLogoutResponseSchema)
-def logout(
+@router.delete('/auth/session', response_model=AuthLogoutResponseSchema)
+def delete_auth_session(
     annoyingcap_refresh_token: str | None = Cookie(default=None),
     service: AuthService = Depends(get_auth_service),
 ):

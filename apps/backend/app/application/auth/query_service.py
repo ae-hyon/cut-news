@@ -27,7 +27,17 @@ class AuthQueryService:
         if access_token:
             decoded = self.token_service.decode_access_token(access_token)
             if decoded:
-                return decoded
+                if not decoded.user_id:
+                    return decoded
+                preference = self.ensure_preference_exists(decoded.user_id)
+                return AuthSession(
+                    user_id=decoded.user_id,
+                    session_state='onboarded' if preference.onboarding_completed else 'authenticated',
+                    onboarding_completed=preference.onboarding_completed,
+                    authenticated=True,
+                    auth_provider=decoded.auth_provider,
+                    provider_subject=decoded.provider_subject,
+                )
         if provider == 'kakao' and provider_subject:
             identity = self.identity_repository.get_by_provider_subject(provider, provider_subject)
             if not identity:

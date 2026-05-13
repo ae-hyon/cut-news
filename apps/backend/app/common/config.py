@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     database_url: str = 'postgresql+psycopg://annoyingcap:annoyingcap@localhost:54329/annoyingcap'
     news_summarizer_dir: Path = (Path(__file__).resolve().parents[3] / 'summarizer').resolve()
     kakao_rest_api_key: str = 'local-kakao-rest-key'
-    kakao_redirect_uri: str = 'http://127.0.0.1:8000/v1/auth/kakao/callback'
+    kakao_redirect_uri: str = 'http://127.0.0.1:8000/v1/auth/oauth/kakao/callback'
     kakao_client_secret: str | None = None
     kakao_authorize_url: str = 'https://kauth.kakao.com/oauth/authorize'
     kakao_token_url: str = 'https://kauth.kakao.com/oauth/token'
