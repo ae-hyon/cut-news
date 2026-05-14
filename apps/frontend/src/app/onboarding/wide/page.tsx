@@ -5,6 +5,9 @@ import { motion } from 'motion/react'
 import { useOnboardingStore } from '@/stores/onboarding'
 import { CATEGORIES, MAX_WIDE_CATEGORIES } from '@/constants/categories'
 import { showToast } from '@/components/Toast'
+import OnboardingHeader from '../_components/OnboardingHeader'
+import OnboardingProgress from '../_components/OnboardingProgress'
+import OnboardingGuide from '../_components/OnboardingGuide'
 
 export default function OnboardingWide() {
   const router = useRouter()
@@ -17,73 +20,69 @@ export default function OnboardingWide() {
     }
   }
 
+  const canProceed = selectedCategories.length >= 3
+
   return (
     <>
-      {/* Progress */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <p className="text-text-secondary text-sm mb-1">2 / 3</p>
-        <h1 className="font-[family-name:var(--font-display)] text-xl font-bold">
-          2번째 다됐어요!
-        </h1>
-        <p className="text-text-secondary text-sm mt-2">
-          관심 분야를 선택해주세요 (최대 {MAX_WIDE_CATEGORIES}개)
-        </p>
-      </motion.div>
+      <OnboardingHeader />
 
-      {/* Category chips */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-2 gap-3">
-          {CATEGORIES.map((cat, i) => {
-            const selected = selectedCategories.includes(cat.id)
-            return (
-              <motion.button
-                key={cat.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.04 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => handleToggle(cat.id)}
-                className={`p-4 rounded-lg border text-left transition-all duration-200 ${
-                  selected
-                    ? 'border-accent bg-accent-muted'
-                    : 'border-border-default bg-bg-elevated hover:border-text-tertiary'
-                }`}
-              >
-                <p
-                  className={`font-bold text-sm mb-1 ${selected ? 'text-accent' : ''}`}
+      <div className="flex flex-1 flex-col px-5 pt-6 pb-10">
+        <div className="flex flex-col gap-6 pt-4">
+          <OnboardingGuide />
+          <OnboardingProgress step={2} label="2번째" rightLabel="다됐어요!" />
+
+          {/* Category grid */}
+          <div className="grid grid-cols-2 gap-2 py-4 overflow-y-auto flex-1">
+            {CATEGORIES.map((cat, i) => {
+              const selected = selectedCategories.includes(cat.id)
+              return (
+                <motion.button
+                  key={cat.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => handleToggle(cat.id)}
+                  className={`flex flex-col gap-0.5 items-center justify-center h-[75px] rounded-[24px] px-1 py-[26px] text-center text-white overflow-hidden transition-all duration-200 ${
+                    selected
+                      ? 'bg-[#f3782b]'
+                      : 'bg-[#3c3c3c] border border-[#343434]'
+                  }`}
                 >
-                  {cat.name}
-                </p>
-                <p className="text-text-tertiary text-xs leading-snug">
-                  {cat.keywords.join(' · ')}
-                </p>
-              </motion.button>
-            )
-          })}
+                  <p className="font-bold text-[16px] leading-[19px] w-full">
+                    {cat.name}
+                  </p>
+                  <p className="font-normal text-[12px] leading-[14px] w-full">
+                    {cat.keywords.join(' ')}
+                  </p>
+                </motion.button>
+              )
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* Navigation */}
-      <div className="mt-8 pb-4 flex gap-3">
-        <button
-          onClick={() => router.push('/onboarding')}
-          className="flex-1 py-4 rounded-lg text-base font-bold border border-border-default bg-bg-elevated text-text-secondary hover:border-text-tertiary transition-all"
-        >
-          이전
-        </button>
-        <button
-          onClick={() => router.push('/onboarding/complete')}
-          disabled={selectedCategories.length === 0}
-          className="flex-[2] py-4 rounded-lg text-base font-bold transition-all duration-200
-            bg-accent text-bg hover:bg-accent-hover
-            disabled:bg-bg-elevated disabled:text-text-tertiary disabled:cursor-not-allowed"
-        >
-          다음
-        </button>
+        {/* Navigation */}
+        <div className="flex gap-3.5 mt-auto">
+          <button
+            onClick={() => router.push('/onboarding')}
+            className="flex-1 py-5 rounded-[24px] text-[16px] font-bold text-[#f3782b] text-center border border-[#f3782b] bg-[#101010] transition-all"
+          >
+            이전
+          </button>
+          <button
+            onClick={() => router.push('/onboarding/complete')}
+            disabled={!canProceed}
+            className={`flex-1 py-5 rounded-[24px] text-[16px] font-bold text-center text-white transition-all duration-200 ${
+              canProceed
+                ? 'bg-[#f3782b]'
+                : 'bg-[#414141] opacity-50 cursor-not-allowed'
+            }`}
+          >
+            {canProceed
+              ? `${selectedCategories.length}개 선택 완료`
+              : '3개 이상 선택'}
+          </button>
+        </div>
       </div>
     </>
   )
