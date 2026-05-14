@@ -63,7 +63,7 @@ Docker Compose는 개발 기본값을 compose 파일에 넣어두었기 때문�
 KAKAO_REST_API_KEY=...
 KAKAO_CLIENT_SECRET=...
 KAKAO_REDIRECT_URI=http://127.0.0.1:8000/v1/auth/oauth/kakao/callback
-FRONTEND_APP_URL=http://127.0.0.1:5173
+FRONTEND_APP_URL=http://127.0.0.1:3000
 JWT_SECRET_KEY=change-this-local-dev-secret-at-least-32-chars
 ```
 

@@ -13,8 +13,16 @@ from app.presentation.schemas import (
 
 router = APIRouter(tags=['me'])
 
+AUTH_REQUIRED = {401: {'description': 'Authentication required'}}
 
-@router.get('/me/preference', response_model=UserPreferenceResponseSchema)
+
+@router.get(
+    '/me/preference',
+    response_model=UserPreferenceResponseSchema,
+    summary='Get my onboarding preferences',
+    description='Returns the authenticated user preference state used by frontend onboarding and feed filtering.',
+    responses=AUTH_REQUIRED,
+)
 def get_my_preference(
     session: AuthSession = Depends(require_current_user),
     service: UserPreferenceService = Depends(get_user_preference_service),
@@ -22,7 +30,16 @@ def get_my_preference(
     return UserPreferenceResponseSchema.from_entity(service.get_preferences(session.user_id))
 
 
-@router.put('/me/preference', response_model=UserPreferenceResponseSchema)
+@router.put(
+    '/me/preference',
+    response_model=UserPreferenceResponseSchema,
+    summary='Update my onboarding preferences',
+    description=(
+        'Stores frontend onboarding preferences for the current user. wide mode requires 3~5 primary_categories '
+        'and no subcategories. narrow mode requires exactly one primary category and at least one subcategory.'
+    ),
+    responses={**AUTH_REQUIRED, 422: {'description': 'Preference validation failed'}},
+)
 def put_my_preference(
     payload: UserPreferenceUpdateRequestSchema,
     session: AuthSession = Depends(require_current_user),
@@ -41,7 +58,16 @@ def put_my_preference(
         raise HTTPException(status_code=422, detail=str(e)) from e
 
 
-@router.get('/me/feed', response_model=FeedResponseSchema)
+@router.get(
+    '/me/feed',
+    response_model=FeedResponseSchema,
+    summary='Get my personalized feed',
+    description=(
+        'Returns personalized feed blocks for the authenticated user. Each article includes is_scrapped so '
+        'frontend can render saved state without an additional scraps lookup.'
+    ),
+    responses=AUTH_REQUIRED,
+)
 def get_my_feed(
     session: AuthSession = Depends(require_current_user),
     service: FeedService = Depends(get_feed_service),

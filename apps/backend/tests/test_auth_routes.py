@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.application.services.auth_service import AuthError
+from app.common.config import settings
 from app.presentation.api.dependencies import get_auth_service
 from app.presentation.api.routes import auth
 
@@ -92,6 +93,7 @@ class KakaoFailureAuthService(StubAuthService):
 
 
 def build_client(service: StubAuthService | None = None) -> TestClient:
+    settings.frontend_app_url = 'http://127.0.0.1:3000'
     app = FastAPI()
     app.include_router(auth.router, prefix='/v1')
     if service is not None:
@@ -134,7 +136,7 @@ def test_kakao_callback_redirects_to_frontend_and_sets_jwt_cookies_for_new_user(
     response = client.get('/v1/auth/oauth/kakao/callback', params={'code': 'issued-code', 'state': 'state-123'}, follow_redirects=False)
 
     assert response.status_code == 302
-    assert response.headers['location'] == 'http://127.0.0.1:5173/?auth=kakao'
+    assert response.headers['location'] == 'http://127.0.0.1:3000/?auth=kakao'
     set_cookie = response.headers.get('set-cookie', '')
     assert 'annoyingcap_access_token=' in set_cookie
     assert 'annoyingcap_refresh_token=' in set_cookie
@@ -241,7 +243,7 @@ def test_me_returns_onboarded_state_for_authenticated_kakao_user_after_onboardin
     client = build_client(OnboardedKakaoAuthService())
     callback_response = client.get('/v1/auth/oauth/kakao/callback', params={'code': 'issued-code', 'state': 'state-123'}, follow_redirects=False)
     assert callback_response.status_code == 302
-    assert callback_response.headers['location'] == 'http://127.0.0.1:5173/?auth=kakao'
+    assert callback_response.headers['location'] == 'http://127.0.0.1:3000/?auth=kakao'
 
     client.cookies.set('annoyingcap_access_token', 'access-token-123')
     response = client.get('/v1/me')

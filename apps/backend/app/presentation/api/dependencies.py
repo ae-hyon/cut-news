@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from fastapi import Cookie, Depends, HTTPException
+from fastapi import Cookie, Depends, HTTPException, Security
+from fastapi.security import APIKeyCookie
 from sqlalchemy.orm import Session
 
 from app.application.auth.query_service import AuthQueryService
@@ -56,8 +57,16 @@ def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
     )
 
 
+access_token_cookie = APIKeyCookie(
+    name=settings.auth_access_cookie_name,
+    scheme_name='AccessTokenCookie',
+    auto_error=False,
+    description='HttpOnly access-token cookie set by the Kakao callback or token refresh endpoint.',
+)
+
+
 def get_current_session(
-    annoyingcap_access_token: str | None = Cookie(default=None),
+    annoyingcap_access_token: str | None = Security(access_token_cookie),
     service: AuthService = Depends(get_auth_service),
 ) -> AuthSession:
     return service.resolve_session(access_token=annoyingcap_access_token)

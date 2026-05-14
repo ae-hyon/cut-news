@@ -58,7 +58,23 @@ class CategoryResponseSchema(BaseModel):
 
 
 class UserPreferenceUpdateRequestSchema(BaseModel):
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(
+        extra='forbid',
+        json_schema_extra={
+            'examples': [
+                {
+                    'mode': 'wide',
+                    'primary_categories': ['macro', 'sectors', 'policy'],
+                    'subcategories': [],
+                },
+                {
+                    'mode': 'narrow',
+                    'primary_categories': ['macro'],
+                    'subcategories': ['rates-fx'],
+                },
+            ]
+        },
+    )
 
     mode: Literal['wide', 'narrow']
     primary_categories: list[str] = Field(default_factory=list)
@@ -90,6 +106,37 @@ class AuthStartResponseSchema(BaseModel):
 
 
 class AuthSessionResponseSchema(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            'examples': [
+                {
+                    'user_id': None,
+                    'session_state': 'anonymous',
+                    'onboarding_completed': False,
+                    'authenticated': False,
+                    'auth_provider': 'none',
+                    'provider_subject': None,
+                },
+                {
+                    'user_id': 'user-kakao-123',
+                    'session_state': 'authenticated',
+                    'onboarding_completed': False,
+                    'authenticated': True,
+                    'auth_provider': 'kakao',
+                    'provider_subject': '123456789',
+                },
+                {
+                    'user_id': 'user-kakao-123',
+                    'session_state': 'onboarded',
+                    'onboarding_completed': True,
+                    'authenticated': True,
+                    'auth_provider': 'kakao',
+                    'provider_subject': '123456789',
+                },
+            ]
+        }
+    )
+
     user_id: str | None
     session_state: Literal['anonymous', 'onboarded', 'authenticated']
     onboarding_completed: bool
@@ -146,6 +193,36 @@ class FeedBlockResponseSchema(BaseModel):
 
 
 class FeedResponseSchema(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            'examples': [
+                {
+                    'user_id': 'user-kakao-123',
+                    'mode': 'wide',
+                    'blocks': [
+                        {
+                            'key': 'macro',
+                            'title': '거시경제',
+                            'weight': 1.0,
+                            'articles': [
+                                {
+                                    'id': 'SUM-001',
+                                    'title': '원/달러 환율 변동성 확대',
+                                    'summary': '시장 금리와 환율 변동이 커지며 주요 자산 가격이 조정되었습니다.',
+                                    'primary_category': 'macro',
+                                    'subcategory': 'rates-fx',
+                                    'published_at': '2026-04-25',
+                                    'original_url': 'https://www.yna.co.kr/view/AKR20260425000000001',
+                                    'is_scrapped': False,
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
     user_id: str
     mode: Literal['wide', 'narrow']
     blocks: list[FeedBlockResponseSchema]

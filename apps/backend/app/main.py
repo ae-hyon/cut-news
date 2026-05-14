@@ -16,7 +16,17 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    description=(
+        'Frontend integration contract for the real Next frontend at http://127.0.0.1:3000.\n\n'
+        'Browser requests from frontend must use credentials: include so the HttpOnly auth cookies are sent. '
+        'The legacy apps/test-frontend Vite app is deprecated and is not the source of truth for API integration.\n\n'
+        'Use /v1/me to decide frontend routing from session_state: anonymous, authenticated, or onboarded.'
+    ),
+    lifespan=lifespan,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_app_url],
