@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     app_name: str = 'Annoying Cap Core Backend'
     app_version: str = '0.1.0'
     api_prefix: str = '/v1'
-    frontend_app_url: str = 'http://127.0.0.1:5173'
+    frontend_app_url: str = 'http://127.0.0.1:3000'
     debug: bool = True
     database_echo: bool = False
     migrate_on_startup: bool = True
