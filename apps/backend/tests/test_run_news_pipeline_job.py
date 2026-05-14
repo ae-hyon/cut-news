@@ -90,6 +90,12 @@ def test_run_pipeline_job_writes_success_report_with_step_results(tmp_path: Path
     assert persisted['schedule']['ai_news_generation_time'] == '08:30:00'
     assert 'stdout' not in persisted['steps'][-1]
 
+    archived_reports = list((data_dir / 'run_reports').glob('run_*.json'))
+    assert len(archived_reports) == 1
+    archived = json.loads(archived_reports[0].read_text(encoding='utf-8'))
+    assert archived == persisted
+    assert persisted['archive_report_path'] == str(archived_reports[0])
+
 
 def test_run_pipeline_job_stops_on_failed_step_and_records_failure(tmp_path: Path):
     data_dir = tmp_path / 'data'
@@ -137,3 +143,6 @@ def test_run_pipeline_job_stops_on_failed_step_and_records_failure(tmp_path: Pat
     assert report['quality_gate_skip_counts'] == {}
     persisted = json.loads(report_path.read_text(encoding='utf-8'))
     assert persisted['failed_step'] == 'summarize'
+    archived_reports = list((data_dir / 'run_reports').glob('run_*.json'))
+    assert len(archived_reports) == 1
+    assert json.loads(archived_reports[0].read_text(encoding='utf-8'))['failed_step'] == 'summarize'

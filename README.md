@@ -99,6 +99,8 @@ make full-up
 - backend API: `http://127.0.0.1:8000`
 - crawler API: `http://127.0.0.1:8001`
 - news scheduler: 매일 `08:30` Asia/Seoul 기준으로 crawler -> summarizer -> backend import 실행
+  - 실패 시 기본 2회까지 재시도합니다. (`PIPELINE_MAX_ATTEMPTS`, `PIPELINE_RETRY_DELAY_SECONDS`)
+  - 최신 실행 결과는 `apps/summarizer/data/run_report.json`, 실행별 archive는 `apps/summarizer/data/run_reports/run_*.json`에 저장됩니다.
 - Postgres
 
 즉시 한 번 실행하면서 띄우려면:

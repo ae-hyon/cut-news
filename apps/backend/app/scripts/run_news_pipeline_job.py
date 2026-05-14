@@ -14,6 +14,7 @@ from typing import Callable
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DATA_DIR = REPO_ROOT / 'apps' / 'summarizer' / 'data'
 REPORT_PATH = DATA_DIR / 'run_report.json'
+REPORT_ARCHIVE_DIR_NAME = 'run_reports'
 IMPORT_STATS_PATTERN = re.compile(
     r'inserted=(?P<inserted>\d+)\s+updated=(?P<updated>\d+)\s+deleted=(?P<deleted>\d+)\s+skipped=(?P<skipped>\d+)'
 )
@@ -162,9 +163,17 @@ def _schedule_metadata() -> dict[str, str]:
     }
 
 
-def write_run_report(path: Path, payload: dict[str, object]) -> None:
+def _archive_report_path(data_dir: Path, started_at: str) -> Path:
+    safe_started_at = re.sub(r'[^0-9A-Za-z+-]+', '', started_at)
+    return data_dir / REPORT_ARCHIVE_DIR_NAME / f'run_{safe_started_at}.json'
+
+
+def write_run_report(path: Path, payload: dict[str, object], *, archive_path: Path | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+    if archive_path is not None:
+        archive_path.parent.mkdir(parents=True, exist_ok=True)
+        archive_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
 def run_pipeline_job(
@@ -199,6 +208,7 @@ def run_pipeline_job(
             failed_step = step_name
             break
 
+    archive_path = _archive_report_path(data_dir, started_at)
     payload: dict[str, object] = {
         'status': status,
         'failed_step': failed_step,
@@ -212,8 +222,9 @@ def run_pipeline_job(
         'import_stats': import_stats,
         'quality_gate_skip_counts': import_observability['quality_gate_skip_counts'],
         'report_path': str(report_path),
+        'archive_report_path': str(archive_path),
     }
-    write_run_report(report_path, payload)
+    write_run_report(report_path, payload, archive_path=archive_path)
     return payload
 
 

@@ -29,7 +29,10 @@
 - Next config now keeps only the crawler rewrite:
   - `/api/crawler/:path* -> http://localhost:8001/:path*`
 - Article detail route now requires authenticated current-user context instead of exposing the user-scoped detail contract anonymously.
-- Pipeline run report wrapper already persists `quality_gate_skip_counts`; this part of the previous next-slice note is done.
+- Pipeline run report wrapper persists `quality_gate_skip_counts` and now also writes timestamped archives:
+  - latest: `apps/summarizer/data/run_report.json`
+  - archive: `apps/summarizer/data/run_reports/run_*.json`
+- News scheduler now retries failed pipeline runs with `PIPELINE_MAX_ATTEMPTS` / `PIPELINE_RETRY_DELAY_SECONDS`; `RUN_ON_STARTUP=true` fails fast if the startup smoke cannot succeed after retries.
 - FastAPI OpenAPI docs were upgraded for frontend/backend contract validation:
   - app-level docs call out real Next frontend `3000`, `credentials: include`, and deprecated `apps/test-frontend`.
   - protected routes expose `AccessTokenCookie` cookie auth in Swagger/OpenAPI.
@@ -93,7 +96,9 @@
 
 ## Remaining mismatches / next best slice
 1. `classification_source` / `dropped_reason` are not currently present in code. If tuning needs richer run-report evidence, add those fields in a follow-up implementation slice.
-2. Optional: add or document a lightweight cron/launchd runner for `make pipeline-news` and timestamped `run_report.json` archives.
+2. Run one real Naver pipeline smoke with credentials before calling scheduled scraping production-stable:
+   - `NAVER_CLIENT_ID=... NAVER_CLIENT_SECRET=... NEWS_SOURCE=naver-search NEWS_QUERY=경제 NEWS_COUNT=20 RUN_ON_STARTUP=true make full-up`
+   - verify `apps/summarizer/data/run_report.json`, one `apps/summarizer/data/run_reports/run_*.json`, and imported DB articles.
 3. If content volume is still low, revisit step-3 scoring/selection so the report explains why only a subset reaches summarize/verify/import.
 4. A stale shell environment can still override `FRONTEND_APP_URL` to `http://127.0.0.1:5173`; unset it or set it to `http://127.0.0.1:3000` before local backend runtime checks.
 
