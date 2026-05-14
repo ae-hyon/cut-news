@@ -9,13 +9,15 @@ services:
       APP_NAME: Annoying Cap Core Backend
       APP_VERSION: 0.1.0
       API_PREFIX: /v1
-      FRONTEND_APP_URL: http://127.0.0.1:5173
+      FRONTEND_APP_URL: http://127.0.0.1:3000
       DEBUG: "true"
       MIGRATE_ON_STARTUP: "true"
       SEED_ON_STARTUP: "true"
       DATABASE_URL: postgresql+psycopg://annoyingcap:annoyingcap@db:5432/annoyingcap
       NEWS_SUMMARIZER_DIR: /app/apps/summarizer
-      KAKAO_REDIRECT_URI: http://127.0.0.1:8000/v1/auth/oauth/kakao/callback
+      KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:-your-kakao-rest-api-key}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-your-kakao-client-secret}
+      KAKAO_REDIRECT_URI: http://127.0.0.1:8000/v1/auth/kakao/callback
       JWT_SECRET_KEY: annoyingcap-dev-jwt-secret-key-32chars
     ports:
       - "8000:8000"
@@ -23,7 +25,11 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\""]
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8000/health'', timeout=2)"',
+        ]
       interval: 5s
       timeout: 5s
       retries: 20

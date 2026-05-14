@@ -25,7 +25,7 @@ export function useKakaoLogin({ onSuccess }: UseKakaoLoginOptions = {}) {
       const popup = window.open(
         authorization_url,
         'annoyingcap-kakao-login',
-        'popup=yes,width=420,height=720'
+        'popup=yes,width=420,height=720',
       )
       popupRef.current = popup
 
