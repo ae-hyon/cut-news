@@ -54,7 +54,6 @@
 - synced with `origin/main`
 - current HEAD: run `git log -1 --oneline`
 - local-only untracked artifacts currently observed:
-  - `.dev/`
   - `어드민잉캡-Flow.pdf`
   - `경제_뉴스_클레이션_PRD.docx`
 - `apps/summarizer/data/classification_cache.json` was mentioned in the old handoff but is not currently present.
