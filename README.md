@@ -101,6 +101,7 @@ make full-up
 - news scheduler: 매일 `08:30` Asia/Seoul 기준으로 crawler -> summarizer -> backend import 실행
   - 실패 시 기본 2회까지 재시도합니다. (`PIPELINE_MAX_ATTEMPTS`, `PIPELINE_RETRY_DELAY_SECONDS`)
   - 최신 실행 결과는 `apps/summarizer/data/run_report.json`, 실행별 archive는 `apps/summarizer/data/run_reports/run_*.json`에 저장됩니다.
+  - 실행 결과에는 `import_stats`, `quality_gate_skip_counts`, `drop_reason_counts`, `classification_source_counts`가 포함되어 몇 건이 어떤 검증/분류 단계에서 제외됐는지 확인할 수 있습니다.
 - Postgres
 
 즉시 한 번 실행하면서 띄우려면:

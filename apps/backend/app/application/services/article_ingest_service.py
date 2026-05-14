@@ -24,6 +24,7 @@ class ArticleIngestRow(BaseModel):
 class ArticleDerivedCategory(BaseModel):
     primary_category: str
     subcategory: str
+    classification_source: str
 
 
 PRIMARY_CATEGORY_ALIASES = {
@@ -252,11 +253,19 @@ def _derive_categories(article_payload: dict, category_payload: dict) -> Article
 
     reliable_pair = RELIABLE_SOURCE_CATEGORY_BY_SUBCATEGORY.get(raw_subcategory)
     if reliable_pair:
-        return ArticleDerivedCategory(primary_category=reliable_pair[0], subcategory=reliable_pair[1])
+        return ArticleDerivedCategory(
+            primary_category=reliable_pair[0],
+            subcategory=reliable_pair[1],
+            classification_source='source_subcategory',
+        )
 
     classified = _classify_from_keywords(title, content)
     if classified:
-        return ArticleDerivedCategory(primary_category=classified[0], subcategory=classified[1])
+        return ArticleDerivedCategory(
+            primary_category=classified[0],
+            subcategory=classified[1],
+            classification_source='keyword_rule',
+        )
 
     return None
 
@@ -271,6 +280,8 @@ def load_summarized_articles_report(data_dir: Path) -> tuple[list[ArticleIngestR
     verified_dir = data_dir / 'verified'
     empty_report = {
         'quality_gate_skip_counts': {},
+        'drop_reason_counts': {},
+        'classification_source_counts': {},
     }
     if not json_dir.exists() or not summarized_dir.exists() or not verified_dir.exists():
         return [], empty_report
@@ -279,21 +290,29 @@ def load_summarized_articles_report(data_dir: Path) -> tuple[list[ArticleIngestR
     scores = _score_index(data_dir)
     rows: list[ArticleIngestRow] = []
     quality_gate_skip_counts: dict[str, int] = {}
+    drop_reason_counts: dict[str, int] = {}
+    classification_source_counts: dict[str, int] = {}
     for article_path in sorted(json_dir.glob('*.json')):
         article_id = article_path.stem
         summary_path = summarized_dir / f'{article_id}.json'
         verification_path = verified_dir / f'{article_id}.json'
-        if not summary_path.exists() or not verification_path.exists():
+        if not summary_path.exists():
+            _increment(drop_reason_counts, 'missing_summary')
+            continue
+        if not verification_path.exists():
+            _increment(drop_reason_counts, 'missing_verification')
             continue
 
         article_payload = _read_json(article_path)
         summary_payload = _read_json(summary_path)
         verification_payload = _read_json(verification_path)
         if not isinstance(article_payload, dict) or not isinstance(summary_payload, dict) or not isinstance(verification_payload, dict):
+            _increment(drop_reason_counts, 'invalid_payload')
             continue
         quality_gate_reason = _quality_gate_failure_reason(article_payload, summary_payload, verification_payload)
         if quality_gate_reason is not None:
             _increment(quality_gate_skip_counts, quality_gate_reason)
+            _increment(drop_reason_counts, f'quality_gate:{quality_gate_reason}')
             continue
 
         summary = str(summary_payload.get('summary') or '').strip()
@@ -302,6 +321,7 @@ def load_summarized_articles_report(data_dir: Path) -> tuple[list[ArticleIngestR
         original_url = str(article_payload.get('url') or '').strip()
         published_at = _published_at(article_payload)
         if not (summary and title and content and original_url and published_at):
+            _increment(drop_reason_counts, 'missing_required_fields')
             continue
 
         category_payload = categories.get(article_id, {})
@@ -310,7 +330,9 @@ def load_summarized_articles_report(data_dir: Path) -> tuple[list[ArticleIngestR
             category_payload,
         )
         if derived is None:
+            _increment(drop_reason_counts, 'category_unmapped')
             continue
+        _increment(classification_source_counts, derived.classification_source)
         score_weight = _score_weight(scores.get(article_id, {}))
         rows.append(
             ArticleIngestRow(
@@ -327,6 +349,8 @@ def load_summarized_articles_report(data_dir: Path) -> tuple[list[ArticleIngestR
         )
     return rows, {
         'quality_gate_skip_counts': quality_gate_skip_counts,
+        'drop_reason_counts': drop_reason_counts,
+        'classification_source_counts': classification_source_counts,
     }
 
 

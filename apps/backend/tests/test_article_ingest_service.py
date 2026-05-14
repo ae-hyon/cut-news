@@ -379,6 +379,66 @@ def test_load_summarized_articles_report_tracks_quality_gate_skips(tmp_path: Pat
     assert report['quality_gate_skip_counts'] == {'low_confidence': 1}
 
 
+
+def test_load_summarized_articles_report_tracks_import_drop_reasons_and_classification_sources(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / '001.json',
+        {
+            'title': '시장 금리 하락에 증권주 강세',
+            'date': '2026-04-28',
+            'url': 'https://example.com/1',
+            'content': '시장 금리 하락과 증권 업종 흐름을 다룬 본문입니다.',
+        },
+    )
+    write_json(dataset / 'summarized' / '001.json', {'headline_34': '시장 금리 하락에 증권주 강세', 'summary': '시장 금리 하락 영향으로 증권주가 강세를 보였습니다.'})
+    write_json(dataset / 'verified' / '001.json', {'verdict': 'clean', 'confidence': 96})
+
+    write_json(
+        dataset / 'json' / '002.json',
+        {
+            'title': '코스피 상승에 투자 심리 회복',
+            'date': '2026-04-28',
+            'url': 'https://example.com/2',
+            'content': '코스피 상승과 투자 심리 회복을 다룬 본문입니다.',
+        },
+    )
+    write_json(dataset / 'summarized' / '002.json', {'headline_34': '코스피 상승에 투자 심리 회복', 'summary': '코스피 상승으로 투자 심리가 회복됐습니다.'})
+    write_json(dataset / 'verified' / '002.json', {'verdict': 'clean', 'confidence': 96})
+
+    write_json(
+        dataset / 'json' / '003.json',
+        {
+            'title': '지역 축제 관람객 증가',
+            'date': '2026-04-28',
+            'url': 'https://example.com/3',
+            'content': '지역 축제 관람객이 증가했다는 본문입니다.',
+        },
+    )
+    write_json(dataset / 'summarized' / '003.json', {'headline_34': '지역 축제 관람객 증가', 'summary': '지역 축제 관람객이 증가했습니다.'})
+    write_json(dataset / 'verified' / '003.json', {'verdict': 'clean', 'confidence': 96})
+
+    write_json(
+        dataset / 'category_map.json',
+        [
+            {'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'},
+            {'article_id': '002', 'primary_category': '경제', 'subcategory': '일반'},
+            {'article_id': '003', 'primary_category': '경제', 'subcategory': '일반'},
+        ],
+    )
+
+    rows, report = load_summarized_articles_report(dataset)
+
+    assert [row.id for row in rows] == ['SUM-001', 'SUM-002']
+    assert report['classification_source_counts'] == {
+        'source_subcategory': 1,
+        'keyword_rule': 1,
+    }
+    assert report['drop_reason_counts'] == {
+        'category_unmapped': 1,
+    }
+
+
 def test_repo_summarizer_dataset_maps_to_supported_backend_categories():
     rows = load_summarized_articles(Path(__file__).resolve().parents[2] / 'summarizer' / 'data')
 

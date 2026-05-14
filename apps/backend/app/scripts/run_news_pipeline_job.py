@@ -48,15 +48,21 @@ def parse_import_observability(output: str) -> dict[str, dict[str, int]]:
     if not match:
         return {
             'quality_gate_skip_counts': {},
+            'drop_reason_counts': {},
+            'classification_source_counts': {},
         }
     try:
         payload = json.loads(match.group('payload'))
     except json.JSONDecodeError:
         return {
             'quality_gate_skip_counts': {},
+            'drop_reason_counts': {},
+            'classification_source_counts': {},
         }
     return {
         'quality_gate_skip_counts': dict(payload.get('quality_gate_skip_counts') or {}),
+        'drop_reason_counts': dict(payload.get('drop_reason_counts') or {}),
+        'classification_source_counts': dict(payload.get('classification_source_counts') or {}),
     }
 
 
@@ -191,6 +197,8 @@ def run_pipeline_job(
     import_stats = {'inserted': 0, 'updated': 0, 'deleted': 0, 'skipped': 0}
     import_observability = {
         'quality_gate_skip_counts': {},
+        'drop_reason_counts': {},
+        'classification_source_counts': {},
     }
     status = 'success'
     failed_step: str | None = None
@@ -221,6 +229,8 @@ def run_pipeline_job(
         'steps': steps_payload,
         'import_stats': import_stats,
         'quality_gate_skip_counts': import_observability['quality_gate_skip_counts'],
+        'drop_reason_counts': import_observability['drop_reason_counts'],
+        'classification_source_counts': import_observability['classification_source_counts'],
         'report_path': str(report_path),
         'archive_report_path': str(archive_path),
     }

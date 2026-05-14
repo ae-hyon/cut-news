@@ -28,6 +28,8 @@ class ImportStats:
 @dataclass(frozen=True)
 class ImportObservability:
     quality_gate_skip_counts: dict[str, int]
+    drop_reason_counts: dict[str, int]
+    classification_source_counts: dict[str, int]
 
 
 @dataclass(frozen=True)
@@ -114,6 +116,8 @@ def import_summarized_articles(
     stats = ImportStats(inserted=inserted, updated=updated, deleted=deleted, skipped=0)
     observability = ImportObservability(
         quality_gate_skip_counts=dict(report.get('quality_gate_skip_counts', {})),
+        drop_reason_counts=dict(report.get('drop_reason_counts', {})),
+        classification_source_counts=dict(report.get('classification_source_counts', {})),
     )
     return ImportResult(stats=stats, observability=observability)
 
@@ -133,6 +137,8 @@ def main() -> None:
         'summarizer article import observability: ' + json.dumps(
             {
                 'quality_gate_skip_counts': result.observability.quality_gate_skip_counts,
+                'drop_reason_counts': result.observability.drop_reason_counts,
+                'classification_source_counts': result.observability.classification_source_counts,
             },
             ensure_ascii=False,
             separators=(',', ':'),

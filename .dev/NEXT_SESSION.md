@@ -3,7 +3,7 @@
 ## Current branch
 - `main`
 - synced with `origin/main`
-- latest origin/main commit: `a2230be fix: 카카오 로그인 쿠키/CORS 문제 해결 및 직접 통신 전환 (#39)`
+- latest origin/main commit: run `git log -1 --oneline origin/main` after fetch/pull
 
 ## Recently merged / landed work
 - #33 `feat(frontend): 프론트엔드 초기 UI 구현`
@@ -30,9 +30,11 @@
   - `/api/crawler/:path* -> http://localhost:8001/:path*`
 - Article detail route now requires authenticated current-user context instead of exposing the user-scoped detail contract anonymously.
 - Pipeline run report wrapper persists `quality_gate_skip_counts` and now also writes timestamped archives:
-  - latest: `apps/summarizer/data/run_report.json`
+  - `apps/summarizer/data/run_report.json`
   - archive: `apps/summarizer/data/run_reports/run_*.json`
+  - report observability now includes `quality_gate_skip_counts`, `drop_reason_counts`, and `classification_source_counts` so low imported volume can be attributed to quality gates, missing outputs/fields, category mapping failures, or source-vs-keyword classification.
 - News scheduler now retries failed pipeline runs with `PIPELINE_MAX_ATTEMPTS` / `PIPELINE_RETRY_DELAY_SECONDS`; `RUN_ON_STARTUP=true` fails fast if the startup smoke cannot succeed after retries.
+
 - FastAPI OpenAPI docs were upgraded for frontend/backend contract validation:
   - app-level docs call out real Next frontend `3000`, `credentials: include`, and deprecated `apps/test-frontend`.
   - protected routes expose `AccessTokenCookie` cookie auth in Swagger/OpenAPI.
@@ -50,7 +52,7 @@
 ## Current repo state
 - current checkout: `main`
 - synced with `origin/main`
-- current HEAD: `a2230be`
+- current HEAD: run `git log -1 --oneline`
 - local-only untracked artifacts currently observed:
   - `.dev/`
   - `어드민잉캡-Flow.pdf`
@@ -95,12 +97,11 @@
 - Live servers were not restarted during this handoff update. Re-verify runtime manually before assuming the local browser session reflects current files.
 
 ## Remaining mismatches / next best slice
-1. `classification_source` / `dropped_reason` are not currently present in code. If tuning needs richer run-report evidence, add those fields in a follow-up implementation slice.
-2. Run one real Naver pipeline smoke with credentials before calling scheduled scraping production-stable:
+1. Run one real Naver pipeline smoke with credentials before calling scheduled scraping production-stable:
    - `NAVER_CLIENT_ID=... NAVER_CLIENT_SECRET=... NEWS_SOURCE=naver-search NEWS_QUERY=경제 NEWS_COUNT=20 RUN_ON_STARTUP=true make full-up`
-   - verify `apps/summarizer/data/run_report.json`, one `apps/summarizer/data/run_reports/run_*.json`, and imported DB articles.
-3. If content volume is still low, revisit step-3 scoring/selection so the report explains why only a subset reaches summarize/verify/import.
-4. A stale shell environment can still override `FRONTEND_APP_URL` to `http://127.0.0.1:5173`; unset it or set it to `http://127.0.0.1:3000` before local backend runtime checks.
+   - verify `apps/summarizer/data/run_report.json`, one `apps/summarizer/data/run_reports/run_*.json`, imported DB articles, and the new `drop_reason_counts` / `classification_source_counts` fields.
+2. If content volume is still low, use `drop_reason_counts.category_unmapped`, `quality_gate:*`, and `classification_source_counts` to decide whether to tune step-3 scoring/selection, category aliasing, or verification confidence thresholds.
+3. A stale shell environment can still override `FRONTEND_APP_URL` to `http://127.0.0.1:5173`; unset it or set it to `http://127.0.0.1:3000` before local backend runtime checks.
 
 ## Suggested first commands next session
 ```bash
