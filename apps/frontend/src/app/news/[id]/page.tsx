@@ -1,25 +1,25 @@
-'use client'
+'use client';
 
-import { useParams, useRouter } from 'next/navigation'
-import { motion } from 'motion/react'
-import { useScrapStore } from '@/stores/scrap'
-import { MOCK_NEWS } from '@/constants/mock-news'
+import { useParams, useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import { useScrapStore } from '@/stores/scrap';
+import { MOCK_NEWS } from '@/constants/mock-news';
 
 export default function NewsDetail() {
-  const params = useParams()
-  const router = useRouter()
-  const id = params.id as string
-  const { isScrapped, toggleScrap } = useScrapStore()
+  const params = useParams();
+  const router = useRouter();
+  const id = params.id as string;
+  const { isScrapped, toggleScrap } = useScrapStore();
 
-  const news = MOCK_NEWS.find((n) => n.id === id)
-  const scrapped = isScrapped(id)
+  const news = MOCK_NEWS.find((n) => n.id === id);
+  const scrapped = isScrapped(id);
 
   if (!news) {
     return (
       <div className="min-h-dvh flex items-center justify-center px-6">
         <p className="text-text-secondary">뉴스를 찾을 수 없습니다</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -31,7 +31,16 @@ export default function NewsDetail() {
         onClick={() => router.back()}
         className="mb-8 text-text-secondary text-sm hover:text-text-primary transition-colors flex items-center gap-1"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M15 18l-6-6 6-6" />
         </svg>
         뒤로
@@ -101,12 +110,21 @@ export default function NewsDetail() {
               : 'border border-accent text-accent hover:bg-accent hover:text-bg'
           }`}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={scrapped ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill={scrapped ? 'currentColor' : 'none'}
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
           </svg>
           {scrapped ? '스크랩됨' : '스크랩'}
         </button>
       </motion.div>
     </div>
-  )
+  );
 }

@@ -1,27 +1,27 @@
-'use client'
+'use client';
 
-import { useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'motion/react'
-import { useOnboardingStore } from '@/stores/onboarding'
-import { useKakaoLogin } from '@/hooks/useKakaoLogin'
-import { saveUserPreference } from '@/services/authApi'
-import { CATEGORIES } from '@/constants/categories'
-import { showToast } from '@/components/Toast'
-import type { PreferenceMode } from '@/lib/types'
-import OnboardingHeader from '../_components/OnboardingHeader'
-import OnboardingProgress from '../_components/OnboardingProgress'
+import { useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import { useOnboardingStore } from '@/stores/onboarding';
+import { useKakaoLogin } from '@/hooks/useKakaoLogin';
+import { saveUserPreference } from '@/services/authApi';
+import { CATEGORIES } from '@/constants/categories';
+import { showToast } from '@/components/Toast';
+import type { PreferenceMode } from '@/lib/types';
+import OnboardingHeader from '../_components/OnboardingHeader';
+import OnboardingProgress from '../_components/OnboardingProgress';
 
 export default function OnboardingComplete() {
-  const router = useRouter()
+  const router = useRouter();
   const {
     userType,
     selectedCategories,
     narrowMainCategory,
     selectedSubCategories,
-  } = useOnboardingStore()
+  } = useOnboardingStore();
 
-  const isWide = userType === 'wide'
+  const isWide = userType === 'wide';
 
   const handleLoginSuccess = useCallback(
     async (userId: string) => {
@@ -34,34 +34,41 @@ export default function OnboardingComplete() {
               ? [narrowMainCategory]
               : [],
           subcategories: isWide ? [] : selectedSubCategories,
-        }
-        await saveUserPreference(userId, payload)
-        router.push('/')
+        };
+        await saveUserPreference(userId, payload);
+        router.push('/');
       } catch {
-        showToast('설정 저장에 실패했어요. 다시 시도해주세요.')
+        showToast('설정 저장에 실패했어요. 다시 시도해주세요.');
       }
     },
-    [userType, isWide, selectedCategories, narrowMainCategory, selectedSubCategories, router]
-  )
+    [
+      userType,
+      isWide,
+      selectedCategories,
+      narrowMainCategory,
+      selectedSubCategories,
+      router,
+    ],
+  );
 
   const { startLogin, status, error, isLoading } = useKakaoLogin({
     onSuccess: handleLoginSuccess,
-  })
+  });
 
   const selectedNames = isWide
     ? selectedCategories.map(
-        (id) => CATEGORIES.find((c) => c.id === id)?.name ?? id
+        (id) => CATEGORIES.find((c) => c.id === id)?.name ?? id,
       )
     : (() => {
-        const main = CATEGORIES.find((c) => c.id === narrowMainCategory)
-        if (!main) return []
+        const main = CATEGORIES.find((c) => c.id === narrowMainCategory);
+        if (!main) return [];
         const subNames = selectedSubCategories.map(
-          (id) => main.subcategories?.find((s) => s.id === id)?.name ?? id
-        )
-        return [main.name, ...subNames]
-      })()
+          (id) => main.subcategories?.find((s) => s.id === id)?.name ?? id,
+        );
+        return [main.name, ...subNames];
+      })();
 
-  const editRoute = isWide ? '/onboarding/wide' : '/onboarding/narrow'
+  const editRoute = isWide ? '/onboarding/wide' : '/onboarding/narrow';
 
   return (
     <>
@@ -166,5 +173,5 @@ export default function OnboardingComplete() {
         </motion.div>
       </div>
     </>
-  )
+  );
 }

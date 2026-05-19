@@ -1,4 +1,4 @@
-import { Category } from '@/types'
+import { Category } from '@/types';
 
 export const CATEGORIES: Category[] = [
   {
@@ -107,6 +107,6 @@ export const CATEGORIES: Category[] = [
       { id: 'lifestyle-food', name: '맛집' },
     ],
   },
-]
+];
 
-export const MAX_WIDE_CATEGORIES = 5
+export const MAX_WIDE_CATEGORIES = 5;

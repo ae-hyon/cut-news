@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { motion } from 'motion/react'
+import { motion } from 'motion/react';
 
 export default function OnboardingGuide() {
   return (
@@ -13,5 +13,5 @@ export default function OnboardingGuide() {
       <p>관심있는 분야를 최소 3개 이상 선택해서</p>
       <p>하루에 한번씩 요약해서 받아보세요</p>
     </motion.div>
-  )
+  );
 }

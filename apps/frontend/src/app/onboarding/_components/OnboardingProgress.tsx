@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import { motion } from 'motion/react'
+import { motion } from 'motion/react';
 
-const TOTAL_STEPS = 3
+const TOTAL_STEPS = 3;
 
 interface OnboardingProgressProps {
-  step: number
-  label?: string
-  rightLabel?: string
+  step: number;
+  label?: string;
+  rightLabel?: string;
 }
 
 export default function OnboardingProgress({
@@ -15,10 +15,10 @@ export default function OnboardingProgress({
   label,
   rightLabel,
 }: OnboardingProgressProps) {
-  const progressWidth = `${(step / TOTAL_STEPS) * 100}%`
+  const progressWidth = `${(step / TOTAL_STEPS) * 100}%`;
 
   // Step 1 uses badge style, steps 2+ use text labels
-  const isBadgeStyle = step === 1
+  const isBadgeStyle = step === 1;
 
   return (
     <motion.div
@@ -56,5 +56,5 @@ export default function OnboardingProgress({
         />
       </div>
     </motion.div>
-  )
+  );
 }

@@ -1,26 +1,24 @@
-'use client'
+'use client';
 
-import { useRouter } from 'next/navigation'
-import { motion } from 'motion/react'
-import { useOnboardingStore } from '@/stores/onboarding'
-import { CATEGORIES } from '@/constants/categories'
+import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import { useOnboardingStore } from '@/stores/onboarding';
+import { CATEGORIES } from '@/constants/categories';
 
 export default function OnboardingNarrowSub() {
-  const router = useRouter()
+  const router = useRouter();
   const { narrowMainCategory, selectedSubCategories, toggleSubCategory } =
-    useOnboardingStore()
+    useOnboardingStore();
 
-  const mainCat = CATEGORIES.find((c) => c.id === narrowMainCategory)
-  const subs = mainCat?.subcategories ?? []
+  const mainCat = CATEGORIES.find((c) => c.id === narrowMainCategory);
+  const subs = mainCat?.subcategories ?? [];
 
   if (!mainCat) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-text-secondary">
-          먼저 대카테고리를 선택해주세요
-        </p>
+        <p className="text-text-secondary">먼저 대카테고리를 선택해주세요</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -46,7 +44,7 @@ export default function OnboardingNarrowSub() {
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-wrap gap-3">
           {subs.map((sub, i) => {
-            const selected = selectedSubCategories.includes(sub.id)
+            const selected = selectedSubCategories.includes(sub.id);
             return (
               <motion.button
                 key={sub.id}
@@ -63,7 +61,7 @@ export default function OnboardingNarrowSub() {
               >
                 {sub.name}
               </motion.button>
-            )
+            );
           })}
         </div>
       </div>
@@ -87,5 +85,5 @@ export default function OnboardingNarrowSub() {
         </button>
       </div>
     </>
-  )
+  );
 }

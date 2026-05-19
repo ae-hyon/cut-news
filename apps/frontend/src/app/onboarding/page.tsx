@@ -1,33 +1,62 @@
-'use client'
+'use client';
 
-import { useRouter } from 'next/navigation'
-import { motion } from 'motion/react'
-import { useOnboardingStore } from '@/stores/onboarding'
-import type { UserType } from '@/types'
-import OnboardingHeader from './_components/OnboardingHeader'
-import OnboardingGuide from './_components/OnboardingGuide'
-import OnboardingProgress from './_components/OnboardingProgress'
+import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import { useOnboardingStore } from '@/stores/onboarding';
+import type { UserType } from '@/types';
+import OnboardingHeader from './_components/OnboardingHeader';
+import OnboardingGuide from './_components/OnboardingGuide';
+import OnboardingProgress from './_components/OnboardingProgress';
 
 function WideIcon() {
   return (
-    <svg width="50" height="32" viewBox="0 0 50 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-80">
+    <svg
+      width="50"
+      height="32"
+      viewBox="0 0 50 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="opacity-80"
+    >
       <rect x="5" y="9" width="3" height="14" rx="2" fill="#FFE5D4" />
       <rect x="43" y="9" width="3" height="14" rx="2" fill="#FFE5D4" />
       <rect x="6" y="14.5" width="38" height="3" fill="#FFE5D4" />
     </svg>
-  )
+  );
 }
 
 function NarrowIcon() {
   return (
-    <svg width="50" height="32" viewBox="0 0 40 27" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-80">
-      <path d="M0 21.0937C0 20.1618 0.75552 19.4062 1.6875 19.4062H5.90625C6.83823 19.4062 7.59375 20.1618 7.59375 21.0938V25.3125C7.59375 26.2445 6.83823 27 5.90625 27H1.6875C0.755519 27 0 26.2445 0 25.3125V21.0937Z" fill="#FFE5D4"/>
-      <path d="M16.0312 21.0937C16.0312 20.1618 16.7868 19.4062 17.7188 19.4062H21.9375C22.8695 19.4062 23.625 20.1618 23.625 21.0938V25.3125C23.625 26.2445 22.8695 27 21.9375 27H17.7187C16.7868 27 16.0312 26.2445 16.0312 25.3125V21.0937Z" fill="#FFE5D4"/>
-      <path d="M16.0312 1.6875C16.0312 0.755519 16.7868 0 17.7188 0H21.9375C22.8695 0 23.625 0.75552 23.625 1.6875V5.90625C23.625 6.83823 22.8695 7.59375 21.9375 7.59375H17.7187C16.7868 7.59375 16.0312 6.83823 16.0312 5.90625V1.6875Z" fill="#FFE5D4"/>
-      <path d="M32.0625 21.0937C32.0625 20.1618 32.818 19.4062 33.75 19.4062H37.9688C38.9007 19.4062 39.6562 20.1618 39.6562 21.0938V25.3125C39.6562 26.2445 38.9007 27 37.9688 27H33.75C32.818 27 32.0625 26.2445 32.0625 25.3125V21.0937Z" fill="#FFE5D4"/>
-      <path d="M20.625 12.7031H32.4844C34.7884 12.7031 36.6562 14.5709 36.6562 16.875V24H35.0625V16.875C35.0625 15.4511 33.9082 14.2969 32.4844 14.2969H20.625V23.1562H19.0312V14.2969H7.17188C5.74802 14.2969 4.59375 15.4511 4.59375 16.875V21.4688H3V16.875C3 14.5709 4.86781 12.7031 7.17188 12.7031H19.0312V6.375H20.625V12.7031Z" fill="#FFE5D4"/>
+    <svg
+      width="50"
+      height="32"
+      viewBox="0 0 40 27"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="opacity-80"
+    >
+      <path
+        d="M0 21.0937C0 20.1618 0.75552 19.4062 1.6875 19.4062H5.90625C6.83823 19.4062 7.59375 20.1618 7.59375 21.0938V25.3125C7.59375 26.2445 6.83823 27 5.90625 27H1.6875C0.755519 27 0 26.2445 0 25.3125V21.0937Z"
+        fill="#FFE5D4"
+      />
+      <path
+        d="M16.0312 21.0937C16.0312 20.1618 16.7868 19.4062 17.7188 19.4062H21.9375C22.8695 19.4062 23.625 20.1618 23.625 21.0938V25.3125C23.625 26.2445 22.8695 27 21.9375 27H17.7187C16.7868 27 16.0312 26.2445 16.0312 25.3125V21.0937Z"
+        fill="#FFE5D4"
+      />
+      <path
+        d="M16.0312 1.6875C16.0312 0.755519 16.7868 0 17.7188 0H21.9375C22.8695 0 23.625 0.75552 23.625 1.6875V5.90625C23.625 6.83823 22.8695 7.59375 21.9375 7.59375H17.7187C16.7868 7.59375 16.0312 6.83823 16.0312 5.90625V1.6875Z"
+        fill="#FFE5D4"
+      />
+      <path
+        d="M32.0625 21.0937C32.0625 20.1618 32.818 19.4062 33.75 19.4062H37.9688C38.9007 19.4062 39.6562 20.1618 39.6562 21.0938V25.3125C39.6562 26.2445 38.9007 27 37.9688 27H33.75C32.818 27 32.0625 26.2445 32.0625 25.3125V21.0937Z"
+        fill="#FFE5D4"
+      />
+      <path
+        d="M20.625 12.7031H32.4844C34.7884 12.7031 36.6562 14.5709 36.6562 16.875V24H35.0625V16.875C35.0625 15.4511 33.9082 14.2969 32.4844 14.2969H20.625V23.1562H19.0312V14.2969H7.17188C5.74802 14.2969 4.59375 15.4511 4.59375 16.875V21.4688H3V16.875C3 14.5709 4.86781 12.7031 7.17188 12.7031H19.0312V6.375H20.625V12.7031Z"
+        fill="#FFE5D4"
+      />
     </svg>
-  )
+  );
 }
 
 function CheckIcon({ checked }: { checked: boolean }) {
@@ -48,19 +77,19 @@ function CheckIcon({ checked }: { checked: boolean }) {
         strokeLinejoin="round"
       />
     </svg>
-  )
+  );
 }
 
 export default function OnboardingStep1() {
-  const router = useRouter()
-  const { userType, setUserType } = useOnboardingStore()
+  const router = useRouter();
+  const { userType, setUserType } = useOnboardingStore();
 
   const handleNext = () => {
-    if (!userType) return
+    if (!userType) return;
     router.push(
       userType === 'wide' ? '/onboarding/wide' : '/onboarding/narrow',
-    )
-  }
+    );
+  };
 
   return (
     <>
@@ -127,7 +156,7 @@ export default function OnboardingStep1() {
         </motion.div>
       </div>
     </>
-  )
+  );
 }
 
 function TypeCard({
@@ -139,13 +168,13 @@ function TypeCard({
   description,
   delay,
 }: {
-  type: UserType
-  selected: boolean
-  onSelect: (t: UserType) => void
-  icon: React.ReactNode
-  title: string
-  description: React.ReactNode
-  delay: number
+  type: UserType;
+  selected: boolean;
+  onSelect: (t: UserType) => void;
+  icon: React.ReactNode;
+  title: string;
+  description: React.ReactNode;
+  delay: number;
 }) {
   return (
     <motion.button
@@ -173,5 +202,5 @@ function TypeCard({
         </p>
       </div>
     </motion.button>
-  )
+  );
 }

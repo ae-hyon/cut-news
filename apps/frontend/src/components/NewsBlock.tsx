@@ -1,25 +1,25 @@
-'use client'
+'use client';
 
-import { motion } from 'motion/react'
-import type { NewsItem } from '@/types'
+import { motion } from 'motion/react';
+import type { NewsItem } from '@/types';
 
 interface NewsBlockProps {
-  news: NewsItem
-  index: number
-  onClick: (id: string) => void
+  news: NewsItem;
+  index: number;
+  onClick: (id: string) => void;
 }
 
 const sizeStyles = {
   large: 'row-span-2 min-h-[220px]',
   medium: 'min-h-[160px]',
   small: 'min-h-[120px]',
-}
+};
 
 const titleStyles = {
   large: 'text-lg font-bold leading-snug',
   medium: 'text-base font-bold leading-snug',
   small: 'text-sm font-bold leading-snug',
-}
+};
 
 export default function NewsBlock({ news, index, onClick }: NewsBlockProps) {
   return (
@@ -49,5 +49,5 @@ export default function NewsBlock({ news, index, onClick }: NewsBlockProps) {
       </div>
       <p className="text-text-tertiary text-[10px] mt-3">{news.publishedAt}</p>
     </motion.button>
-  )
+  );
 }

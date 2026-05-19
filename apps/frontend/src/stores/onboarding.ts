@@ -1,20 +1,20 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import { UserType } from '@/types'
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { UserType } from '@/types';
 
 interface OnboardingStore {
-  userType: UserType | null
-  selectedCategories: string[]
-  narrowMainCategory: string | null
-  selectedSubCategories: string[]
-  isCompleted: boolean
+  userType: UserType | null;
+  selectedCategories: string[];
+  narrowMainCategory: string | null;
+  selectedSubCategories: string[];
+  isCompleted: boolean;
 
-  setUserType: (type: UserType) => void
-  toggleCategory: (id: string) => boolean
-  setNarrowMainCategory: (id: string) => void
-  toggleSubCategory: (id: string) => void
-  setCompleted: (val: boolean) => void
-  reset: () => void
+  setUserType: (type: UserType) => void;
+  toggleCategory: (id: string) => boolean;
+  setNarrowMainCategory: (id: string) => void;
+  toggleSubCategory: (id: string) => void;
+  setCompleted: (val: boolean) => void;
+  reset: () => void;
 }
 
 export const useOnboardingStore = create<OnboardingStore>()(
@@ -35,27 +35,31 @@ export const useOnboardingStore = create<OnboardingStore>()(
         }),
 
       toggleCategory: (id) => {
-        const { selectedCategories } = get()
+        const { selectedCategories } = get();
         if (selectedCategories.includes(id)) {
-          set({ selectedCategories: selectedCategories.filter((c) => c !== id) })
-          return true
+          set({
+            selectedCategories: selectedCategories.filter((c) => c !== id),
+          });
+          return true;
         }
-        if (selectedCategories.length >= 5) return false
-        set({ selectedCategories: [...selectedCategories, id] })
-        return true
+        if (selectedCategories.length >= 5) return false;
+        set({ selectedCategories: [...selectedCategories, id] });
+        return true;
       },
 
       setNarrowMainCategory: (id) =>
         set({ narrowMainCategory: id, selectedSubCategories: [] }),
 
       toggleSubCategory: (id) => {
-        const { selectedSubCategories } = get()
+        const { selectedSubCategories } = get();
         if (selectedSubCategories.includes(id)) {
           set({
-            selectedSubCategories: selectedSubCategories.filter((c) => c !== id),
-          })
+            selectedSubCategories: selectedSubCategories.filter(
+              (c) => c !== id,
+            ),
+          });
         } else {
-          set({ selectedSubCategories: [...selectedSubCategories, id] })
+          set({ selectedSubCategories: [...selectedSubCategories, id] });
         }
       },
 
@@ -70,6 +74,6 @@ export const useOnboardingStore = create<OnboardingStore>()(
           isCompleted: false,
         }),
     }),
-    { name: 'annoying-cap-onboarding' }
-  )
-)
+    { name: 'annoying-cap-onboarding' },
+  ),
+);

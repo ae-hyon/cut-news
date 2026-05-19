@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { motion } from 'motion/react'
+import { motion } from 'motion/react';
 
 export default function ProfilePage() {
   return (
@@ -19,5 +19,5 @@ export default function ProfilePage() {
         <p className="text-text-secondary text-sm">프로필 및 설정 (TBD)</p>
       </motion.div>
     </div>
-  )
+  );
 }

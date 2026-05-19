@@ -1,37 +1,37 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useCallback } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { useEffect, useState, useCallback } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 
 interface ToastMessage {
-  id: number
-  text: string
+  id: number;
+  text: string;
 }
 
-let toastId = 0
-let addToastFn: ((text: string) => void) | null = null
+let toastId = 0;
+let addToastFn: ((text: string) => void) | null = null;
 
 export function showToast(text: string) {
-  addToastFn?.(text)
+  addToastFn?.(text);
 }
 
 export default function Toast() {
-  const [messages, setMessages] = useState<ToastMessage[]>([])
+  const [messages, setMessages] = useState<ToastMessage[]>([]);
 
   const addToast = useCallback((text: string) => {
-    const id = ++toastId
-    setMessages((prev) => [...prev, { id, text }])
+    const id = ++toastId;
+    setMessages((prev) => [...prev, { id, text }]);
     setTimeout(() => {
-      setMessages((prev) => prev.filter((m) => m.id !== id))
-    }, 2500)
-  }, [])
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+    }, 2500);
+  }, []);
 
   useEffect(() => {
-    addToastFn = addToast
+    addToastFn = addToast;
     return () => {
-      addToastFn = null
-    }
-  }, [addToast])
+      addToastFn = null;
+    };
+  }, [addToast]);
 
   return (
     <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none">
@@ -50,5 +50,5 @@ export default function Toast() {
         ))}
       </AnimatePresence>
     </div>
-  )
+  );
 }
