@@ -27,19 +27,19 @@ export function getCategories() {
 }
 
 export function getAnonymousSession() {
-  return api<AuthSessionResponse>('/v1/auth/session')
+  return api<AuthSessionResponse>('/v1/me')
 }
 
 export function getUserSession(userId: string) {
-  return api<AuthSessionResponse>(`/v1/auth/session?user_id=${userId}`)
+  return api<AuthSessionResponse>(`/v1/me?user_id=${userId}`)
 }
 
 export function getKakaoStart() {
-  return api<AuthStartResponse>('/v1/auth/kakao/start')
+  return api<AuthStartResponse>('/v1/auth/oauth/kakao/authorization', { method: 'POST' })
 }
 
 export function postLogout() {
-  return api<AuthLogoutResponse>('/v1/auth/logout', { method: 'POST' })
+  return api<AuthLogoutResponse>('/v1/auth/session', { method: 'DELETE' })
 }
 
 export function getUserPreference(userId: string) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { getKakaoStart } from '@/services/authApi';
 import { useAuthStore } from '@/stores/auth';
 import { getErrorMessage } from '@/lib/api';
@@ -19,7 +19,6 @@ interface UseKakaoLoginOptions {
 export function useKakaoLogin({ onSuccess }: UseKakaoLoginOptions = {}) {
   const [status, setStatus] = useState<KakaoLoginStatus>('idle');
   const [error, setError] = useState<string | null>(null);
-  const popupRef = useRef<Window | null>(null);
   const checkSession = useAuthStore((s) => s.checkSession);
 
   const startLogin = useCallback(async () => {
@@ -27,21 +26,7 @@ export function useKakaoLogin({ onSuccess }: UseKakaoLoginOptions = {}) {
       setStatus('waiting');
       setError(null);
       const { authorization_url } = await getKakaoStart();
-      const popup = window.open(
-        authorization_url,
-        'annoyingcap-kakao-login',
-        'popup=yes,width=420,height=720',
-      );
-      popupRef.current = popup;
-
-      if (!popup) {
-        setStatus('error');
-        setError(
-          '팝업이 차단됐어요. 브라우저에서 팝업을 허용한 뒤 다시 시도해주세요.',
-        );
-        return;
-      }
-      popup.focus();
+      window.location.href = authorization_url;
     } catch (err) {
       setStatus('error');
       setError(getErrorMessage(err));
@@ -49,16 +34,15 @@ export function useKakaoLogin({ onSuccess }: UseKakaoLoginOptions = {}) {
   }, []);
 
   useEffect(() => {
-    const handler = async (event: MessageEvent) => {
-      if (event.data?.type !== 'annoyingcap:kakao-authenticated') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('auth') !== 'kakao') return;
 
+    const handleCallback = async () => {
       try {
         setStatus('checking');
         const session = await checkSession();
         if (session.user_id) {
           setStatus('confirmed');
-          popupRef.current?.close();
-          popupRef.current = null;
           onSuccess?.(session.user_id);
         } else {
           setStatus('error');
@@ -70,8 +54,7 @@ export function useKakaoLogin({ onSuccess }: UseKakaoLoginOptions = {}) {
       }
     };
 
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
+    void handleCallback();
   }, [checkSession, onSuccess]);
 
   return {
