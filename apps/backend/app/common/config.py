@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     app_version: str = '0.1.0'
     api_prefix: str = '/v1'
     frontend_app_url: str = 'http://127.0.0.1:3000'
+    cors_allowed_origins: str = ''
     debug: bool = True
     database_echo: bool = False
     migrate_on_startup: bool = True
@@ -35,6 +36,18 @@ class Settings(BaseSettings):
     auth_refresh_cookie_name: str = 'annoyingcap_refresh_token'
     auth_cookie_secure: bool = False
     auth_cookie_samesite: str = 'lax'
+
+    @property
+    def resolved_cors_allowed_origins(self) -> list[str]:
+        origins = {self.frontend_app_url.rstrip('/')}
+        if self.app_env == 'development':
+            origins.update({'http://127.0.0.1:3000', 'http://localhost:3000'})
+        origins.update(
+            origin.rstrip('/')
+            for origin in self.cors_allowed_origins.split(',')
+            if origin.strip()
+        )
+        return sorted(origins)
 
 
 settings = Settings()

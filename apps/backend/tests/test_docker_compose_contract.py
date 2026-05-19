@@ -21,6 +21,7 @@ def test_root_compose_runs_backend_crawler_summarizer_and_real_frontend():
     assert '"3000:3000"' in compose_text
     assert 'NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://127.0.0.1:8000}' in compose_text
     assert 'FRONTEND_APP_URL: http://127.0.0.1:3000' in compose_text
+    assert 'CORS_ALLOWED_ORIGINS: http://127.0.0.1:3000,http://localhost:3000' in compose_text
     assert 'apps/summarizer/data:/app/apps/summarizer/data' in compose_text
     assert 'AI_NEWS_GENERATION_TIME: "08:30:00"' in compose_text
     assert 'make full-up          - Start frontend + backend + crawler + scheduler + Postgres' in makefile_text
