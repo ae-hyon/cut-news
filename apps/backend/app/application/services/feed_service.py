@@ -172,6 +172,36 @@ class FeedService:
                 items.append(article)
         return items
 
+    def _archive_items_for_user(self, user_id: str, articles: list[Article]) -> list[Article]:
+        return self._sort_articles(self._filter_articles_for_user(user_id, articles))
+
+    def get_archive_month(self, user_id: str, archive_month: str) -> dict:
+        articles = self._archive_items_for_user(user_id, self.article_repository.list_by_month(archive_month))
+        grouped: dict[str, list[Article]] = {}
+        for article in articles:
+            grouped.setdefault(article.published_at, []).append(article)
+
+        return {
+            'user_id': user_id,
+            'month': archive_month,
+            'days': [
+                {
+                    'date': archive_date,
+                    'count': len(items),
+                    'items': items,
+                }
+                for archive_date, items in sorted(grouped.items(), reverse=True)
+            ],
+        }
+
+    def get_archive_date(self, user_id: str, archive_date: str) -> dict:
+        items = self._archive_items_for_user(user_id, self.article_repository.list_by_date(archive_date))
+        return {
+            'user_id': user_id,
+            'date': archive_date,
+            'items': items,
+        }
+
     def add_scrap(self, user_id: str, article_id: str) -> None:
         if not self.article_repository.get_by_id(article_id):
             raise NotFoundError('Article not found')

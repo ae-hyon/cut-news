@@ -243,6 +243,49 @@ class FeedResponseSchema(BaseModel):
         return cls(user_id=payload['user_id'], mode=payload['mode'], blocks=blocks)
 
 
+class ArchiveDayResponseSchema(BaseModel):
+    date: str
+    count: int
+    items: list[ArticleCardResponseSchema]
+
+
+class ArchiveMonthResponseSchema(BaseModel):
+    user_id: str
+    month: str
+    days: list[ArchiveDayResponseSchema]
+
+    @classmethod
+    def from_payload(cls, payload: dict, service, user_id: str) -> 'ArchiveMonthResponseSchema':
+        scrapped_ids = {item.id for item in service.list_scraps(user_id)}
+        return cls(
+            user_id=payload['user_id'],
+            month=payload['month'],
+            days=[
+                ArchiveDayResponseSchema(
+                    date=day['date'],
+                    count=day['count'],
+                    items=[ArticleCardResponseSchema.from_entity(article, article.id in scrapped_ids) for article in day['items']],
+                )
+                for day in payload['days']
+            ],
+        )
+
+
+class ArchiveDateResponseSchema(BaseModel):
+    user_id: str
+    date: str
+    items: list[ArticleCardResponseSchema]
+
+    @classmethod
+    def from_payload(cls, payload: dict, service, user_id: str) -> 'ArchiveDateResponseSchema':
+        scrapped_ids = {item.id for item in service.list_scraps(user_id)}
+        return cls(
+            user_id=payload['user_id'],
+            date=payload['date'],
+            items=[ArticleCardResponseSchema.from_entity(article, article.id in scrapped_ids) for article in payload['items']],
+        )
+
+
 class ScrapToggleResponseSchema(BaseModel):
     user_id: str
     article_id: str

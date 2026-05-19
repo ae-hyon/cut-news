@@ -38,7 +38,11 @@ class StubArticleRepository:
     def list_by_primary_and_subcategories(self, primary: str, subs: list[str]):
         return list(self.by_primary_and_subcategories.get((primary, tuple(subs)), []))
 
+    def list_by_date(self, archive_date: str):
         return [article for article in self.all_articles if article.published_at == archive_date]
+
+    def list_by_month(self, archive_month: str):
+        return [article for article in self.all_articles if article.published_at.startswith(f'{archive_month}-')]
 
 
 class StubPreferenceRepository:
@@ -254,3 +258,42 @@ def test_scraps_remain_available_even_when_current_preference_would_filter_them_
     payload = service.list_scraps('demo-user')
 
     assert [article.id for article in payload] == ['A3', 'A4']
+
+
+def test_archive_month_groups_current_user_articles_by_date_and_preference():
+    service = build_service(
+        UserPreference(
+            user_id='demo-user',
+            mode=PreferenceMode.WIDE,
+            primary_categories=['economy'],
+            subcategories=[],
+            onboarding_completed=True,
+        ),
+        scrap_ids=['A5'],
+    )
+
+    payload = service.get_archive_month('demo-user', '2026-04')
+
+    assert payload['user_id'] == 'demo-user'
+    assert payload['month'] == '2026-04'
+    assert [(day['date'], day['count']) for day in payload['days']] == [('2026-04-15', 2), ('2026-04-14', 2), ('2026-04-13', 1)]
+    assert [article.id for article in payload['days'][0]['items']] == ['A5', 'A7']
+
+
+def test_archive_date_returns_current_user_articles_with_scrap_state():
+    service = build_service(
+        UserPreference(
+            user_id='demo-user',
+            mode=PreferenceMode.WIDE,
+            primary_categories=['economy'],
+            subcategories=[],
+            onboarding_completed=True,
+        ),
+        scrap_ids=['A5'],
+    )
+
+    payload = service.get_archive_date('demo-user', '2026-04-15')
+
+    assert payload['user_id'] == 'demo-user'
+    assert payload['date'] == '2026-04-15'
+    assert [article.id for article in payload['items']] == ['A5', 'A7']

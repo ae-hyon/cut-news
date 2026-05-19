@@ -137,7 +137,15 @@ class SqlAlchemyArticleRepository:
         return [_to_article(row) for row in rows]
 
     def list_by_date(self, archive_date: str) -> list[Article]:
-        rows = self.db.scalars(select(ArticleModel).where(ArticleModel.published_at == archive_date).order_by(ArticleModel.id)).all()
+        rows = self.db.scalars(select(ArticleModel).where(ArticleModel.published_at == archive_date).order_by(ArticleModel.published_at.desc(), ArticleModel.id)).all()
+        return [_to_article(row) for row in rows]
+
+    def list_by_month(self, archive_month: str) -> list[Article]:
+        rows = self.db.scalars(
+            select(ArticleModel)
+            .where(ArticleModel.published_at.like(f'{archive_month}-%'))
+            .order_by(ArticleModel.published_at.desc(), ArticleModel.id)
+        ).all()
         return [_to_article(row) for row in rows]
 
 

@@ -6,6 +6,8 @@ from app.domain.entities import AuthSession
 from app.domain.exceptions import ValidationError
 from app.presentation.api.dependencies import get_feed_service, get_user_preference_service, require_current_user
 from app.presentation.schemas import (
+    ArchiveDateResponseSchema,
+    ArchiveMonthResponseSchema,
     FeedResponseSchema,
     UserPreferenceResponseSchema,
     UserPreferenceUpdateRequestSchema,
@@ -73,3 +75,35 @@ def get_my_feed(
     service: FeedService = Depends(get_feed_service),
 ):
     return FeedResponseSchema.from_payload(service.get_feed(session.user_id), service, session.user_id)
+
+
+@router.get(
+    '/me/archive',
+    response_model=ArchiveMonthResponseSchema,
+    summary='Get my monthly archive',
+    description='Returns the authenticated user archive grouped by published date for the requested YYYY-MM month.',
+    responses=AUTH_REQUIRED,
+)
+def get_my_archive_month(
+    month: str,
+    session: AuthSession = Depends(require_current_user),
+    service: FeedService = Depends(get_feed_service),
+):
+    assert session.user_id is not None
+    return ArchiveMonthResponseSchema.from_payload(service.get_archive_month(session.user_id, month), service, session.user_id)
+
+
+@router.get(
+    '/me/archive/{archive_date}',
+    response_model=ArchiveDateResponseSchema,
+    summary='Get my daily archive',
+    description='Returns the authenticated user archive items for the requested YYYY-MM-DD date.',
+    responses=AUTH_REQUIRED,
+)
+def get_my_archive_date(
+    archive_date: str,
+    session: AuthSession = Depends(require_current_user),
+    service: FeedService = Depends(get_feed_service),
+):
+    assert session.user_id is not None
+    return ArchiveDateResponseSchema.from_payload(service.get_archive_date(session.user_id, archive_date), service, session.user_id)
