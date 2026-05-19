@@ -1,15 +1,16 @@
-'use client'
+'use client';
 
-import { motion } from 'motion/react'
-import Image from 'next/image'
+import { motion } from 'motion/react';
+import Image from 'next/image';
 
-const today = new Date().toLocaleDateString('ko-KR', {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-})
+const today = new Date()
+  .toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
   .replace(/\. /g, '.')
-  .replace(/\.$/, '')
+  .replace(/\.$/, '');
 
 export default function OnboardingHeader() {
   return (
@@ -39,5 +40,5 @@ export default function OnboardingHeader() {
         </span>
       </div>
     </motion.div>
-  )
+  );
 }

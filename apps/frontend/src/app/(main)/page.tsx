@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import { useRouter } from 'next/navigation'
-import { motion } from 'motion/react'
-import NewsBlock from '@/components/NewsBlock'
-import { MOCK_NEWS } from '@/constants/mock-news'
+import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import NewsBlock from '@/components/NewsBlock';
+import { MOCK_NEWS } from '@/constants/mock-news';
 
 export default function NewsHome() {
-  const router = useRouter()
-  const news = MOCK_NEWS
+  const router = useRouter();
+  const news = MOCK_NEWS;
 
   if (news.length === 0) {
     return (
@@ -26,7 +26,7 @@ export default function NewsHome() {
           </p>
         </motion.div>
       </div>
-    )
+    );
   }
 
   return (
@@ -42,5 +42,5 @@ export default function NewsHome() {
         ))}
       </div>
     </div>
-  )
+  );
 }

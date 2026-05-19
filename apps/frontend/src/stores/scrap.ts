@@ -1,10 +1,10 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface ScrapStore {
-  scrappedIds: string[]
-  toggleScrap: (id: string) => void
-  isScrapped: (id: string) => boolean
+  scrappedIds: string[];
+  toggleScrap: (id: string) => void;
+  isScrapped: (id: string) => boolean;
 }
 
 export const useScrapStore = create<ScrapStore>()(
@@ -13,16 +13,16 @@ export const useScrapStore = create<ScrapStore>()(
       scrappedIds: [],
 
       toggleScrap: (id) => {
-        const { scrappedIds } = get()
+        const { scrappedIds } = get();
         if (scrappedIds.includes(id)) {
-          set({ scrappedIds: scrappedIds.filter((s) => s !== id) })
+          set({ scrappedIds: scrappedIds.filter((s) => s !== id) });
         } else {
-          set({ scrappedIds: [...scrappedIds, id] })
+          set({ scrappedIds: [...scrappedIds, id] });
         }
       },
 
       isScrapped: (id) => get().scrappedIds.includes(id),
     }),
-    { name: 'annoying-cap-scrap' }
-  )
-)
+    { name: 'annoying-cap-scrap' },
+  ),
+);

@@ -1,26 +1,26 @@
-'use client'
+'use client';
 
-import { useRouter } from 'next/navigation'
-import { motion } from 'motion/react'
-import { useOnboardingStore } from '@/stores/onboarding'
-import { CATEGORIES, MAX_WIDE_CATEGORIES } from '@/constants/categories'
-import { showToast } from '@/components/Toast'
-import OnboardingHeader from '../_components/OnboardingHeader'
-import OnboardingProgress from '../_components/OnboardingProgress'
-import OnboardingGuide from '../_components/OnboardingGuide'
+import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import { useOnboardingStore } from '@/stores/onboarding';
+import { CATEGORIES, MAX_WIDE_CATEGORIES } from '@/constants/categories';
+import { showToast } from '@/components/Toast';
+import OnboardingHeader from '../_components/OnboardingHeader';
+import OnboardingProgress from '../_components/OnboardingProgress';
+import OnboardingGuide from '../_components/OnboardingGuide';
 
 export default function OnboardingWide() {
-  const router = useRouter()
-  const { selectedCategories, toggleCategory } = useOnboardingStore()
+  const router = useRouter();
+  const { selectedCategories, toggleCategory } = useOnboardingStore();
 
   const handleToggle = (id: string) => {
-    const success = toggleCategory(id)
+    const success = toggleCategory(id);
     if (!success) {
-      showToast(`대분류 ${MAX_WIDE_CATEGORIES}개까지만 선택 가능해요`)
+      showToast(`대분류 ${MAX_WIDE_CATEGORIES}개까지만 선택 가능해요`);
     }
-  }
+  };
 
-  const canProceed = selectedCategories.length >= 3
+  const canProceed = selectedCategories.length >= 3;
 
   return (
     <>
@@ -34,7 +34,7 @@ export default function OnboardingWide() {
           {/* Category grid */}
           <div className="grid grid-cols-2 gap-2 py-4 overflow-y-auto flex-1">
             {CATEGORIES.map((cat, i) => {
-              const selected = selectedCategories.includes(cat.id)
+              const selected = selectedCategories.includes(cat.id);
               return (
                 <motion.button
                   key={cat.id}
@@ -56,7 +56,7 @@ export default function OnboardingWide() {
                     {cat.keywords.join(' ')}
                   </p>
                 </motion.button>
-              )
+              );
             })}
           </div>
         </div>
@@ -85,5 +85,5 @@ export default function OnboardingWide() {
         </div>
       </div>
     </>
-  )
+  );
 }

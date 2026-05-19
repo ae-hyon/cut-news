@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
 const today = new Date().toLocaleDateString('ko-KR', {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
-})
+});
 
 interface HeaderProps {
-  userName?: string
+  userName?: string;
 }
 
 export default function Header({ userName }: HeaderProps) {
@@ -25,5 +25,5 @@ export default function Header({ userName }: HeaderProps) {
         )}
       </div>
     </header>
-  )
+  );
 }

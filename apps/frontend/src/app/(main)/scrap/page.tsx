@@ -1,16 +1,16 @@
-'use client'
+'use client';
 
-import { useRouter } from 'next/navigation'
-import { motion } from 'motion/react'
-import NewsBlock from '@/components/NewsBlock'
-import { useScrapStore } from '@/stores/scrap'
-import { MOCK_NEWS } from '@/constants/mock-news'
+import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import NewsBlock from '@/components/NewsBlock';
+import { useScrapStore } from '@/stores/scrap';
+import { MOCK_NEWS } from '@/constants/mock-news';
 
 export default function ScrapPage() {
-  const router = useRouter()
-  const { scrappedIds } = useScrapStore()
+  const router = useRouter();
+  const { scrappedIds } = useScrapStore();
 
-  const scrappedNews = MOCK_NEWS.filter((n) => scrappedIds.includes(n.id))
+  const scrappedNews = MOCK_NEWS.filter((n) => scrappedIds.includes(n.id));
 
   if (scrappedNews.length === 0) {
     return (
@@ -20,7 +20,17 @@ export default function ScrapPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--color-text-tertiary)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="mx-auto mb-4"
+          >
             <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
           </svg>
           <p className="text-text-secondary text-sm">
@@ -31,7 +41,7 @@ export default function ScrapPage() {
           </p>
         </motion.div>
       </div>
-    )
+    );
   }
 
   return (
@@ -47,5 +57,5 @@ export default function ScrapPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }

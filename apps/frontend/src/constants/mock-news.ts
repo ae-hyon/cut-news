@@ -1,4 +1,4 @@
-import type { NewsItem } from '@/types'
+import type { NewsItem } from '@/types';
 
 export const MOCK_NEWS: NewsItem[] = [
   {
@@ -71,4 +71,4 @@ export const MOCK_NEWS: NewsItem[] = [
     publishedAt: '2026-04-28',
     blockSize: 'medium',
   },
-]
+];

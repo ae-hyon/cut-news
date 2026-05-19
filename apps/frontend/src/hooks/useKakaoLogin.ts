@@ -1,71 +1,83 @@
-'use client'
+'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react'
-import { getKakaoStart } from '@/services/authApi'
-import { useAuthStore } from '@/stores/auth'
-import { getErrorMessage } from '@/lib/api'
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { getKakaoStart } from '@/services/authApi';
+import { useAuthStore } from '@/stores/auth';
+import { getErrorMessage } from '@/lib/api';
 
-export type KakaoLoginStatus = 'idle' | 'waiting' | 'checking' | 'confirmed' | 'error'
+export type KakaoLoginStatus =
+  | 'idle'
+  | 'waiting'
+  | 'checking'
+  | 'confirmed'
+  | 'error';
 
 interface UseKakaoLoginOptions {
-  onSuccess?: (userId: string) => void
+  onSuccess?: (userId: string) => void;
 }
 
 export function useKakaoLogin({ onSuccess }: UseKakaoLoginOptions = {}) {
-  const [status, setStatus] = useState<KakaoLoginStatus>('idle')
-  const [error, setError] = useState<string | null>(null)
-  const popupRef = useRef<Window | null>(null)
-  const checkSession = useAuthStore((s) => s.checkSession)
+  const [status, setStatus] = useState<KakaoLoginStatus>('idle');
+  const [error, setError] = useState<string | null>(null);
+  const popupRef = useRef<Window | null>(null);
+  const checkSession = useAuthStore((s) => s.checkSession);
 
   const startLogin = useCallback(async () => {
     try {
-      setStatus('waiting')
-      setError(null)
-      const { authorization_url } = await getKakaoStart()
+      setStatus('waiting');
+      setError(null);
+      const { authorization_url } = await getKakaoStart();
       const popup = window.open(
         authorization_url,
         'annoyingcap-kakao-login',
         'popup=yes,width=420,height=720',
-      )
-      popupRef.current = popup
+      );
+      popupRef.current = popup;
 
       if (!popup) {
-        setStatus('error')
-        setError('팝업이 차단됐어요. 브라우저에서 팝업을 허용한 뒤 다시 시도해주세요.')
-        return
+        setStatus('error');
+        setError(
+          '팝업이 차단됐어요. 브라우저에서 팝업을 허용한 뒤 다시 시도해주세요.',
+        );
+        return;
       }
-      popup.focus()
+      popup.focus();
     } catch (err) {
-      setStatus('error')
-      setError(getErrorMessage(err))
+      setStatus('error');
+      setError(getErrorMessage(err));
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     const handler = async (event: MessageEvent) => {
-      if (event.data?.type !== 'annoyingcap:kakao-authenticated') return
+      if (event.data?.type !== 'annoyingcap:kakao-authenticated') return;
 
       try {
-        setStatus('checking')
-        const session = await checkSession()
+        setStatus('checking');
+        const session = await checkSession();
         if (session.user_id) {
-          setStatus('confirmed')
-          popupRef.current?.close()
-          popupRef.current = null
-          onSuccess?.(session.user_id)
+          setStatus('confirmed');
+          popupRef.current?.close();
+          popupRef.current = null;
+          onSuccess?.(session.user_id);
         } else {
-          setStatus('error')
-          setError('로그인 세션을 찾지 못했어요. 다시 시도해주세요.')
+          setStatus('error');
+          setError('로그인 세션을 찾지 못했어요. 다시 시도해주세요.');
         }
       } catch (err) {
-        setStatus('error')
-        setError(getErrorMessage(err))
+        setStatus('error');
+        setError(getErrorMessage(err));
       }
-    }
+    };
 
-    window.addEventListener('message', handler)
-    return () => window.removeEventListener('message', handler)
-  }, [checkSession, onSuccess])
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [checkSession, onSuccess]);
 
-  return { startLogin, status, error, isLoading: status === 'waiting' || status === 'checking' }
+  return {
+    startLogin,
+    status,
+    error,
+    isLoading: status === 'waiting' || status === 'checking',
+  };
 }

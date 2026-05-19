@@ -1,11 +1,11 @@
-'use client'
+'use client';
 
-import Toast from '@/components/Toast'
+import Toast from '@/components/Toast';
 
 export default function OnboardingLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <div
@@ -18,5 +18,5 @@ export default function OnboardingLayout({
       <Toast />
       {children}
     </div>
-  )
+  );
 }

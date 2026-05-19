@@ -1,26 +1,26 @@
-'use client'
+'use client';
 
-import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'motion/react'
-import { useOnboardingStore } from '@/stores/onboarding'
-import { CATEGORIES } from '@/constants/categories'
-import OnboardingHeader from '../_components/OnboardingHeader'
-import OnboardingProgress from '../_components/OnboardingProgress'
-import OnboardingGuide from '../_components/OnboardingGuide'
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'motion/react';
+import { useOnboardingStore } from '@/stores/onboarding';
+import { CATEGORIES } from '@/constants/categories';
+import OnboardingHeader from '../_components/OnboardingHeader';
+import OnboardingProgress from '../_components/OnboardingProgress';
+import OnboardingGuide from '../_components/OnboardingGuide';
 
 export default function OnboardingNarrow() {
-  const router = useRouter()
+  const router = useRouter();
   const {
     narrowMainCategory,
     setNarrowMainCategory,
     selectedSubCategories,
     toggleSubCategory,
-  } = useOnboardingStore()
+  } = useOnboardingStore();
 
-  const selectedCat = CATEGORIES.find((c) => c.id === narrowMainCategory)
-  const subs = selectedCat?.subcategories ?? []
+  const selectedCat = CATEGORIES.find((c) => c.id === narrowMainCategory);
+  const subs = selectedCat?.subcategories ?? [];
   const canProceed =
-    narrowMainCategory !== null && selectedSubCategories.length > 0
+    narrowMainCategory !== null && selectedSubCategories.length > 0;
 
   return (
     <>
@@ -34,13 +34,13 @@ export default function OnboardingNarrow() {
           {/* Category list with inline sub-category expansion */}
           <div className="flex flex-col gap-2 py-4 overflow-y-auto flex-1">
             {(() => {
-              const rows: React.ReactNode[] = []
+              const rows: React.ReactNode[] = [];
               for (let i = 0; i < CATEGORIES.length; i += 2) {
-                const cat1 = CATEGORIES[i]
-                const cat2 = CATEGORIES[i + 1]
-                const selected1 = narrowMainCategory === cat1.id
-                const selected2 = cat2 && narrowMainCategory === cat2.id
-                const showSubPanel = selected1 || selected2
+                const cat1 = CATEGORIES[i];
+                const cat2 = CATEGORIES[i + 1];
+                const selected1 = narrowMainCategory === cat1.id;
+                const selected2 = cat2 && narrowMainCategory === cat2.id;
+                const showSubPanel = selected1 || selected2;
 
                 rows.push(
                   <div key={`row-${i}`} className="flex gap-2">
@@ -59,11 +59,13 @@ export default function OnboardingNarrow() {
                       />
                     )}
                   </div>,
-                )
+                );
 
-                {/* Sub-category panel below the row containing selected category */}
+                {
+                  /* Sub-category panel below the row containing selected category */
+                }
                 if (showSubPanel && subs.length > 0) {
-                  const selectedIdx = selected1 ? 0 : 1
+                  const selectedIdx = selected1 ? 0 : 1;
                   rows.push(
                     <AnimatePresence key={`sub-${narrowMainCategory}`}>
                       <motion.div
@@ -78,7 +80,8 @@ export default function OnboardingNarrow() {
                           <div
                             className="absolute -top-[10px] w-0 h-0"
                             style={{
-                              left: selectedIdx === 0 ? '32px' : 'calc(50% + 32px)',
+                              left:
+                                selectedIdx === 0 ? '32px' : 'calc(50% + 32px)',
                               borderLeft: '10px solid transparent',
                               borderRight: '10px solid transparent',
                               borderBottom: '10px solid rgba(255,255,255,0.1)',
@@ -87,7 +90,7 @@ export default function OnboardingNarrow() {
                           <div className="grid grid-cols-3 gap-2.5">
                             {subs.map((sub, si) => {
                               const subSelected =
-                                selectedSubCategories.includes(sub.id)
+                                selectedSubCategories.includes(sub.id);
                               return (
                                 <motion.button
                                   key={sub.id}
@@ -100,23 +103,21 @@ export default function OnboardingNarrow() {
                                   whileTap={{ scale: 0.95 }}
                                   onClick={() => toggleSubCategory(sub.id)}
                                   className={`h-[52px] rounded-[16px] text-[12px] text-white text-center flex items-center justify-center transition-all duration-200 ${
-                                    subSelected
-                                      ? 'bg-[#f3782b]'
-                                      : 'bg-white/10'
+                                    subSelected ? 'bg-[#f3782b]' : 'bg-white/10'
                                   }`}
                                 >
                                   {sub.name}
                                 </motion.button>
-                              )
+                              );
                             })}
                           </div>
                         </div>
                       </motion.div>
                     </AnimatePresence>,
-                  )
+                  );
                 }
               }
-              return rows
+              return rows;
             })()}
           </div>
         </div>
@@ -143,7 +144,7 @@ export default function OnboardingNarrow() {
         </div>
       </div>
     </>
-  )
+  );
 }
 
 function CategoryCard({
@@ -152,10 +153,10 @@ function CategoryCard({
   onSelect,
   index,
 }: {
-  cat: (typeof CATEGORIES)[number]
-  selected: boolean
-  onSelect: (id: string) => void
-  index: number
+  cat: (typeof CATEGORIES)[number];
+  selected: boolean;
+  onSelect: (id: string) => void;
+  index: number;
 }) {
   return (
     <motion.button
@@ -165,9 +166,7 @@ function CategoryCard({
       whileTap={{ scale: 0.96 }}
       onClick={() => onSelect(cat.id)}
       className={`flex-1 flex flex-col gap-0.5 items-center justify-center h-[75px] rounded-[24px] px-1 py-[26px] text-center text-white overflow-hidden transition-all duration-200 ${
-        selected
-          ? 'bg-[#f3782b]'
-          : 'bg-[#3c3c3c] border border-[#343434]'
+        selected ? 'bg-[#f3782b]' : 'bg-[#3c3c3c] border border-[#343434]'
       }`}
     >
       <p className="font-bold text-[16px] leading-[19px] w-full">{cat.name}</p>
@@ -175,5 +174,5 @@ function CategoryCard({
         {cat.keywords.join(' ')}
       </p>
     </motion.button>
-  )
+  );
 }
