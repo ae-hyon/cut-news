@@ -91,6 +91,22 @@ PYTHONPATH=. uv run pytest tests/ -q
 
 루트 `docker-compose.yml`은 백엔드 외에 crawler와 daily scheduler까지 함께 띄웁니다.
 
+처음 실행할 때는 루트 환경 파일을 준비합니다. 기본값(`NEWS_SOURCE=seeded`)은 Naver credential 없이 실행됩니다.
+
+```bash
+cp .env.example .env
+```
+
+Naver Search API로 실제 뉴스를 수집하려면 루트 `.env`에 다음 값을 채우고 `NEWS_SOURCE=naver-search`로 바꿉니다.
+
+```dotenv
+NEWS_SOURCE=naver-search
+NAVER_CLIENT_ID=your-naver-client-id
+NAVER_CLIENT_SECRET=your-naver-client-secret
+```
+
+이 credential은 crawler 수집 로직에서 사용하며, Docker Compose에서는 `crawler`와 full pipeline 실행 주체인 `news-scheduler` 컨테이너에 함께 전달됩니다.
+
 ```bash
 make full-up
 ```
@@ -139,5 +155,9 @@ make pipeline-news NEWS_SOURCE=seeded
 Naver Search credential이 있는 경우:
 
 ```bash
-make pipeline-news NEWS_SOURCE=naver-search NEWS_QUERY=경제 NEWS_COUNT=20
+cp .env.example .env
+# .env에 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 입력 후 NEWS_SOURCE=naver-search 설정
+make pipeline-news NEWS_QUERY=경제 NEWS_COUNT=20
 ```
+
+`Makefile`은 루트 `.env`가 있으면 자동으로 읽기 때문에, 로컬 1회 실행과 `make full-up` 모두 같은 credential 설정을 공유합니다.

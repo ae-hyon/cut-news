@@ -65,6 +65,7 @@ class AuthSession(DomainModel):
     authenticated: bool
     auth_provider: str
     provider_subject: str | None = None
+    preference: UserPreference | None = None
 
 
 class RefreshSession(DomainModel):

@@ -1,5 +1,10 @@
 .PHONY: help backend-up backend-down backend-reset backend-logs full-up full-down test test-backend dev-backend import-articles pipeline-news clean
 
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
+
 NEWS_SOURCE ?= seeded
 NEWS_QUERY ?= 경제
 NEWS_COUNT ?= 20

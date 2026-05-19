@@ -27,6 +27,7 @@ def test_openapi_documents_cookie_auth_for_frontend_try_it_out():
         ('/v1/me', 'get'),
         ('/v1/me/preference', 'get'),
         ('/v1/me/preference', 'put'),
+        ('/v1/me/preference', 'patch'),
         ('/v1/me/feed', 'get'),
         ('/v1/me/articles/{article_id}', 'get'),
         ('/v1/me/scraps', 'get'),
@@ -66,9 +67,18 @@ def test_openapi_frontend_contract_has_examples_and_actionable_descriptions():
     }
 
     session_schema = schema['components']['schemas']['AuthSessionResponseSchema']
+    assert 'preference' in session_schema['required']
     assert session_schema['examples'][0]['session_state'] == 'anonymous'
     assert session_schema['examples'][1]['session_state'] == 'authenticated'
     assert session_schema['examples'][2]['session_state'] == 'onboarded'
+    assert session_schema['examples'][2]['preference'] == {
+        'mode': 'narrow',
+        'primary_categories': ['macro'],
+        'subcategories': ['rates-fx'],
+    }
+
+    patch_preference = _operation(schema, '/v1/me/preference', 'patch')
+    assert patch_preference['summary'] == 'Update my interest categories'
 
     feed_schema = schema['components']['schemas']['FeedResponseSchema']
     assert feed_schema['examples'][0]['blocks'][0]['articles'][0]['is_scrapped'] is False

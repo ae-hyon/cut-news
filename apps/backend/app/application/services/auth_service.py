@@ -53,10 +53,13 @@ class AuthService:
                 ExternalIdentity(provider=identity.provider, provider_subject=identity.provider_subject, user_id=user_id)
             )
         preference = self.query_service.ensure_preference_exists(user_id)
-        return self.token_service.issue_tokens(user_id, identity.provider, identity.provider_subject, preference.onboarding_completed)
+        return self.token_service.issue_tokens(
+            user_id, identity.provider, identity.provider_subject, preference.onboarding_completed, preference
+        )
 
     def issue_tokens(self, user_id: str, auth_provider: str, provider_subject: str | None, onboarding_completed: bool):
-        return self.token_service.issue_tokens(user_id, auth_provider, provider_subject, onboarding_completed)
+        preference = self.query_service.ensure_preference_exists(user_id)
+        return self.token_service.issue_tokens(user_id, auth_provider, provider_subject, onboarding_completed, preference)
 
     def refresh_session(self, refresh_token: str) -> AuthTokens:
         saved = self.token_service.get_refresh_session(refresh_token)
@@ -64,7 +67,9 @@ class AuthService:
             raise AuthError('invalid_refresh_token', 'Refresh token is invalid or expired.', status_code=401)
         self.token_service.revoke_refresh_token(refresh_token)
         preference = self.query_service.ensure_preference_exists(saved.user_id)
-        return self.token_service.issue_tokens(saved.user_id, saved.auth_provider, saved.provider_subject, preference.onboarding_completed)
+        return self.token_service.issue_tokens(
+            saved.user_id, saved.auth_provider, saved.provider_subject, preference.onboarding_completed, preference
+        )
 
     def logout(self, refresh_token: str | None) -> None:
         if refresh_token:

@@ -23,7 +23,14 @@ class AuthTokenService:
     def hash_refresh_token(refresh_token: str) -> str:
         return hashlib.sha256(refresh_token.encode('utf-8')).hexdigest()
 
-    def issue_tokens(self, user_id: str, auth_provider: str, provider_subject: str | None, onboarding_completed: bool) -> AuthTokens:
+    def issue_tokens(
+        self,
+        user_id: str,
+        auth_provider: str,
+        provider_subject: str | None,
+        onboarding_completed: bool,
+        preference: UserPreference | None = None,
+    ) -> AuthTokens:
         session_state = 'onboarded' if onboarding_completed else 'authenticated'
         session = AuthSession(
             user_id=user_id,
@@ -32,6 +39,7 @@ class AuthTokenService:
             authenticated=True,
             auth_provider=auth_provider,
             provider_subject=provider_subject,
+            preference=preference,
         )
         access_token = self.encode_access_token(session)
         refresh_token = secrets.token_urlsafe(32)

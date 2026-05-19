@@ -103,6 +103,28 @@ def test_put_me_preference_marks_onboarding_completed_when_valid():
     assert body['subcategories'] == ['macro', 'real-estate']
 
 
+def test_patch_me_preference_updates_current_users_interest_categories():
+    client = build_client()
+
+    response = client.patch(
+        '/v1/me/preference',
+        json={
+            'mode': 'wide',
+            'primary_categories': ['economy', 'politics', 'tech'],
+            'subcategories': [],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        'user_id': 'user-kakao-123',
+        'mode': 'wide',
+        'primary_categories': ['economy', 'politics', 'tech'],
+        'subcategories': [],
+        'onboarding_completed': True,
+    }
+
+
 def test_me_preference_requires_authenticated_user():
     client = build_client(
         AuthSession(

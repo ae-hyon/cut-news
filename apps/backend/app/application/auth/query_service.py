@@ -37,6 +37,7 @@ class AuthQueryService:
                     authenticated=True,
                     auth_provider=decoded.auth_provider,
                     provider_subject=decoded.provider_subject,
+                    preference=preference,
                 )
         if provider == 'kakao' and provider_subject:
             identity = self.identity_repository.get_by_provider_subject(provider, provider_subject)
@@ -50,6 +51,7 @@ class AuthQueryService:
                 authenticated=True,
                 auth_provider=provider,
                 provider_subject=provider_subject,
+                preference=preference,
             )
         if user_id:
             preference = self.ensure_preference_exists(user_id)
@@ -60,6 +62,7 @@ class AuthQueryService:
                 authenticated=False,
                 auth_provider='demo' if preference.onboarding_completed else 'none',
                 provider_subject=None,
+                preference=preference,
             )
         return self.anonymous_session()
 

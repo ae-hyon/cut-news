@@ -99,6 +99,20 @@ class UserPreferenceResponseSchema(BaseModel):
         )
 
 
+class UserPreferenceSnapshotSchema(BaseModel):
+    mode: Literal['wide', 'narrow']
+    primary_categories: list[str]
+    subcategories: list[str]
+
+    @classmethod
+    def from_entity(cls, entity: UserPreference) -> 'UserPreferenceSnapshotSchema':
+        return cls(
+            mode=entity.mode.value,
+            primary_categories=entity.primary_categories,
+            subcategories=entity.subcategories,
+        )
+
+
 class AuthStartResponseSchema(BaseModel):
     provider: Literal['kakao']
     state: str
@@ -116,6 +130,7 @@ class AuthSessionResponseSchema(BaseModel):
                     'authenticated': False,
                     'auth_provider': 'none',
                     'provider_subject': None,
+                    'preference': None,
                 },
                 {
                     'user_id': 'user-kakao-123',
@@ -124,6 +139,11 @@ class AuthSessionResponseSchema(BaseModel):
                     'authenticated': True,
                     'auth_provider': 'kakao',
                     'provider_subject': '123456789',
+                    'preference': {
+                        'mode': 'wide',
+                        'primary_categories': ['sectors', 'macro', 'assets', 'policy'],
+                        'subcategories': [],
+                    },
                 },
                 {
                     'user_id': 'user-kakao-123',
@@ -132,6 +152,11 @@ class AuthSessionResponseSchema(BaseModel):
                     'authenticated': True,
                     'auth_provider': 'kakao',
                     'provider_subject': '123456789',
+                    'preference': {
+                        'mode': 'narrow',
+                        'primary_categories': ['macro'],
+                        'subcategories': ['rates-fx'],
+                    },
                 },
             ]
         }
@@ -143,6 +168,7 @@ class AuthSessionResponseSchema(BaseModel):
     authenticated: bool
     auth_provider: Literal['none', 'demo', 'kakao']
     provider_subject: str | None = None
+    preference: UserPreferenceSnapshotSchema | None
 
 
 class AuthLogoutResponseSchema(BaseModel):

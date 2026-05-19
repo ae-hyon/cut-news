@@ -84,6 +84,7 @@ Auth:
 - `GET /v1/me`
 - `GET /v1/me/preference`
 - `PUT /v1/me/preference`
+- `PATCH /v1/me/preference`
 - `GET /v1/me/feed`
 - `GET /v1/articles/{article_id}`
 - `GET /v1/me/articles/{article_id}`
@@ -97,6 +98,7 @@ Internal:
 ## 인증/피드 계약
 
 - 프론트는 `GET /v1/me`의 `session_state`를 보고 자체 라우팅합니다.
+- `GET /v1/me`는 앱 부팅용 세션 스냅샷이며 `preference`에 현재 관심 카테고리 요약(`mode`, `primary_categories`, `subcategories`)을 함께 내려줍니다. 비로그인 상태는 `preference: null`입니다.
 - `session_state`는 `anonymous`, `authenticated`, `onboarded` 중 하나입니다.
 - 기사 상세, feed, scraps는 로그인된 현재 사용자 기준으로 동작합니다.
 - `is_scrapped`는 현재 사용자의 스크랩 상태를 뜻합니다.

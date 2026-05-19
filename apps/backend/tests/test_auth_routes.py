@@ -28,6 +28,11 @@ class StubAuthService:
                 'authenticated': True,
                 'auth_provider': 'kakao',
                 'provider_subject': 'kakao-123',
+                'preference': {
+                    'mode': 'wide',
+                    'primary_categories': ['sectors', 'macro', 'assets', 'policy'],
+                    'subcategories': [],
+                },
             },
             'access_token': 'access-token-123',
             'refresh_token': 'refresh-token-123',
@@ -52,6 +57,11 @@ class StubAuthService:
                 'authenticated': True,
                 'auth_provider': 'kakao',
                 'provider_subject': 'kakao-123',
+                'preference': {
+                    'mode': 'wide',
+                    'primary_categories': ['sectors', 'macro', 'assets', 'policy'],
+                    'subcategories': [],
+                },
             }
         return {
             'user_id': None,
@@ -60,6 +70,7 @@ class StubAuthService:
             'authenticated': False,
             'auth_provider': 'none',
             'provider_subject': None,
+            'preference': None,
         }
 
     def refresh_session(self, refresh_token: str) -> dict:
@@ -72,6 +83,11 @@ class StubAuthService:
                 'authenticated': True,
                 'auth_provider': 'kakao',
                 'provider_subject': 'kakao-123',
+                'preference': {
+                    'mode': 'wide',
+                    'primary_categories': ['sectors', 'macro', 'assets', 'policy'],
+                    'subcategories': [],
+                },
             },
             'access_token': 'access-token-456',
             'refresh_token': 'refresh-token-456',
@@ -114,6 +130,7 @@ def test_me_returns_anonymous_state_when_access_cookie_missing():
         'authenticated': False,
         'auth_provider': 'none',
         'provider_subject': None,
+        'preference': None,
     }
 
 
@@ -157,6 +174,11 @@ def test_me_resolves_authenticated_user_from_access_cookie():
         'authenticated': True,
         'auth_provider': 'kakao',
         'provider_subject': 'kakao-123',
+        'preference': {
+            'mode': 'wide',
+            'primary_categories': ['sectors', 'macro', 'assets', 'policy'],
+            'subcategories': [],
+        },
     }
 
 
@@ -238,6 +260,11 @@ def test_me_returns_onboarded_state_for_authenticated_kakao_user_after_onboardin
                 'authenticated': True,
                 'auth_provider': 'kakao',
                 'provider_subject': 'kakao-123',
+                'preference': {
+                    'mode': 'narrow',
+                    'primary_categories': ['macro'],
+                    'subcategories': ['rates-fx'],
+                },
             }
 
     client = build_client(OnboardedKakaoAuthService())
@@ -256,4 +283,9 @@ def test_me_returns_onboarded_state_for_authenticated_kakao_user_after_onboardin
         'authenticated': True,
         'auth_provider': 'kakao',
         'provider_subject': 'kakao-123',
+        'preference': {
+            'mode': 'narrow',
+            'primary_categories': ['macro'],
+            'subcategories': ['rates-fx'],
+        },
     }

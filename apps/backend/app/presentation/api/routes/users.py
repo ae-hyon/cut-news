@@ -47,6 +47,32 @@ def put_my_preference(
     session: AuthSession = Depends(require_current_user),
     service: UserPreferenceService = Depends(get_user_preference_service),
 ):
+    return _update_my_preference(payload, session, service)
+
+
+@router.patch(
+    '/me/preference',
+    response_model=UserPreferenceResponseSchema,
+    summary='Update my interest categories',
+    description=(
+        'Updates the current user interest categories after onboarding. The request body uses the complete '
+        'preference shape so mode, primary_categories, and subcategories can be validated together.'
+    ),
+    responses={**AUTH_REQUIRED, 422: {'description': 'Preference validation failed'}},
+)
+def patch_my_preference(
+    payload: UserPreferenceUpdateRequestSchema,
+    session: AuthSession = Depends(require_current_user),
+    service: UserPreferenceService = Depends(get_user_preference_service),
+):
+    return _update_my_preference(payload, session, service)
+
+
+def _update_my_preference(
+    payload: UserPreferenceUpdateRequestSchema,
+    session: AuthSession,
+    service: UserPreferenceService,
+) -> UserPreferenceResponseSchema:
     try:
         return UserPreferenceResponseSchema.from_entity(
             service.update_preferences(

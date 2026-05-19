@@ -40,3 +40,23 @@ def test_news_scheduler_retries_and_fails_fast_on_startup_smoke_failure():
     assert 'RUN_ON_STARTUP' in scheduler_text
     assert 'run_pipeline_with_retries' in scheduler_text
     assert 'exit 1' in scheduler_text
+
+
+def test_crawler_image_imports_src_layout_package():
+    dockerfile_text = (REPO_ROOT / 'apps' / 'crawler' / 'Dockerfile').read_text(encoding='utf-8')
+
+    assert 'PYTHONPATH="/app/apps/crawler/src"' in dockerfile_text
+    assert 'uvicorn", "crawler.main:app"' in dockerfile_text
+
+
+def test_full_pipeline_exposes_naver_credentials_to_crawler_and_scheduler():
+    compose_text = (REPO_ROOT / 'docker-compose.yml').read_text(encoding='utf-8')
+    env_example_text = (REPO_ROOT / '.env.example').read_text(encoding='utf-8')
+    makefile_text = (REPO_ROOT / 'Makefile').read_text(encoding='utf-8')
+
+    assert compose_text.count('NAVER_CLIENT_ID: ${NAVER_CLIENT_ID:-}') == 2
+    assert compose_text.count('NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET:-}') == 2
+    assert 'NAVER_CLIENT_ID=' in env_example_text
+    assert 'NAVER_CLIENT_SECRET=' in env_example_text
+    assert 'include .env' in makefile_text
+    assert 'export' in makefile_text
