@@ -1,28 +1,69 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
-export async function api<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+interface ApiOptions extends RequestInit {
+  retryOnUnauthorized?: boolean;
+}
+
+async function request(path: string, options: RequestInit = {}) {
+  return fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options,
   });
+}
 
+async function parseResponse(response: Response) {
   const contentType = response.headers.get('content-type') || '';
-  const data = contentType.includes('application/json')
+  return contentType.includes('application/json')
     ? await response.json()
     : await response.text();
+}
+
+function errorMessage(data: unknown): string {
+  if (typeof data !== 'object' || data === null) return String(data);
+
+  const error = data as { message?: string; detail?: string | unknown[] };
+  if (error.message) return error.message;
+  if (typeof error.detail === 'string') return error.detail;
+  if (Array.isArray(error.detail)) {
+    return error.detail
+      .map((item) => {
+        if (typeof item !== 'object' || item === null) return String(item);
+        const validation = item as { loc?: unknown[]; msg?: string };
+        const field = Array.isArray(validation.loc)
+          ? validation.loc.join('.')
+          : 'field';
+        return validation.msg
+          ? `${field}: ${validation.msg}`
+          : JSON.stringify(item);
+      })
+      .join('\n');
+  }
+  return JSON.stringify(data);
+}
+
+export async function api<T>(
+  path: string,
+  options: ApiOptions = {},
+): Promise<T> {
+  const { retryOnUnauthorized = true, ...requestOptions } = options;
+  let response = await request(path, requestOptions);
+
+  if (
+    response.status === 401 &&
+    retryOnUnauthorized &&
+    path !== '/v1/auth/token/refresh'
+  ) {
+    const refresh = await request('/v1/auth/token/refresh', { method: 'POST' });
+    if (refresh.ok) {
+      response = await request(path, requestOptions);
+    }
+  }
+
+  const data = await parseResponse(response);
 
   if (!response.ok) {
-    const message =
-      typeof data === 'object' && data !== null
-        ? (data as { message?: string; detail?: string }).message ||
-          (data as { message?: string; detail?: string }).detail ||
-          JSON.stringify(data)
-        : String(data);
-    throw new Error(message);
+    throw new Error(errorMessage(data));
   }
 
   return data as T;

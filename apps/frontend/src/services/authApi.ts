@@ -24,7 +24,10 @@ export function getSession() {
 }
 
 export function postRefresh() {
-  return api<AuthSessionResponse>('/v1/auth/token/refresh', { method: 'POST' });
+  return api<AuthSessionResponse>('/v1/auth/token/refresh', {
+    method: 'POST',
+    retryOnUnauthorized: false,
+  });
 }
 
 export function postLogout() {

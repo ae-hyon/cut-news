@@ -19,6 +19,14 @@ describe('real frontend backend contract', () => {
     assert.match(source, /preference:\s*UserPreferenceSnapshot\s*\|\s*null/);
   });
 
+  it('refreshes the auth token once before surfacing protected API 401s', () => {
+    const apiSource = read('src/lib/api.ts');
+    const authSource = read('src/services/authApi.ts');
+    assert.match(apiSource, /response\.status === 401/);
+    assert.match(apiSource, /\/v1\/auth\/token\/refresh/);
+    assert.match(authSource, /retryOnUnauthorized: false/);
+  });
+
   it('wires feed, details, scraps, and archive screens to /v1/me APIs instead of MOCK_NEWS', () => {
     const apiSource = read('src/services/contentApi.ts');
     for (const endpoint of [
