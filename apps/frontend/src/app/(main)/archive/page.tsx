@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import NewsBlock from '@/components/NewsBlock';
-import { MOCK_NEWS } from '@/constants/mock-news';
+import {
+  getMyArchiveDate,
+  getMyArchiveMonth,
+  mapArticleToNewsItem,
+} from '@/services/contentApi';
+import type { ArchiveDay } from '@/lib/types';
+import type { NewsItem } from '@/types';
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -21,19 +27,63 @@ export default function ArchivePage() {
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
+  const [days, setDays] = useState<ArchiveDay[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedNews, setSelectedNews] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  const monthKey = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfWeek(viewYear, viewMonth);
-
-  // dates that have news
-  const newsDates = useMemo(() => {
-    const dates = new Set<string>();
-    MOCK_NEWS.forEach((n) => dates.add(n.publishedAt));
-    return dates;
-  }, []);
-
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const dayMap = new Map(days.map((day) => [day.date, day]));
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setSelectedDate(null);
+    setSelectedNews([]);
+
+    getMyArchiveMonth(monthKey)
+      .then((response) => {
+        if (!active) return;
+        setDays(response.days);
+        setError(null);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : String(err));
+        setDays([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [monthKey]);
+
+  const openDate = async (date: string) => {
+    if (selectedDate === date) {
+      setSelectedDate(null);
+      setSelectedNews([]);
+      return;
+    }
+
+    setSelectedDate(date);
+    try {
+      const response = await getMyArchiveDate(date);
+      setSelectedNews(
+        response.items.map((item, index) => mapArticleToNewsItem(item, index)),
+      );
+      setError(null);
+    } catch (err) {
+      setSelectedNews([]);
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
 
   const prevMonth = () => {
     if (viewMonth === 0) {
@@ -42,7 +92,6 @@ export default function ArchivePage() {
     } else {
       setViewMonth(viewMonth - 1);
     }
-    setSelectedDate(null);
   };
 
   const nextMonth = () => {
@@ -52,16 +101,10 @@ export default function ArchivePage() {
     } else {
       setViewMonth(viewMonth + 1);
     }
-    setSelectedDate(null);
   };
-
-  const selectedNews = selectedDate
-    ? MOCK_NEWS.filter((n) => n.publishedAt === selectedDate)
-    : [];
 
   return (
     <div className="px-6 pt-6">
-      {/* Title */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -72,24 +115,12 @@ export default function ArchivePage() {
         </h2>
       </motion.div>
 
-      {/* Month nav */}
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={prevMonth}
           className="text-text-secondary hover:text-text-primary p-2 transition-colors"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          ‹
         </button>
         <p className="text-text-primary text-sm font-medium">
           월간 이력 — {viewYear}년 {viewMonth + 1}월
@@ -98,22 +129,20 @@ export default function ArchivePage() {
           onClick={nextMonth}
           className="text-text-secondary hover:text-text-primary p-2 transition-colors"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M9 18l6-6-6-6" />
-          </svg>
+          ›
         </button>
       </div>
 
-      {/* Calendar grid */}
+      {loading && (
+        <p className="text-text-tertiary text-sm text-center py-8 animate-pulse">
+          아카이브를 불러오는 중...
+        </p>
+      )}
+
+      {error && !loading && (
+        <p className="text-red-400 text-sm text-center py-4">{error}</p>
+      )}
+
       <div className="grid grid-cols-7 gap-1 mb-6">
         {WEEKDAYS.map((d) => (
           <div
@@ -124,35 +153,30 @@ export default function ArchivePage() {
           </div>
         ))}
 
-        {/* empty cells before first day */}
         {Array.from({ length: firstDay }).map((_, i) => (
           <div key={`e-${i}`} />
         ))}
 
-        {/* day cells */}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1;
-          const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const hasNews = newsDates.has(dateStr);
+          const dateStr = `${monthKey}-${String(day).padStart(2, '0')}`;
+          const archiveDay = dayMap.get(dateStr);
+          const hasNews = !!archiveDay && archiveDay.items.length > 0;
           const isFuture = dateStr > todayStr;
           const isSelected = selectedDate === dateStr;
-          const isToday = dateStr === todayStr;
+          const disabled = loading || isFuture || !hasNews;
 
           return (
             <button
               key={day}
-              disabled={isFuture || !hasNews}
-              onClick={() => setSelectedDate(isSelected ? null : dateStr)}
+              disabled={disabled}
+              onClick={() => void openDate(dateStr)}
               className={`relative py-2.5 rounded-md text-xs font-medium transition-all duration-200 ${
                 isSelected
                   ? 'bg-accent text-bg'
-                  : isToday
-                    ? 'text-accent'
-                    : isFuture
-                      ? 'text-text-tertiary/30 cursor-not-allowed'
-                      : hasNews
-                        ? 'text-text-primary hover:bg-bg-elevated'
-                        : 'text-text-tertiary cursor-not-allowed'
+                  : disabled
+                    ? 'text-text-tertiary/30 cursor-not-allowed'
+                    : 'text-text-primary hover:bg-bg-elevated'
               }`}
             >
               {day}
@@ -164,7 +188,6 @@ export default function ArchivePage() {
         })}
       </div>
 
-      {/* Selected date news */}
       <AnimatePresence mode="wait">
         {selectedDate && (
           <motion.div
@@ -178,14 +201,11 @@ export default function ArchivePage() {
               <h3 className="text-sm font-bold text-text-primary">
                 {selectedDate.replace(/-/g, '.')}
               </h3>
-              <button
-                onClick={() => setSelectedDate(null)}
-                className="text-text-tertiary hover:text-text-primary text-xs transition-colors"
-              >
-                닫기
-              </button>
+              <span className="text-xs text-text-tertiary">
+                {selectedNews.length}개 기사
+              </span>
             </div>
-            <div className="columns-2 gap-3 pb-8">
+            <div className="columns-2 gap-3">
               {selectedNews.map((item, i) => (
                 <NewsBlock
                   key={item.id}

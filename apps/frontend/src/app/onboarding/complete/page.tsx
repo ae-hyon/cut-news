@@ -23,33 +23,30 @@ export default function OnboardingComplete() {
 
   const isWide = userType === 'wide';
 
-  const handleLoginSuccess = useCallback(
-    async (userId: string) => {
-      try {
-        const payload = {
-          mode: (userType ?? 'wide') as PreferenceMode,
-          primary_categories: isWide
-            ? selectedCategories
-            : narrowMainCategory
-              ? [narrowMainCategory]
-              : [],
-          subcategories: isWide ? [] : selectedSubCategories,
-        };
-        await saveUserPreference(userId, payload);
-        router.push('/');
-      } catch {
-        showToast('설정 저장에 실패했어요. 다시 시도해주세요.');
-      }
-    },
-    [
-      userType,
-      isWide,
-      selectedCategories,
-      narrowMainCategory,
-      selectedSubCategories,
-      router,
-    ],
-  );
+  const handleLoginSuccess = useCallback(async () => {
+    try {
+      const payload = {
+        mode: (userType ?? 'wide') as PreferenceMode,
+        primary_categories: isWide
+          ? selectedCategories
+          : narrowMainCategory
+            ? [narrowMainCategory]
+            : [],
+        subcategories: isWide ? [] : selectedSubCategories,
+      };
+      await saveUserPreference(payload);
+      router.push('/');
+    } catch {
+      showToast('설정 저장에 실패했어요. 다시 시도해주세요.');
+    }
+  }, [
+    userType,
+    isWide,
+    selectedCategories,
+    narrowMainCategory,
+    selectedSubCategories,
+    router,
+  ]);
 
   const { startLogin, status, error, isLoading } = useKakaoLogin({
     onSuccess: handleLoginSuccess,

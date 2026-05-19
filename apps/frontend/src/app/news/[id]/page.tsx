@@ -1,18 +1,77 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
-import { useScrapStore } from '@/stores/scrap';
-import { MOCK_NEWS } from '@/constants/mock-news';
+import { addMyScrap, getMyArticle, removeMyScrap } from '@/services/contentApi';
+import type { ArticleDetail } from '@/lib/types';
 
 export default function NewsDetail() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const { isScrapped, toggleScrap } = useScrapStore();
+  const [news, setNews] = useState<ArticleDetail | null>(null);
+  const [scrapped, setScrapped] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const news = MOCK_NEWS.find((n) => n.id === id);
-  const scrapped = isScrapped(id);
+  useEffect(() => {
+    let active = true;
+
+    getMyArticle(id)
+      .then((article) => {
+        if (!active) return;
+        setNews(article);
+        setScrapped(article.is_scrapped);
+        setError(null);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  const toggleScrap = async () => {
+    if (!news) return;
+    const nextScrapped = !scrapped;
+    setScrapped(nextScrapped);
+    try {
+      if (nextScrapped) {
+        await addMyScrap(news.id);
+      } else {
+        await removeMyScrap(news.id);
+      }
+    } catch (err) {
+      setScrapped(!nextScrapped);
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center px-6">
+        <p className="text-text-tertiary text-sm animate-pulse">
+          뉴스를 불러오는 중...
+        </p>
+      </div>
+    );
+  }
+
+  if (error && !news) {
+    return (
+      <div className="min-h-dvh flex flex-col items-center justify-center px-6 text-center">
+        <p className="text-red-400 text-sm">뉴스를 불러오지 못했어요</p>
+        <p className="text-text-tertiary text-xs mt-2">{error}</p>
+      </div>
+    );
+  }
 
   if (!news) {
     return (
@@ -24,7 +83,6 @@ export default function NewsDetail() {
 
   return (
     <div className="min-h-dvh max-w-lg mx-auto px-6 py-8">
-      {/* Back button */}
       <motion.button
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -46,7 +104,6 @@ export default function NewsDetail() {
         뒤로
       </motion.button>
 
-      {/* Category + Date */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -54,12 +111,11 @@ export default function NewsDetail() {
         className="flex items-center gap-3 mb-4"
       >
         <span className="text-accent text-xs font-bold uppercase tracking-widest">
-          {news.category}
+          {news.primary_category}
         </span>
-        <span className="text-text-tertiary text-xs">{news.publishedAt}</span>
+        <span className="text-text-tertiary text-xs">{news.published_at}</span>
       </motion.div>
 
-      {/* Headline */}
       <motion.h1
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -69,7 +125,6 @@ export default function NewsDetail() {
         {news.title}
       </motion.h1>
 
-      {/* Divider */}
       <motion.div
         initial={{ scaleX: 0 }}
         animate={{ scaleX: 1 }}
@@ -77,17 +132,28 @@ export default function NewsDetail() {
         className="h-px bg-border-default mb-8 origin-left"
       />
 
-      {/* Summary */}
       <motion.p
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="text-text-primary text-base leading-relaxed mb-12"
+        className="text-text-primary text-base leading-relaxed mb-4"
       >
         {news.summary}
       </motion.p>
 
-      {/* Actions */}
+      <motion.p
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+        className="text-text-secondary text-sm leading-relaxed mb-12 whitespace-pre-wrap"
+      >
+        {news.content}
+      </motion.p>
+
+      {error && (
+        <p className="text-red-400 text-xs text-center mb-4">{error}</p>
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -95,7 +161,7 @@ export default function NewsDetail() {
         className="flex gap-3"
       >
         <a
-          href={news.sourceUrl}
+          href={news.original_url}
           target="_blank"
           rel="noopener noreferrer"
           className="flex-1 py-3.5 rounded-lg text-sm font-bold border border-border-default bg-bg-elevated text-text-secondary hover:border-text-tertiary transition-all text-center"
@@ -103,7 +169,7 @@ export default function NewsDetail() {
           원문보기
         </a>
         <button
-          onClick={() => toggleScrap(id)}
+          onClick={toggleScrap}
           className={`flex-1 py-3.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 ${
             scrapped
               ? 'bg-accent text-bg'

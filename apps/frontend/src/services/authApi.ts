@@ -31,9 +31,16 @@ export function postLogout() {
   return api<AuthLogoutResponse>('/v1/auth/session', { method: 'DELETE' });
 }
 
-export function saveUserPreference(userId: string, payload: PreferencePayload) {
-  return api<UserPreference>(`/v1/users/${userId}/preferences`, {
+export function saveUserPreference(payload: PreferencePayload) {
+  return api<UserPreference>('/v1/me/preference', {
     method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateUserPreference(payload: PreferencePayload) {
+  return api<UserPreference>('/v1/me/preference', {
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }

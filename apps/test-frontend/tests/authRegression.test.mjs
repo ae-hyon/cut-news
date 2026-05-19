@@ -24,7 +24,7 @@ test('frontend logout clears backend session through the dedicated API and expos
   const detail = await read('src/components/screens/DetailScreen.tsx')
   const devPanel = await read('src/components/common/DevPanel.tsx')
 
-  assert.match(api, /export function postLogout\(\) \{\s+return api<AuthLogoutResponse>\('\/v1\/auth\/logout', \{ method: 'POST' \}\)/s)
+  assert.match(api, /export function postLogout\(\) \{\s+return api<AuthLogoutResponse>\('\/v1\/auth\/session', \{ method: 'DELETE' \}\)/s)
   assert.match(authHook, /const logout = React\.useCallback\(async \(\) => \{\s+const result = await postLogout\(\)/s)
   assert.match(app, /onLogout=\{app\.logout\}/)
   assert.match(topbar, /aria-label="로그아웃"/)

@@ -1,16 +1,62 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import NewsBlock from '@/components/NewsBlock';
-import { useScrapStore } from '@/stores/scrap';
-import { MOCK_NEWS } from '@/constants/mock-news';
+import { getMyScraps, mapArticleToNewsItem } from '@/services/contentApi';
+import type { NewsItem } from '@/types';
 
 export default function ScrapPage() {
   const router = useRouter();
-  const { scrappedIds } = useScrapStore();
+  const [scrappedNews, setScrappedNews] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const scrappedNews = MOCK_NEWS.filter((n) => scrappedIds.includes(n.id));
+  useEffect(() => {
+    let active = true;
+
+    getMyScraps()
+      .then((response) => {
+        if (!active) return;
+        setScrappedNews(
+          response.items.map((item, index) =>
+            mapArticleToNewsItem(item, index),
+          ),
+        );
+        setError(null);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center px-6 py-20">
+        <p className="text-text-tertiary text-sm animate-pulse">
+          스크랩을 불러오는 중...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-20 text-center">
+        <p className="text-red-400 text-sm">스크랩을 불러오지 못했어요</p>
+        <p className="text-text-tertiary text-xs mt-2">{error}</p>
+      </div>
+    );
+  }
 
   if (scrappedNews.length === 0) {
     return (

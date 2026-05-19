@@ -13,7 +13,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { session, userId, isLoading, checkSession } = useAuthStore();
+  const { userId, isLoading, checkSession } = useAuthStore();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -42,9 +42,6 @@ export default function MainLayout({
       </div>
     );
   }
-
-  const userName = session?.provider_subject ? undefined : undefined;
-  // TODO: 유저 닉네임은 향후 프로필 API에서 가져올 예정
 
   return (
     <div className="min-h-dvh flex flex-col max-w-lg mx-auto">

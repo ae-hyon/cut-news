@@ -2,9 +2,10 @@
   "name": "cut-news",
   "private": true,
   "scripts": {
-    "dev:frontend": "pnpm --filter frontend dev",
-    "build:frontend": "pnpm --filter frontend build",
-    "lint:frontend": "pnpm --filter frontend lint",
+    "dev:frontend": "npm --prefix apps/frontend run dev",
+    "build:frontend": "npm --prefix apps/frontend run build",
+    "lint:frontend": "npm --prefix apps/frontend run lint",
+    "test:frontend": "npm --prefix apps/frontend test",
     "dev:test-frontend": "npm --prefix apps/test-frontend run dev -- --host 127.0.0.1",
     "test:test-frontend": "npm --prefix apps/test-frontend test",
     "build:test-frontend": "npm --prefix apps/test-frontend run build"

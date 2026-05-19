@@ -1,13 +1,59 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import NewsBlock from '@/components/NewsBlock';
-import { MOCK_NEWS } from '@/constants/mock-news';
+import { getMyFeed, mapArticleToNewsItem } from '@/services/contentApi';
+import type { NewsItem } from '@/types';
 
 export default function NewsHome() {
   const router = useRouter();
-  const news = MOCK_NEWS;
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    getMyFeed()
+      .then((feed) => {
+        if (!active) return;
+        const items = feed.blocks.flatMap((block) => block.articles);
+        setNews(items.map((item, index) => mapArticleToNewsItem(item, index)));
+        setError(null);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center px-6 py-20">
+        <p className="text-text-tertiary text-sm animate-pulse">
+          뉴스를 불러오는 중...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-20 text-center">
+        <p className="text-red-400 text-sm">뉴스를 불러오지 못했어요</p>
+        <p className="text-text-tertiary text-xs mt-2">{error}</p>
+      </div>
+    );
+  }
 
   if (news.length === 0) {
     return (

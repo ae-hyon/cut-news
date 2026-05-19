@@ -14,6 +14,12 @@ export interface AuthStartResponse {
   authorization_url: string;
 }
 
+export interface UserPreferenceSnapshot {
+  mode: PreferenceMode;
+  primary_categories: string[];
+  subcategories: string[];
+}
+
 export interface AuthSessionResponse {
   user_id: string | null;
   session_state: SessionState;
@@ -21,6 +27,7 @@ export interface AuthSessionResponse {
   authenticated: boolean;
   auth_provider: AuthProvider;
   provider_subject?: string | null;
+  preference: UserPreferenceSnapshot | null;
 }
 
 export interface AuthLogoutResponse {

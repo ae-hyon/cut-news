@@ -3,15 +3,6 @@
 import { motion } from 'motion/react';
 import Image from 'next/image';
 
-const today = new Date()
-  .toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
-  .replace(/\. /g, '.')
-  .replace(/\.$/, '');
-
 export default function OnboardingHeader() {
   return (
     <motion.div
