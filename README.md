@@ -2,9 +2,37 @@
 
 뉴스 수집, 요약, 개인화 피드를 제공하는 프로젝트입니다.
 
-## 바로 실행: 백엔드
+## 바로 실행: 전체 앱
 
-Docker만 켜져 있으면 추가 설정 없이 백엔드 API와 Postgres를 실행할 수 있습니다.
+Docker만 켜져 있으면 실제 Next 프론트, 백엔드 API, crawler, scheduler, Postgres를 한 번에 실행할 수 있습니다.
+
+```bash
+make full-up
+```
+
+실행 후 확인:
+
+```bash
+open http://127.0.0.1:3000
+curl http://127.0.0.1:8000/health
+open http://127.0.0.1:8000/docs
+```
+
+포트:
+- frontend: `http://127.0.0.1:3000`
+- backend API: `http://127.0.0.1:8000`
+- crawler API: `http://127.0.0.1:8001`
+- Postgres: host port `54329`
+
+중지:
+
+```bash
+make full-down
+```
+
+## 바로 실행: 백엔드만
+
+Docker만 켜져 있으면 추가 설정 없이 백엔드 API와 Postgres만 실행할 수 있습니다.
 
 ```bash
 make backend-up
@@ -89,7 +117,7 @@ PYTHONPATH=. uv run pytest tests/ -q
 
 ## 선택: 전체 뉴스 파이프라인
 
-루트 `docker-compose.yml`은 백엔드 외에 crawler와 daily scheduler까지 함께 띄웁니다.
+루트 `docker-compose.yml`은 백엔드 외에 실제 Next 프론트, crawler, daily scheduler까지 함께 띄웁니다.
 
 처음 실행할 때는 루트 환경 파일을 준비합니다. 기본값(`NEWS_SOURCE=seeded`)은 Naver credential 없이 실행됩니다.
 
@@ -112,6 +140,7 @@ make full-up
 ```
 
 포함 서비스:
+- frontend: `http://127.0.0.1:3000`
 - backend API: `http://127.0.0.1:8000`
 - crawler API: `http://127.0.0.1:8001`
 - news scheduler: 매일 `08:30` Asia/Seoul 기준으로 crawler -> summarizer -> backend import 실행

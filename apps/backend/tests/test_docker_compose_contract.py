@@ -6,20 +6,36 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_root_compose_runs_backend_crawler_summarizer_without_frontend():
+def test_root_compose_runs_backend_crawler_summarizer_and_real_frontend():
     compose_text = (REPO_ROOT / 'docker-compose.yml').read_text(encoding='utf-8')
+    makefile_text = (REPO_ROOT / 'Makefile').read_text(encoding='utf-8')
 
     assert 'api:' in compose_text
     assert 'db:' in compose_text
     assert 'crawler:' in compose_text
     assert 'news-scheduler:' in compose_text
+    assert 'frontend:' in compose_text
     assert 'apps/backend/Dockerfile' in compose_text
     assert 'apps/crawler/Dockerfile' in compose_text
+    assert 'apps/frontend/Dockerfile' in compose_text
+    assert '"3000:3000"' in compose_text
+    assert 'NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://127.0.0.1:8000}' in compose_text
+    assert 'FRONTEND_APP_URL: http://127.0.0.1:3000' in compose_text
     assert 'apps/summarizer/data:/app/apps/summarizer/data' in compose_text
     assert 'AI_NEWS_GENERATION_TIME: "08:30:00"' in compose_text
-    assert 'FRONTEND_APP_URL' not in compose_text
+    assert 'make full-up          - Start frontend + backend + crawler + scheduler + Postgres' in makefile_text
     assert 'test-frontend:' not in compose_text
-    assert 'frontend:' not in compose_text
+
+
+def test_frontend_dockerfile_builds_standalone_next_app():
+    dockerfile_text = (REPO_ROOT / 'apps' / 'frontend' / 'Dockerfile').read_text(encoding='utf-8')
+
+    assert 'COPY apps/frontend/package.json' in dockerfile_text
+    assert 'npm install' in dockerfile_text
+    assert 'npm run build' in dockerfile_text
+    assert 'apps/frontend/.next/standalone' in dockerfile_text
+    assert 'HOSTNAME=0.0.0.0' in dockerfile_text
+    assert 'PORT=3000' in dockerfile_text
 
 
 def test_backend_image_contains_crawler_and_scheduler_entrypoint():

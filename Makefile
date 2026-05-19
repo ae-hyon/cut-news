@@ -29,7 +29,7 @@ help:
 	@echo "  make dev-backend      - Run backend locally without Docker"
 	@echo ""
 	@echo "Optional full pipeline:"
-	@echo "  make full-up          - Start backend + crawler + scheduler + Postgres"
+	@echo "  make full-up          - Start frontend + backend + crawler + scheduler + Postgres"
 	@echo "  make full-down        - Stop full pipeline compose"
 	@echo "  make pipeline-news    - Run one crawler -> summarizer -> import job locally"
 	@echo "  make import-articles  - Import summarizer data into backend DB locally"
