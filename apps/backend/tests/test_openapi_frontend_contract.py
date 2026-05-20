@@ -93,7 +93,7 @@ def test_openapi_documents_kakao_cookie_redirect_contract():
     assert 'annoyingcap_access_token' in callback['description']
     assert 'annoyingcap_refresh_token' in callback['description']
     assert callback['responses']['302']['description'].startswith('Redirects to the real Next frontend')
-    assert 'http://127.0.0.1:3000/?auth=kakao' in callback['responses']['302']['description']
+    assert 'http://127.0.0.1:3000/onboarding/complete' in callback['responses']['302']['description']
     assert callback['responses']['401']['description'] == 'Invalid or expired OAuth state.'
 
 
