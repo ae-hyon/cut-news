@@ -52,6 +52,41 @@ class UserPreference(DomainModel):
     onboarding_completed: bool
 
 
+class DailyFeedSnapshotItem(DomainModel):
+    id: int | None = None
+    snapshot_id: int | None = None
+    article_id: str
+    block_key: str
+    block_title: str
+    sort_order: int
+    score_weight: float = 1.0
+
+
+class DailyFeedSnapshot(DomainModel):
+    id: int | None = None
+    user_id: str
+    feed_date: str
+    status: str
+    generated_at: datetime
+    first_viewed_at: datetime | None = None
+    completed_at: datetime | None = None
+    preference_mode: PreferenceMode
+    primary_categories: list[str]
+    subcategories: list[str]
+    generation_source: str | None = None
+    items: list[DailyFeedSnapshotItem] = Field(default_factory=list)
+
+
+class UserArticleRead(DomainModel):
+    id: int | None = None
+    user_id: str
+    article_id: str
+    snapshot_id: int | None = None
+    opened_at: datetime
+    read_at: datetime | None = None
+    read_source: str | None = None
+
+
 class ExternalIdentity(DomainModel):
     provider: str
     provider_subject: str

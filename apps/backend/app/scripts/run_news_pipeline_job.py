@@ -7,8 +7,10 @@ import subprocess
 import sys
 import time
 from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Callable
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -33,7 +35,16 @@ class StepExecutionResult:
     returncode: int
 
 
+@dataclass(frozen=True)
+class SnapshotGenerationResult:
+    attempted_user_count: int = 0
+    generated_count: int = 0
+    skipped_viewed_count: int = 0
+    failed_count: int = 0
+
+
 Runner = Callable[[str, list[str], Path, dict[str, str]], StepExecutionResult]
+SnapshotGenerator = Callable[[str, str], SnapshotGenerationResult]
 
 
 def parse_import_stats(output: str) -> dict[str, int]:
@@ -169,6 +180,63 @@ def _schedule_metadata() -> dict[str, str]:
     }
 
 
+def _current_feed_date(timezone_name: str) -> str:
+    try:
+        timezone = ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError:
+        timezone = ZoneInfo('UTC')
+    return datetime.now(timezone).date().isoformat()
+
+
+def generate_daily_snapshots(feed_date: str, generation_source: str = 'news-pipeline') -> SnapshotGenerationResult:
+    from app.application.services.daily_feed_snapshot_service import DailyFeedSnapshotService
+    from app.application.services.feed_service import FeedService
+    from app.infrastructure.database import SessionLocal
+    from app.infrastructure.repositories import (
+        SqlAlchemyArticleRepository,
+        SqlAlchemyDailyFeedSnapshotRepository,
+        SqlAlchemyScrapRepository,
+        SqlAlchemyUserArticleReadRepository,
+        SqlAlchemyUserPreferenceRepository,
+    )
+
+    attempted_user_count = 0
+    generated_count = 0
+    skipped_viewed_count = 0
+    failed_count = 0
+
+    with SessionLocal() as db:
+        article_repository = SqlAlchemyArticleRepository(db)
+        preference_repository = SqlAlchemyUserPreferenceRepository(db)
+        snapshot_repository = SqlAlchemyDailyFeedSnapshotRepository(db)
+        service = DailyFeedSnapshotService(
+            feed_service=FeedService(article_repository, preference_repository, SqlAlchemyScrapRepository(db)),
+            preference_repository=preference_repository,
+            snapshot_repository=snapshot_repository,
+            read_repository=SqlAlchemyUserArticleReadRepository(db),
+        )
+        user_ids = preference_repository.list_onboarded_user_ids()
+        for user_id in user_ids:
+            attempted_user_count += 1
+            try:
+                existing = snapshot_repository.get_by_user_date(user_id, feed_date)
+                saved = service.generate_for_user_date(user_id, feed_date, generation_source=generation_source)
+            except Exception:
+                failed_count += 1
+                continue
+            if existing is not None and existing.first_viewed_at is not None and saved.id == existing.id:
+                skipped_viewed_count += 1
+            else:
+                generated_count += 1
+
+    return SnapshotGenerationResult(
+        attempted_user_count=attempted_user_count,
+        generated_count=generated_count,
+        skipped_viewed_count=skipped_viewed_count,
+        failed_count=failed_count,
+    )
+
+
 def _archive_report_path(data_dir: Path, started_at: str) -> Path:
     safe_started_at = re.sub(r'[^0-9A-Za-z+-]+', '', started_at)
     return data_dir / REPORT_ARCHIVE_DIR_NAME / f'run_{safe_started_at}.json'
@@ -191,6 +259,7 @@ def run_pipeline_job(
     query: str,
     count: int,
     runner: Runner = run_command,
+    snapshot_generator: SnapshotGenerator = generate_daily_snapshots,
 ) -> dict[str, object]:
     started_at = time.strftime('%Y-%m-%dT%H:%M:%S%z')
     steps_payload: list[dict[str, object]] = []
@@ -202,6 +271,9 @@ def run_pipeline_job(
     }
     status = 'success'
     failed_step: str | None = None
+    schedule = _schedule_metadata()
+    feed_date = _current_feed_date(schedule['timezone'])
+    snapshot_generation = SnapshotGenerationResult()
 
     for step_name, command, cwd, env in _pipeline_steps(repo_root, source=source, query=query, count=count):
         result = runner(step_name, command, cwd, env)
@@ -216,6 +288,9 @@ def run_pipeline_job(
             failed_step = step_name
             break
 
+    if status == 'success':
+        snapshot_generation = snapshot_generator(feed_date, 'news-pipeline')
+
     archive_path = _archive_report_path(data_dir, started_at)
     payload: dict[str, object] = {
         'status': status,
@@ -225,12 +300,14 @@ def run_pipeline_job(
         'source': source,
         'query': query,
         'count': count,
-        'schedule': _schedule_metadata(),
+        'feed_date': feed_date,
+        'schedule': schedule,
         'steps': steps_payload,
         'import_stats': import_stats,
         'quality_gate_skip_counts': import_observability['quality_gate_skip_counts'],
         'drop_reason_counts': import_observability['drop_reason_counts'],
         'classification_source_counts': import_observability['classification_source_counts'],
+        'snapshot_generation': asdict(snapshot_generation),
         'report_path': str(report_path),
         'archive_report_path': str(archive_path),
     }

@@ -29,6 +29,8 @@ def test_openapi_documents_cookie_auth_for_frontend_try_it_out():
         ('/v1/me/preference', 'put'),
         ('/v1/me/preference', 'patch'),
         ('/v1/me/feed', 'get'),
+        ('/v1/me/archive', 'get'),
+        ('/v1/me/archive/{archive_date}', 'get'),
         ('/v1/me/articles/{article_id}', 'get'),
         ('/v1/me/scraps', 'get'),
         ('/v1/me/scraps/{article_id}', 'put'),
@@ -56,8 +58,13 @@ def test_openapi_frontend_contract_has_examples_and_actionable_descriptions():
     assert 'onboarded' in get_me['description']
 
     feed = _operation(schema, '/v1/me/feed', 'get')
-    assert 'personalized' in feed['description'].lower()
+    assert 'snapshot' in feed['description'].lower()
     assert 'is_scrapped' in feed['description']
+
+    article_detail = _operation(schema, '/v1/me/articles/{article_id}', 'get')
+    assert 'marks the article read' in article_detail['description']
+    assert 'snapshot_id' in article_detail['description']
+    assert 'snapshot_id' in [parameter['name'] for parameter in article_detail['parameters']]
 
     preference_schema = schema['components']['schemas']['UserPreferenceUpdateRequestSchema']
     assert preference_schema['examples'][0] == {
@@ -81,7 +88,22 @@ def test_openapi_frontend_contract_has_examples_and_actionable_descriptions():
     assert patch_preference['summary'] == 'Update my interest categories'
 
     feed_schema = schema['components']['schemas']['FeedResponseSchema']
+    required_feed_fields = set(feed_schema['required'])
+    assert {'snapshot_id', 'feed_date', 'status', 'read_count', 'total_count'} <= required_feed_fields
+    assert feed_schema['examples'][0]['snapshot_id'] == 42
     assert feed_schema['examples'][0]['blocks'][0]['articles'][0]['is_scrapped'] is False
+
+    archive_month = _operation(schema, '/v1/me/archive', 'get')
+    assert 'persisted daily feed snapshot' in archive_month['description']
+    archive_date = _operation(schema, '/v1/me/archive/{archive_date}', 'get')
+    assert 'marks the snapshot viewed' in archive_date['description']
+
+    archive_day_schema = schema['components']['schemas']['ArchiveDayResponseSchema']
+    assert {'snapshot_id', 'status', 'has_feed', 'read_count', 'total_count', 'first_viewed_at', 'completed_at'} <= set(archive_day_schema['required'])
+    assert 'items' not in archive_day_schema.get('properties', {})
+
+    archive_date_schema = schema['components']['schemas']['ArchiveDateResponseSchema']
+    assert {'snapshot_id', 'status', 'read_count', 'total_count', 'items'} <= set(archive_date_schema['required'])
 
 
 def test_openapi_documents_kakao_cookie_redirect_contract():

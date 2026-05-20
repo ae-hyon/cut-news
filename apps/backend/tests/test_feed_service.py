@@ -243,6 +243,44 @@ def test_narrow_feed_does_not_backfill_with_articles_below_minimum_score_thresho
 
 
 
+def test_build_feed_blocks_for_preference_matches_wide_feed_block_selection():
+    service = build_service(
+        UserPreference(
+            user_id='demo-user',
+            mode=PreferenceMode.WIDE,
+            primary_categories=['tech', 'economy'],
+            subcategories=[],
+            onboarding_completed=True,
+        )
+    )
+
+    blocks = service.build_feed_blocks_for_preference(PreferenceMode.WIDE, ['tech', 'economy'], [])
+
+    assert [block['key'] for block in blocks] == ['tech-block', 'economy-block']
+    assert [block['weight'] for block in blocks] == [1.0, 0.85]
+    assert [article.id for article in blocks[1]['articles']] == ['A2', 'A5', 'A7', 'A1']
+
+
+def test_build_feed_blocks_for_preference_matches_narrow_fallback_selection():
+    service = build_service(
+        UserPreference(
+            user_id='demo-user',
+            mode=PreferenceMode.NARROW,
+            primary_categories=['economy'],
+            subcategories=['real-estate'],
+            onboarding_completed=True,
+        )
+    )
+
+    blocks = service.build_feed_blocks_for_preference(PreferenceMode.NARROW, ['economy'], ['real-estate'])
+
+    assert len(blocks) == 1
+    assert blocks[0]['key'] == 'economy-focus'
+    assert blocks[0]['title'] == '깊게 보기'
+    assert blocks[0]['weight'] == 1.0
+    assert [article.id for article in blocks[0]['articles']] == ['A2', 'A5', 'A7', 'A1']
+
+
 def test_scraps_remain_available_even_when_current_preference_would_filter_them_out():
     service = build_service(
         UserPreference(

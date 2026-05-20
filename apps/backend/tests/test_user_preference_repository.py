@@ -60,3 +60,24 @@ def test_save_existing_user_preference_clears_stale_subcategories_when_switching
     assert saved.mode == PreferenceMode.WIDE
     assert saved.primary_categories == ['economy', 'politics', 'tech']
     assert saved.subcategories == []
+
+
+def test_list_onboarded_user_ids_returns_completed_users_sorted():
+    engine = create_engine('sqlite+pysqlite:///:memory:', future=True)
+    Base.metadata.create_all(engine)
+    session_local = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
+    with session_local() as db:
+        repository = SqlAlchemyUserPreferenceRepository(db)
+        for user_id, completed in [('z-user', True), ('pending-user', False), ('a-user', True)]:
+            repository.save(
+                UserPreference(
+                    user_id=user_id,
+                    mode=PreferenceMode.WIDE,
+                    primary_categories=['economy'],
+                    subcategories=[],
+                    onboarding_completed=completed,
+                )
+            )
+
+        assert repository.list_onboarded_user_ids() == ['a-user', 'z-user']

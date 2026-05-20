@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.domain.entities import Article, AuthSession
 from app.domain.exceptions import NotFoundError
-from app.presentation.api.dependencies import get_current_session, get_feed_service
+from app.presentation.api.dependencies import get_current_session, get_daily_feed_snapshot_service, get_feed_service
 from app.presentation.api.routes.articles import router
 
 
@@ -40,10 +40,19 @@ class StubFeedService:
         return [self.get_article('A1')]
 
 
-def build_client(session: AuthSession = CURRENT_SESSION) -> TestClient:
+class StubDailyFeedSnapshotService:
+    def __init__(self):
+        self.reads: list[tuple[str, str, int | None, str | None]] = []
+
+    def mark_article_read(self, user_id: str, article_id: str, snapshot_id: int | None, read_source: str | None = None):
+        self.reads.append((user_id, article_id, snapshot_id, read_source))
+
+
+def build_client(session: AuthSession = CURRENT_SESSION, snapshot_service: StubDailyFeedSnapshotService | None = None) -> TestClient:
     app = FastAPI()
     app.include_router(router, prefix='/v1')
     app.dependency_overrides[get_feed_service] = lambda: StubFeedService()
+    app.dependency_overrides[get_daily_feed_snapshot_service] = lambda: snapshot_service or StubDailyFeedSnapshotService()
     app.dependency_overrides[get_current_session] = lambda: session
     return TestClient(app)
 
@@ -66,8 +75,9 @@ def test_article_detail_requires_authenticated_user():
     assert response.json()['detail'] == 'Authentication required'
 
 
-def test_article_detail_includes_current_users_scrap_state():
-    client = build_client()
+def test_article_detail_includes_current_users_scrap_state_and_marks_read_without_snapshot_context():
+    snapshot_service = StubDailyFeedSnapshotService()
+    client = build_client(snapshot_service=snapshot_service)
 
     response = client.get('/v1/articles/A1')
 
@@ -76,6 +86,30 @@ def test_article_detail_includes_current_users_scrap_state():
     assert body['id'] == 'A1'
     assert body['content'] == 'full content'
     assert body['is_scrapped'] is True
+    assert snapshot_service.reads == [('user-kakao-123', 'A1', None, 'article_detail')]
+
+
+def test_me_article_detail_marks_snapshot_read_when_snapshot_id_query_is_provided():
+    snapshot_service = StubDailyFeedSnapshotService()
+    client = build_client(snapshot_service=snapshot_service)
+
+    response = client.get('/v1/me/articles/A2?snapshot_id=42')
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body['id'] == 'A2'
+    assert body['is_scrapped'] is False
+    assert snapshot_service.reads == [('user-kakao-123', 'A2', 42, 'article_detail')]
+
+
+def test_article_detail_does_not_mark_missing_article_read():
+    snapshot_service = StubDailyFeedSnapshotService()
+    client = build_client(snapshot_service=snapshot_service)
+
+    response = client.get('/v1/articles/missing?snapshot_id=42')
+
+    assert response.status_code == 404
+    assert snapshot_service.reads == []
 
 
 def test_me_article_detail_requires_authenticated_user():

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
@@ -15,7 +16,7 @@ def normalize_text(value: str) -> str:
     return ' '.join(value.split())
 
 
-from app.domain.entities import Article, Category, Subcategory, UserPreference
+from app.domain.entities import Article, Category, DailyFeedSnapshot, Subcategory, UserPreference
 from app.domain.enums import PreferenceMode
 
 
@@ -224,6 +225,11 @@ class FeedResponseSchema(BaseModel):
             'examples': [
                 {
                     'user_id': 'user-kakao-123',
+                    'snapshot_id': 42,
+                    'feed_date': '2026-05-20',
+                    'status': 'viewed',
+                    'read_count': 0,
+                    'total_count': 1,
                     'mode': 'wide',
                     'blocks': [
                         {
@@ -249,7 +255,12 @@ class FeedResponseSchema(BaseModel):
         }
     )
 
-    user_id: str
+    user_id: str = Field(description='Authenticated current user id.')
+    snapshot_id: int = Field(description='Daily feed snapshot id. Pass this as article detail snapshot_id when opening items from this feed.')
+    feed_date: str = Field(description='Snapshot date in YYYY-MM-DD, based on the service schedule timezone.')
+    status: str = Field(description='Snapshot status: generated before first view, viewed after check-in, completed after all snapshot items are read.')
+    read_count: int = Field(description='Number of articles read in this snapshot context.')
+    total_count: int = Field(description='Number of article items stored in the snapshot.')
     mode: Literal['wide', 'narrow']
     blocks: list[FeedBlockResponseSchema]
 
@@ -266,49 +277,166 @@ class FeedResponseSchema(BaseModel):
                     articles=[ArticleCardResponseSchema.from_entity(article, article.id in scrapped_ids) for article in block['articles']],
                 )
             )
-        return cls(user_id=payload['user_id'], mode=payload['mode'], blocks=blocks)
-
-
-class ArchiveDayResponseSchema(BaseModel):
-    date: str
-    count: int
-    items: list[ArticleCardResponseSchema]
-
-
-class ArchiveMonthResponseSchema(BaseModel):
-    user_id: str
-    month: str
-    days: list[ArchiveDayResponseSchema]
-
-    @classmethod
-    def from_payload(cls, payload: dict, service, user_id: str) -> 'ArchiveMonthResponseSchema':
-        scrapped_ids = {item.id for item in service.list_scraps(user_id)}
+        articles_count = sum(len(block.articles) for block in blocks)
         return cls(
             user_id=payload['user_id'],
-            month=payload['month'],
-            days=[
-                ArchiveDayResponseSchema(
-                    date=day['date'],
-                    count=day['count'],
-                    items=[ArticleCardResponseSchema.from_entity(article, article.id in scrapped_ids) for article in day['items']],
+            snapshot_id=payload.get('snapshot_id') or 0,
+            feed_date=payload.get('feed_date') or '',
+            status=payload.get('status') or 'generated',
+            read_count=payload.get('read_count') or 0,
+            total_count=payload.get('total_count') or articles_count,
+            mode=payload['mode'],
+            blocks=blocks,
+        )
+
+    @classmethod
+    def from_snapshot(cls, snapshot: DailyFeedSnapshot, feed_service, snapshot_service, user_id: str) -> 'FeedResponseSchema':
+        scrapped_ids = {item.id for item in feed_service.list_scraps(user_id)}
+        read_article_ids = snapshot_service.list_read_article_ids(user_id, snapshot.id) if snapshot.id is not None else set()
+        block_entries: dict[str, dict] = {}
+        for item in sorted(snapshot.items, key=lambda candidate: candidate.sort_order):
+            entry = block_entries.setdefault(
+                item.block_key,
+                {
+                    'title': item.block_title,
+                    'weight': item.score_weight,
+                    'articles': [],
+                },
+            )
+            article = feed_service.get_article(item.article_id)
+            entry['articles'].append(ArticleCardResponseSchema.from_entity(article, article.id in scrapped_ids))
+
+        return cls(
+            user_id=snapshot.user_id,
+            snapshot_id=snapshot.id or 0,
+            feed_date=snapshot.feed_date,
+            status=snapshot.status,
+            read_count=len(read_article_ids),
+            total_count=len(snapshot.items),
+            mode=snapshot.preference_mode.value,
+            blocks=[
+                FeedBlockResponseSchema(
+                    key=key,
+                    title=entry['title'],
+                    weight=entry['weight'],
+                    articles=entry['articles'],
                 )
-                for day in payload['days']
+                for key, entry in block_entries.items()
             ],
         )
 
 
-class ArchiveDateResponseSchema(BaseModel):
-    user_id: str
-    date: str
-    items: list[ArticleCardResponseSchema]
+class ArchiveDayResponseSchema(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            'examples': [
+                {
+                    'date': '2026-05-20',
+                    'snapshot_id': 42,
+                    'status': 'viewed',
+                    'has_feed': True,
+                    'count': 3,
+                    'total_count': 3,
+                    'read_count': 1,
+                    'first_viewed_at': '2026-05-20T09:00:00Z',
+                    'completed_at': None,
+                }
+            ]
+        }
+    )
+
+    date: str = Field(description='Snapshot date in YYYY-MM-DD.')
+    snapshot_id: int = Field(description='Daily feed snapshot id for this date.')
+    status: str = Field(description='Snapshot status for calendar rendering: generated, viewed, or completed.')
+    has_feed: bool = Field(description='Whether this snapshot contains at least one article item.')
+    count: int = Field(description='Calendar item count. Currently identical to total_count.')
+    total_count: int = Field(description='Number of article items in the snapshot.')
+    read_count: int = Field(description='Number of articles read in this snapshot context.')
+    first_viewed_at: datetime | None = Field(description='First feed/archive open time; null means unviewed.')
+    completed_at: datetime | None = Field(description='Time when all snapshot items became read; null until completed.')
 
     @classmethod
-    def from_payload(cls, payload: dict, service, user_id: str) -> 'ArchiveDateResponseSchema':
-        scrapped_ids = {item.id for item in service.list_scraps(user_id)}
+    def from_snapshot(cls, snapshot: DailyFeedSnapshot, read_article_ids: set[str]) -> 'ArchiveDayResponseSchema':
+        total_count = len(snapshot.items)
         return cls(
-            user_id=payload['user_id'],
-            date=payload['date'],
-            items=[ArticleCardResponseSchema.from_entity(article, article.id in scrapped_ids) for article in payload['items']],
+            date=snapshot.feed_date,
+            snapshot_id=snapshot.id or 0,
+            status=snapshot.status,
+            has_feed=total_count > 0,
+            count=total_count,
+            total_count=total_count,
+            read_count=len(read_article_ids),
+            first_viewed_at=snapshot.first_viewed_at,
+            completed_at=snapshot.completed_at,
+        )
+
+
+class ArchiveMonthResponseSchema(BaseModel):
+    user_id: str = Field(description='Authenticated current user id.')
+    month: str = Field(description='Requested month in YYYY-MM.')
+    days: list[ArchiveDayResponseSchema] = Field(description='Persisted daily snapshot metadata only; article items are intentionally omitted from month responses.')
+
+    @classmethod
+    def from_snapshots(cls, user_id: str, month: str, snapshots: list[DailyFeedSnapshot], snapshot_service) -> 'ArchiveMonthResponseSchema':
+        days = []
+        for snapshot in sorted(snapshots, key=lambda candidate: candidate.feed_date):
+            read_article_ids = snapshot_service.list_read_article_ids(user_id, snapshot.id) if snapshot.id is not None else set()
+            days.append(ArchiveDayResponseSchema.from_snapshot(snapshot, read_article_ids))
+        return cls(user_id=user_id, month=month, days=days)
+
+
+class ArchiveDateResponseSchema(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            'examples': [
+                {
+                    'user_id': 'user-kakao-123',
+                    'date': '2026-05-20',
+                    'snapshot_id': 42,
+                    'status': 'viewed',
+                    'read_count': 1,
+                    'total_count': 1,
+                    'items': [
+                        {
+                            'id': 'SUM-001',
+                            'title': '원/달러 환율 변동성 확대',
+                            'summary': '시장 금리와 환율 변동이 커지며 주요 자산 가격이 조정되었습니다.',
+                            'primary_category': 'macro',
+                            'subcategory': 'rates-fx',
+                            'published_at': '2026-04-25',
+                            'original_url': 'https://www.yna.co.kr/view/AKR20260425000000001',
+                            'is_scrapped': False,
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
+    user_id: str = Field(description='Authenticated current user id.')
+    date: str = Field(description='Archive date in YYYY-MM-DD.')
+    snapshot_id: int = Field(description='Daily feed snapshot id. Pass this as article detail snapshot_id when opening items from this archive day.')
+    status: str = Field(description='Snapshot status after this endpoint marks the snapshot viewed.')
+    read_count: int = Field(description='Number of articles read in this snapshot context.')
+    total_count: int = Field(description='Number of article items in the snapshot.')
+    items: list[ArticleCardResponseSchema] = Field(description='Article cards in persisted snapshot sort order; is_scrapped reflects current scrap state.')
+
+    @classmethod
+    def from_snapshot(cls, snapshot: DailyFeedSnapshot, feed_service, snapshot_service, user_id: str) -> 'ArchiveDateResponseSchema':
+        scrapped_ids = {item.id for item in feed_service.list_scraps(user_id)}
+        read_article_ids = snapshot_service.list_read_article_ids(user_id, snapshot.id) if snapshot.id is not None else set()
+        articles = []
+        for item in sorted(snapshot.items, key=lambda candidate: candidate.sort_order):
+            article = feed_service.get_article(item.article_id)
+            articles.append(ArticleCardResponseSchema.from_entity(article, article.id in scrapped_ids))
+        return cls(
+            user_id=snapshot.user_id,
+            date=snapshot.feed_date,
+            snapshot_id=snapshot.id or 0,
+            status=snapshot.status,
+            read_count=len(read_article_ids),
+            total_count=len(snapshot.items),
+            items=articles,
         )
 
 

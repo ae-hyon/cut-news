@@ -41,6 +41,21 @@
   - auth/session/feed/preference/article/scrap routes now include actionable summaries/descriptions and 401/404/422 response notes.
   - key schemas include examples for session states, preference update payloads, and feed shape.
   - tests cover the OpenAPI contract in `apps/backend/tests/test_openapi_frontend_contract.py`.
+- Phase 5 snapshot archive API is implemented:
+  - `GET /v1/me/archive?month=YYYY-MM` lists persisted snapshot days only and no longer recalculates runtime current-preference archive items.
+  - `GET /v1/me/archive/{YYYY-MM-DD}` reads persisted snapshot items in snapshot sort order, marks the snapshot viewed/check-in, and includes snapshot metadata plus read counts.
+  - Archive response schemas expose `snapshot_id`, `status`, `has_feed`, `read_count`, `total_count`, `first_viewed_at`, and `completed_at`; daily archive preserves article cards and current `is_scrapped` state.
+- Phase 6 read tracking is implemented:
+  - `GET /v1/articles/{article_id}` and `GET /v1/me/articles/{article_id}` mark authenticated article-detail opens as read.
+  - Detail routes accept optional `snapshot_id` query; with a snapshot context, read state contributes to snapshot `read_count` and completion.
+  - Detail opens without `snapshot_id` are allowed and stored as article-only reads without changing any snapshot status.
+  - Re-reading the same article in the same snapshot is idempotent; when all snapshot items are read, the snapshot is saved as `completed` with `completed_at`.
+  - Current scrap state remains separate from read state and is still returned as `is_scrapped`.
+- Phase 7 scheduler snapshot generation is implemented:
+  - After a successful import step, `run_news_pipeline_job` generates today's snapshot for onboarded users using the configured schedule timezone.
+  - Import failure or earlier step failure skips snapshot generation.
+  - Per-user snapshot failures are counted in `snapshot_generation.failed_count` and do not fail the whole pipeline.
+  - `run_report.json` and archived `run_reports/run_*.json` include `feed_date` and `snapshot_generation` counters: `attempted_user_count`, `generated_count`, `skipped_viewed_count`, `failed_count`.
 
 ## Current runtime ports
 - Backend API: `http://127.0.0.1:8000`
@@ -96,11 +111,30 @@
 - Live servers were not restarted during this handoff update. Re-verify runtime manually before assuming the local browser session reflects current files.
 
 ## Remaining mismatches / next best slice
-1. Run one real Naver pipeline smoke with credentials before calling scheduled scraping production-stable:
-   - `NAVER_CLIENT_ID=... NAVER_CLIENT_SECRET=... NEWS_SOURCE=naver-search NEWS_QUERY=경제 NEWS_COUNT=20 RUN_ON_STARTUP=true make full-up`
-   - verify `apps/summarizer/data/run_report.json`, one `apps/summarizer/data/run_reports/run_*.json`, imported DB articles, and the new `drop_reason_counts` / `classification_source_counts` fields.
-2. If content volume is still low, use `drop_reason_counts.category_unmapped`, `quality_gate:*`, and `classification_source_counts` to decide whether to tune step-3 scoring/selection, category aliasing, or verification confidence thresholds.
-3. A stale shell environment can still override `FRONTEND_APP_URL` to `http://127.0.0.1:5173`; unset it or set it to `http://127.0.0.1:3000` before local backend runtime checks.
+1. Product direction for `나의 뉴스 피드` / monthly archive is now snapshot-based, not runtime current-preference filtering.
+   - Source workflow doc: `.dev/news-feed-archive-workflow.md`
+   - Development checklist: `.dev/news-feed-snapshot-development-checklist.md`
+2. Snapshot phases 1-7 are complete:
+   - Phase 1: daily feed snapshot/read entities, SQLAlchemy models, Alembic migration, repository protocols, repository implementation, and repository tests.
+   - Phase 2: `FeedService.get_feed()` delegates to reusable `build_feed_blocks_for_preference(...)`, with wide/narrow selector coverage.
+   - Phase 3: `DailyFeedSnapshotService` generates/regenerates unviewed snapshots, preserves viewed snapshots, freezes preference-at-generation and block item metadata, and delegates view/read state.
+   - Phase 4: `GET /v1/me/feed` lazy-generates today's Asia/Seoul snapshot, marks it viewed, and returns required snapshot metadata plus preserved `mode`/`blocks[].articles` card shape.
+   - Phase 5: monthly/daily archive endpoints use persisted snapshots, include snapshot/read metadata, mark daily archive opens viewed, and preserve snapshot item article cards with current scrap state.
+   - Phase 6: authenticated article detail opens mark read; optional `snapshot_id` query links reads to snapshot completion; article-only reads are allowed and do not complete snapshots.
+   - Phase 7: successful scheduler/import runs generate daily snapshots for onboarded users and persist `run_report.snapshot_generation` counters.
+3. Phase 8 docs/API contract is complete:
+   - `apps/backend/README.md` documents `/v1/me/feed`, `/v1/me/archive?month=YYYY-MM`, `/v1/me/archive/{YYYY-MM-DD}`, read tracking, status transitions, calendar mapping, and scheduler `run_report.snapshot_generation` fields.
+   - `.dev/news-feed-archive-workflow.md` now reflects implemented snapshot-backed API behavior instead of the old runtime preference-filtered archive.
+   - OpenAPI schema docs/examples were tightened for feed/archive snapshot fields.
+4. Phase 9 full verification is complete:
+   - `make test`: `114 passed`.
+   - Root compose API was rebuilt with current backend image via `docker compose up -d --build api`.
+   - `api` and `db` are healthy; `/health` and `/v1/categories` smoke checks pass.
+   - DB migration smoke shows `alembic_version=0006_daily_feed_snapshots` and all three snapshot/read tables exist.
+5. Next best slice: cleanup/PR preparation.
+   - Separate real source/doc changes from generated summarizer data churn before committing.
+   - Naver pipeline smoke is still useful later, but snapshot development should not be blocked by real Naver credentials.
+6. A stale shell environment can still override `FRONTEND_APP_URL` to `http://127.0.0.1:5173`; unset it or set it to `http://127.0.0.1:3000` before local backend runtime checks.
 
 ## Suggested first commands next session
 ```bash

@@ -9,6 +9,7 @@ from app.application.auth.state_service import OAuthStateService
 from app.application.auth.token_service import AuthTokenService
 from app.application.services.auth_service import AuthService, DefaultKakaoOAuthClient
 from app.application.services.catalog_service import CatalogService
+from app.application.services.daily_feed_snapshot_service import DailyFeedSnapshotService
 from app.application.services.feed_service import FeedService
 from app.application.services.summary_service import SummaryGatewayService
 from app.application.services.user_service import UserPreferenceService
@@ -16,9 +17,11 @@ from app.infrastructure.database import get_db
 from app.infrastructure.repositories import (
     SqlAlchemyArticleRepository,
     SqlAlchemyCategoryRepository,
+    SqlAlchemyDailyFeedSnapshotRepository,
     SqlAlchemyExternalIdentityRepository,
     SqlAlchemyRefreshSessionRepository,
     SqlAlchemyScrapRepository,
+    SqlAlchemyUserArticleReadRepository,
     SqlAlchemyUserPreferenceRepository,
 )
 from app.domain.entities import AuthSession
@@ -35,6 +38,18 @@ def get_user_preference_service(db: Session = Depends(get_db)) -> UserPreference
 
 def get_feed_service(db: Session = Depends(get_db)) -> FeedService:
     return FeedService(SqlAlchemyArticleRepository(db), SqlAlchemyUserPreferenceRepository(db), SqlAlchemyScrapRepository(db))
+
+
+def get_daily_feed_snapshot_service(db: Session = Depends(get_db)) -> DailyFeedSnapshotService:
+    article_repository = SqlAlchemyArticleRepository(db)
+    preference_repository = SqlAlchemyUserPreferenceRepository(db)
+    scrap_repository = SqlAlchemyScrapRepository(db)
+    return DailyFeedSnapshotService(
+        feed_service=FeedService(article_repository, preference_repository, scrap_repository),
+        preference_repository=preference_repository,
+        snapshot_repository=SqlAlchemyDailyFeedSnapshotRepository(db),
+        read_repository=SqlAlchemyUserArticleReadRepository(db),
+    )
 
 
 def get_auth_service(db: Session = Depends(get_db)) -> AuthService:

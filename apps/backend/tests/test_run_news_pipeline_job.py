@@ -1,8 +1,17 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.domain.entities import DailyFeedSnapshot, DailyFeedSnapshotItem, UserPreference
+from app.domain.enums import PreferenceMode
+from app.infrastructure.database import Base
+from app.infrastructure.models import ArticleModel, UserPreferenceModel
+from app.infrastructure.repositories import SqlAlchemyDailyFeedSnapshotRepository, SqlAlchemyUserPreferenceRepository
 from app.scripts import run_news_pipeline_job
 
 
@@ -36,7 +45,7 @@ def test_parse_import_observability_extracts_json_payload_from_stdout():
     }
 
 
-def test_run_pipeline_job_writes_success_report_with_step_results(tmp_path: Path):
+def test_run_pipeline_job_writes_success_report_with_step_results_and_snapshot_generation(tmp_path: Path):
     data_dir = tmp_path / 'data'
     for directory in ['raw', 'json', 'scored', 'summarized', 'verified']:
         (data_dir / directory).mkdir(parents=True, exist_ok=True)
@@ -72,6 +81,17 @@ def test_run_pipeline_job_writes_success_report_with_step_results(tmp_path: Path
             returncode=0,
         )
 
+    snapshot_calls: list[tuple[str, str]] = []
+
+    def fake_snapshot_generator(feed_date: str, generation_source: str):
+        snapshot_calls.append((feed_date, generation_source))
+        return run_news_pipeline_job.SnapshotGenerationResult(
+            attempted_user_count=3,
+            generated_count=2,
+            skipped_viewed_count=1,
+            failed_count=0,
+        )
+
     report = run_news_pipeline_job.run_pipeline_job(
         repo_root=tmp_path,
         data_dir=data_dir,
@@ -80,15 +100,23 @@ def test_run_pipeline_job_writes_success_report_with_step_results(tmp_path: Path
         query='경제',
         count=6,
         runner=fake_runner,
+        snapshot_generator=fake_snapshot_generator,
     )
 
     assert calls == ['collect', 'export_raw', 'summarize', 'import']
+    assert snapshot_calls == [(report['feed_date'], 'news-pipeline')]
     assert report['status'] == 'success'
     assert report['failed_step'] is None
     assert report['import_stats'] == {'inserted': 1, 'updated': 2, 'deleted': 0, 'skipped': 3}
     assert report['quality_gate_skip_counts'] == {'violations': 1}
     assert report['drop_reason_counts'] == {'category_unmapped': 2}
     assert report['classification_source_counts'] == {'source_subcategory': 1}
+    assert report['snapshot_generation'] == {
+        'attempted_user_count': 3,
+        'generated_count': 2,
+        'skipped_viewed_count': 1,
+        'failed_count': 0,
+    }
     assert report['schedule'] == {
         'timezone': 'Asia/Seoul',
         'ai_news_generation_time': '08:30:00',
@@ -105,6 +133,124 @@ def test_run_pipeline_job_writes_success_report_with_step_results(tmp_path: Path
     archived = json.loads(archived_reports[0].read_text(encoding='utf-8'))
     assert archived == persisted
     assert persisted['archive_report_path'] == str(archived_reports[0])
+
+
+def test_run_pipeline_job_does_not_generate_snapshots_when_import_fails(tmp_path: Path):
+    data_dir = tmp_path / 'data'
+    data_dir.mkdir(parents=True, exist_ok=True)
+    report_path = data_dir / 'run_report.json'
+
+    def fake_runner(step_name: str, command: list[str], cwd: Path, env: dict[str, str]):
+        status = 'failed' if step_name == 'import' else 'success'
+        return run_news_pipeline_job.StepExecutionResult(
+            name=step_name,
+            status=status,
+            command=command,
+            cwd=str(cwd),
+            duration_seconds=0.1,
+            stdout='',
+            stderr='import boom' if step_name == 'import' else '',
+            returncode=1 if step_name == 'import' else 0,
+        )
+
+    snapshot_calls: list[tuple[str, str]] = []
+
+    def fake_snapshot_generator(feed_date: str, generation_source: str):
+        snapshot_calls.append((feed_date, generation_source))
+        return run_news_pipeline_job.SnapshotGenerationResult()
+
+    report = run_news_pipeline_job.run_pipeline_job(
+        repo_root=tmp_path,
+        data_dir=data_dir,
+        report_path=report_path,
+        source='seeded',
+        query='경제',
+        count=4,
+        runner=fake_runner,
+        snapshot_generator=fake_snapshot_generator,
+    )
+
+    assert report['status'] == 'failed'
+    assert report['failed_step'] == 'import'
+    assert [step['name'] for step in report['steps']] == ['collect', 'export_raw', 'summarize', 'import']
+    assert snapshot_calls == []
+    assert report['snapshot_generation'] == {
+        'attempted_user_count': 0,
+        'generated_count': 0,
+        'skipped_viewed_count': 0,
+        'failed_count': 0,
+    }
+def test_generate_daily_snapshots_counts_generated_skipped_viewed_and_failed_users(monkeypatch):
+    engine = create_engine('sqlite+pysqlite:///:memory:', future=True)
+    Base.metadata.create_all(engine)
+    session_local = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
+    with session_local() as db:
+        preference_repository = SqlAlchemyUserPreferenceRepository(db)
+        for user_id, completed in [('fresh-user', True), ('viewed-user', True), ('pending-user', False)]:
+            preference_repository.save(
+                UserPreference(
+                    user_id=user_id,
+                    mode=PreferenceMode.WIDE,
+                    primary_categories=['economy'],
+                    subcategories=[],
+                    onboarding_completed=completed,
+                )
+            )
+        db.add(
+            ArticleModel(
+                id='A1',
+                title='경제 뉴스',
+                summary='s',
+                content='c',
+                primary_category='economy',
+                subcategory='macro',
+                published_at='2026-05-20',
+                original_url='https://news.example/a1',
+                score_weight=0.95,
+            )
+        )
+        db.add(UserPreferenceModel(user_id='broken-user', mode='broken-mode', onboarding_completed=True))
+        db.commit()
+
+        snapshot_repository = SqlAlchemyDailyFeedSnapshotRepository(db)
+        viewed_snapshot = snapshot_repository.save(
+            DailyFeedSnapshot(
+                user_id='viewed-user',
+                feed_date='2026-05-20',
+                status='viewed',
+                generated_at=datetime(2026, 5, 20, 0, 30, tzinfo=UTC),
+                first_viewed_at=datetime(2026, 5, 20, 8, 0, tzinfo=UTC),
+                preference_mode=PreferenceMode.WIDE,
+                primary_categories=['economy'],
+                subcategories=[],
+                generation_source='previous-run',
+                items=[DailyFeedSnapshotItem(article_id='A1', block_key='economy-block', block_title='economy block', sort_order=1, score_weight=0.95)],
+            )
+        )
+
+    monkeypatch.setattr('app.infrastructure.database.SessionLocal', session_local)
+
+    result = run_news_pipeline_job.generate_daily_snapshots('2026-05-20', 'news-pipeline')
+
+    assert result == run_news_pipeline_job.SnapshotGenerationResult(
+        attempted_user_count=3,
+        generated_count=1,
+        skipped_viewed_count=1,
+        failed_count=1,
+    )
+    with session_local() as db:
+        snapshot_repository = SqlAlchemyDailyFeedSnapshotRepository(db)
+        fresh_snapshot = snapshot_repository.get_by_user_date('fresh-user', '2026-05-20')
+        preserved_snapshot = snapshot_repository.get_by_user_date('viewed-user', '2026-05-20')
+        pending_snapshot = snapshot_repository.get_by_user_date('pending-user', '2026-05-20')
+
+    assert fresh_snapshot is not None
+    assert fresh_snapshot.generation_source == 'news-pipeline'
+    assert preserved_snapshot is not None
+    assert preserved_snapshot.id == viewed_snapshot.id
+    assert preserved_snapshot.generation_source == 'previous-run'
+    assert pending_snapshot is None
 
 
 def test_run_pipeline_job_stops_on_failed_step_and_records_failure(tmp_path: Path):
@@ -153,6 +299,12 @@ def test_run_pipeline_job_stops_on_failed_step_and_records_failure(tmp_path: Pat
     assert report['quality_gate_skip_counts'] == {}
     assert report['drop_reason_counts'] == {}
     assert report['classification_source_counts'] == {}
+    assert report['snapshot_generation'] == {
+        'attempted_user_count': 0,
+        'generated_count': 0,
+        'skipped_viewed_count': 0,
+        'failed_count': 0,
+    }
     persisted = json.loads(report_path.read_text(encoding='utf-8'))
     assert persisted['failed_step'] == 'summarize'
     archived_reports = list((data_dir / 'run_reports').glob('run_*.json'))

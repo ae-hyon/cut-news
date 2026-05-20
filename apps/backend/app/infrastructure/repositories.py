@@ -6,15 +6,18 @@ from datetime import UTC, datetime
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.domain.entities import Article, Category, ExternalIdentity, RefreshSession, Subcategory, UserPreference
+from app.domain.entities import Article, Category, DailyFeedSnapshot, DailyFeedSnapshotItem, ExternalIdentity, RefreshSession, Subcategory, UserPreference
 from app.domain.enums import PreferenceMode
 from app.infrastructure.models import (
     ArticleModel,
     CategoryModel,
+    DailyFeedSnapshotItemModel,
+    DailyFeedSnapshotModel,
     ExternalIdentityModel,
     RefreshSessionModel,
     ScrapModel,
     SubcategoryModel,
+    UserArticleReadModel,
     UserPreferenceModel,
     UserPrimaryCategoryModel,
     UserSubcategoryModel,
@@ -73,6 +76,53 @@ def _to_preference(model: UserPreferenceModel) -> UserPreference:
         primary_categories=[item.category_slug for item in sorted(model.primary_categories, key=lambda x: x.sort_order)],
         subcategories=[item.subcategory_slug for item in sorted(model.subcategories, key=lambda x: x.sort_order)],
         onboarding_completed=model.onboarding_completed,
+    )
+
+
+def _json_list(value: str | None) -> list[str]:
+    try:
+        payload = json.loads(value or '[]')
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(payload, list):
+        return []
+    return [str(item) for item in payload]
+
+
+def _with_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value
+
+
+def _to_snapshot_item(model: DailyFeedSnapshotItemModel) -> DailyFeedSnapshotItem:
+    return DailyFeedSnapshotItem(
+        id=model.id,
+        snapshot_id=model.snapshot_id,
+        article_id=model.article_id,
+        block_key=model.block_key,
+        block_title=model.block_title,
+        sort_order=model.sort_order,
+        score_weight=model.score_weight,
+    )
+
+
+def _to_snapshot(model: DailyFeedSnapshotModel) -> DailyFeedSnapshot:
+    return DailyFeedSnapshot(
+        id=model.id,
+        user_id=model.user_id,
+        feed_date=model.feed_date,
+        status=model.status,
+        generated_at=_with_utc(model.generated_at),
+        first_viewed_at=_with_utc(model.first_viewed_at),
+        completed_at=_with_utc(model.completed_at),
+        preference_mode=PreferenceMode(model.preference_mode),
+        primary_categories=_json_list(model.primary_categories_json),
+        subcategories=_json_list(model.subcategories_json),
+        generation_source=model.generation_source,
+        items=[_to_snapshot_item(item) for item in sorted(model.items, key=lambda item: item.sort_order)],
     )
 
 
@@ -161,6 +211,14 @@ class SqlAlchemyUserPreferenceRepository:
         )
         return _to_preference(item) if item else None
 
+    def list_onboarded_user_ids(self) -> list[str]:
+        rows = self.db.scalars(
+            select(UserPreferenceModel.user_id)
+            .where(UserPreferenceModel.onboarding_completed.is_(True))
+            .order_by(UserPreferenceModel.user_id)
+        ).all()
+        return list(rows)
+
     def save(self, preference: UserPreference) -> UserPreference:
         item = self.db.get(UserPreferenceModel, preference.user_id)
         if not item:
@@ -208,6 +266,144 @@ class SqlAlchemyScrapRepository:
     def list_article_ids(self, user_id: str) -> list[str]:
         rows = self.db.scalars(select(ScrapModel.article_id).where(ScrapModel.user_id == user_id).order_by(ScrapModel.article_id)).all()
         return list(rows)
+
+
+class SqlAlchemyDailyFeedSnapshotRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_by_id(self, snapshot_id: int) -> DailyFeedSnapshot | None:
+        item = self.db.scalar(select(DailyFeedSnapshotModel).options(selectinload(DailyFeedSnapshotModel.items)).where(DailyFeedSnapshotModel.id == snapshot_id))
+        return _to_snapshot(item) if item else None
+
+    def get_by_user_date(self, user_id: str, feed_date: str) -> DailyFeedSnapshot | None:
+        item = self.db.scalar(
+            select(DailyFeedSnapshotModel)
+            .options(selectinload(DailyFeedSnapshotModel.items))
+            .where(DailyFeedSnapshotModel.user_id == user_id, DailyFeedSnapshotModel.feed_date == feed_date)
+        )
+        return _to_snapshot(item) if item else None
+
+    def list_by_user_month(self, user_id: str, month: str) -> list[DailyFeedSnapshot]:
+        rows = self.db.scalars(
+            select(DailyFeedSnapshotModel)
+            .options(selectinload(DailyFeedSnapshotModel.items))
+            .where(DailyFeedSnapshotModel.user_id == user_id, DailyFeedSnapshotModel.feed_date.like(f'{month}-%'))
+            .order_by(DailyFeedSnapshotModel.feed_date.desc())
+        ).all()
+        return [_to_snapshot(row) for row in rows]
+
+    def save(self, snapshot: DailyFeedSnapshot) -> DailyFeedSnapshot:
+        item = self.db.scalar(
+            select(DailyFeedSnapshotModel)
+            .options(selectinload(DailyFeedSnapshotModel.items))
+            .where(DailyFeedSnapshotModel.user_id == snapshot.user_id, DailyFeedSnapshotModel.feed_date == snapshot.feed_date)
+        )
+        if not item:
+            item = DailyFeedSnapshotModel(
+                user_id=snapshot.user_id,
+                feed_date=snapshot.feed_date,
+                status=snapshot.status,
+                generated_at=snapshot.generated_at,
+                first_viewed_at=snapshot.first_viewed_at,
+                completed_at=snapshot.completed_at,
+                preference_mode=snapshot.preference_mode.value,
+                primary_categories_json=json.dumps(snapshot.primary_categories, ensure_ascii=False),
+                subcategories_json=json.dumps(snapshot.subcategories, ensure_ascii=False),
+                generation_source=snapshot.generation_source,
+            )
+            self.db.add(item)
+            self.db.flush()
+        else:
+            item.status = snapshot.status
+            item.generated_at = snapshot.generated_at
+            item.first_viewed_at = snapshot.first_viewed_at
+            item.completed_at = snapshot.completed_at
+            item.preference_mode = snapshot.preference_mode.value
+            item.primary_categories_json = json.dumps(snapshot.primary_categories, ensure_ascii=False)
+            item.subcategories_json = json.dumps(snapshot.subcategories, ensure_ascii=False)
+            item.generation_source = snapshot.generation_source
+            self.db.flush()
+
+        self.replace_items(item.id, snapshot.items, commit=False)
+        self.db.commit()
+        self.db.expire_all()
+        saved = self.get_by_user_date(snapshot.user_id, snapshot.feed_date)
+        if saved is None:
+            raise RuntimeError('Saved daily feed snapshot could not be reloaded')
+        return saved
+
+    def replace_items(self, snapshot_id: int, items: list[DailyFeedSnapshotItem], commit: bool = True) -> None:
+        self.db.execute(delete(DailyFeedSnapshotItemModel).where(DailyFeedSnapshotItemModel.snapshot_id == snapshot_id))
+        for item in items:
+            self.db.add(
+                DailyFeedSnapshotItemModel(
+                    snapshot_id=snapshot_id,
+                    article_id=item.article_id,
+                    block_key=item.block_key,
+                    block_title=item.block_title,
+                    sort_order=item.sort_order,
+                    score_weight=item.score_weight,
+                )
+            )
+        if commit:
+            self.db.commit()
+
+    def mark_viewed(self, snapshot_id: int, viewed_at: datetime) -> DailyFeedSnapshot:
+        item = self.db.get(DailyFeedSnapshotModel, snapshot_id)
+        if item is None:
+            raise ValueError('Daily feed snapshot not found')
+        if item.first_viewed_at is None:
+            item.first_viewed_at = viewed_at
+        if item.status == 'generated':
+            item.status = 'viewed'
+        self.db.commit()
+        self.db.expire_all()
+        loaded = self.db.scalar(select(DailyFeedSnapshotModel).options(selectinload(DailyFeedSnapshotModel.items)).where(DailyFeedSnapshotModel.id == snapshot_id))
+        if loaded is None:
+            raise RuntimeError('Viewed daily feed snapshot could not be reloaded')
+        return _to_snapshot(loaded)
+
+
+class SqlAlchemyUserArticleReadRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def mark_read(self, user_id: str, article_id: str, snapshot_id: int | None, read_at: datetime, read_source: str | None = None) -> None:
+        item = self.db.scalar(
+            select(UserArticleReadModel).where(
+                UserArticleReadModel.user_id == user_id,
+                UserArticleReadModel.article_id == article_id,
+                UserArticleReadModel.snapshot_id == snapshot_id,
+            )
+        )
+        if item is None:
+            item = UserArticleReadModel(
+                user_id=user_id,
+                article_id=article_id,
+                snapshot_id=snapshot_id,
+                opened_at=read_at,
+                read_at=read_at,
+                read_source=read_source,
+            )
+            self.db.add(item)
+        else:
+            opened_at = _with_utc(item.opened_at)
+            if opened_at is None or read_at < opened_at:
+                item.opened_at = read_at
+            item.read_at = item.read_at or read_at
+            item.read_source = item.read_source or read_source
+        self.db.commit()
+
+    def list_read_article_ids(self, user_id: str, snapshot_id: int) -> set[str]:
+        rows = self.db.scalars(
+            select(UserArticleReadModel.article_id).where(
+                UserArticleReadModel.user_id == user_id,
+                UserArticleReadModel.snapshot_id == snapshot_id,
+                UserArticleReadModel.read_at.is_not(None),
+            )
+        ).all()
+        return set(rows)
 
 
 class SqlAlchemyExternalIdentityRepository:

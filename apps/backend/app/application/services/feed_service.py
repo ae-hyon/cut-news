@@ -124,23 +124,23 @@ class FeedService:
         ]
         return self._dedupe_articles(selected + fallback)[: self.NARROW_BLOCK_ARTICLE_TARGET]
 
-    def get_feed(self, user_id: str) -> dict:
-        preference_mode, primary_categories, subcategories = self._resolve_preference(user_id)
-
+    def build_feed_blocks_for_preference(
+        self,
+        preference_mode: PreferenceMode,
+        primary_categories: list[str],
+        subcategories: list[str],
+    ) -> list[dict]:
         if preference_mode is PreferenceMode.NARROW:
-            articles = self._fill_narrow_articles(primary_categories[0], subcategories)
-            return {
-                'user_id': user_id,
-                'mode': preference_mode.value,
-                'blocks': [
-                    {
-                        'key': f'{primary_categories[0]}-focus',
-                        'title': '깊게 보기',
-                        'weight': 1.0,
-                        'articles': articles,
-                    }
-                ],
-            }
+            primary_category = primary_categories[0] if primary_categories else ''
+            articles = self._fill_narrow_articles(primary_category, subcategories) if primary_category else []
+            return [
+                {
+                    'key': f'{primary_category}-focus',
+                    'title': '깊게 보기',
+                    'weight': 1.0,
+                    'articles': articles,
+                }
+            ]
 
         blocks = []
         weights = self._wide_weights(len(primary_categories))
@@ -156,6 +156,11 @@ class FeedService:
                     'articles': articles[: self.WIDE_BLOCK_ARTICLE_LIMIT],
                 }
             )
+        return blocks
+
+    def get_feed(self, user_id: str) -> dict:
+        preference_mode, primary_categories, subcategories = self._resolve_preference(user_id)
+        blocks = self.build_feed_blocks_for_preference(preference_mode, primary_categories, subcategories)
 
         return {
             'user_id': user_id,
