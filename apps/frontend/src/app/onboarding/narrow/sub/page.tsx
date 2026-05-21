@@ -3,15 +3,38 @@
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { useOnboardingStore } from '@/stores/onboarding';
-import { CATEGORIES } from '@/constants/categories';
+import { useCategories } from '@/hooks/useCategories';
 
 export default function OnboardingNarrowSub() {
   const router = useRouter();
   const { narrowMainCategory, selectedSubCategories, toggleSubCategory } =
     useOnboardingStore();
+  const { categories, isLoading, error, refetch } = useCategories();
 
-  const mainCat = CATEGORIES.find((c) => c.id === narrowMainCategory);
+  const mainCat = categories.find((c) => c.id === narrowMainCategory);
   const subs = mainCat?.subcategories ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-white/60 text-[14px]">카테고리를 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-3">
+        <p className="text-white/60 text-[14px]">카테고리를 불러올 수 없어요</p>
+        <button
+          onClick={refetch}
+          className="text-[#f3782b] text-[14px] font-medium"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
 
   if (!mainCat) {
     return (
