@@ -117,7 +117,37 @@ PYTHONPATH=. uv run pytest tests/ -q
 
 ## 선택: 전체 뉴스 파이프라인
 
-루트 `docker-compose.yml`은 백엔드 외에 실제 Next 프론트, crawler, daily scheduler까지 함께 띄웁니다.
+권장 로컬 실행은 Dockerless local compose입니다. AI 요약 단계가 `codex_exec` 또는 Hermes gateway처럼 호스트의 OAuth/session 기반 도구를 쓰기 때문에, Docker 컨테이너 안으로 AI CLI 인증을 전달하는 것보다 호스트에서 직접 실행하는 편이 단순합니다.
+
+```bash
+make local-up       # frontend + backend + crawler + scheduler 시작
+make local-up SERVICES="backend crawler scheduler"  # frontend 제외
+make local-ps       # docker compose ps 느낌의 상태 확인
+make local-logs     # 로그 tail
+make local-pipeline # 즉시 파이프라인 1회 실행
+make local-report   # 최신 run_report 요약
+make local-down     # 중지
+```
+
+`docker compose`에 익숙하면 wrapper를 직접 써도 됩니다.
+
+```bash
+./scripts/local-compose.py up -d backend crawler scheduler
+./scripts/local-compose.py ps
+./scripts/local-compose.py logs -f backend
+./scripts/local-compose.py restart backend
+./scripts/local-compose.py stop
+```
+
+포함 서비스:
+- frontend: `http://127.0.0.1:3000`
+- backend API: `http://127.0.0.1:8000`
+- crawler API: `http://127.0.0.1:8001`
+- local scheduler: 매일 `08:30` Asia/Seoul 기준으로 crawler -> summarizer -> backend import 실행
+
+로그와 pid는 `.local/compose/` 아래에 저장됩니다. 기본 DB는 Docker 없이 `apps/backend/dev-ui-test.db` SQLite를 사용합니다. 루트 `.env`와 `apps/backend/.env`가 있으면 자동으로 읽습니다.
+
+Docker Compose가 필요할 때는 루트 `docker-compose.yml`로 백엔드 외에 실제 Next 프론트, crawler, daily scheduler, Postgres까지 함께 띄울 수 있습니다.
 
 처음 실행할 때는 루트 환경 파일을 준비합니다. 기본값(`NEWS_SOURCE=seeded`)은 Naver credential 없이 실행됩니다.
 

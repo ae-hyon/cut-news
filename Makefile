@@ -1,4 +1,4 @@
-.PHONY: help backend-up backend-down backend-reset backend-logs full-up full-down test test-backend dev-backend import-articles pipeline-news clean
+.PHONY: help backend-up backend-down backend-reset backend-logs full-up full-down local-up local-down local-restart local-status local-ps local-logs local-pipeline local-report test test-backend dev-backend import-articles pipeline-news clean
 
 ifneq (,$(wildcard .env))
 include .env
@@ -31,6 +31,13 @@ help:
 	@echo "Optional full pipeline:"
 	@echo "  make full-up          - Start frontend + backend + crawler + scheduler + Postgres"
 	@echo "  make full-down        - Stop full pipeline compose"
+	@echo "  make local-up         - Start Dockerless frontend + backend + crawler + scheduler"
+	@echo "  make local-down       - Stop Dockerless local services"
+	@echo "  make local-status     - Show Dockerless local service status"
+	@echo "  make local-ps         - Alias for local-status"
+	@echo "  make local-logs       - Show Dockerless local logs"
+	@echo "  make local-pipeline   - Run one Dockerless crawler -> summarizer -> import job"
+	@echo "  make local-report     - Summarize latest local pipeline run_report.json"
 	@echo "  make pipeline-news    - Run one crawler -> summarizer -> import job locally"
 	@echo "  make import-articles  - Import summarizer data into backend DB locally"
 	@echo ""
@@ -54,6 +61,30 @@ full-up:
 
 full-down:
 	$(ROOT_COMPOSE) down
+
+local-up:
+	python3 scripts/local-compose.py up $(SERVICES)
+
+local-down:
+	python3 scripts/local-compose.py down $(SERVICES)
+
+local-restart:
+	python3 scripts/local-compose.py restart $(SERVICES)
+
+local-status:
+	python3 scripts/local-compose.py status $(SERVICES)
+
+local-ps:
+	python3 scripts/local-compose.py ps $(SERVICES)
+
+local-logs:
+	python3 scripts/local-compose.py logs $(SERVICES)
+
+local-pipeline:
+	python3 scripts/local-compose.py pipeline
+
+local-report:
+	python3 scripts/local-compose.py report
 
 test: test-backend
 
