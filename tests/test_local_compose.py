@@ -50,6 +50,57 @@ class LocalComposeTests(unittest.TestCase):
                 },
             )
 
+    def test_base_env_prefers_shell_database_url_over_env_files(self) -> None:
+        module = load_local_compose()
+
+        def fake_read_env_file(path: Path):
+            if path == Path("/root/.env"):
+                return {"DATABASE_URL": "postgresql+psycopg://root-db"}
+            if path == Path("/backend/.env"):
+                return {"DATABASE_URL": "postgresql+psycopg://backend-db"}
+            return {}
+
+        with patch.object(module, "ROOT_ENV", Path("/root/.env")), patch.object(
+            module, "BACKEND_ENV", Path("/backend/.env")
+        ), patch.object(module, "read_env_file", side_effect=fake_read_env_file), patch.dict(
+            "os.environ", {"DATABASE_URL": "postgresql+psycopg://shell-db"}, clear=True
+        ):
+            env = module.base_env()
+
+        self.assertEqual(env["DATABASE_URL"], "postgresql+psycopg://shell-db")
+
+    def test_base_env_prefers_root_database_url_over_backend_env_and_default(self) -> None:
+        module = load_local_compose()
+
+        def fake_read_env_file(path: Path):
+            if path == Path("/root/.env"):
+                return {"DATABASE_URL": "postgresql+psycopg://root-db"}
+            if path == Path("/backend/.env"):
+                return {"DATABASE_URL": "postgresql+psycopg://backend-db"}
+            return {}
+
+        with patch.object(module, "ROOT_ENV", Path("/root/.env")), patch.object(
+            module, "BACKEND_ENV", Path("/backend/.env")
+        ), patch.object(module, "read_env_file", side_effect=fake_read_env_file), patch.dict("os.environ", {}, clear=True):
+            env = module.base_env()
+
+        self.assertEqual(env["DATABASE_URL"], "postgresql+psycopg://root-db")
+
+    def test_base_env_uses_backend_database_url_when_root_is_unset(self) -> None:
+        module = load_local_compose()
+
+        def fake_read_env_file(path: Path):
+            if path == Path("/backend/.env"):
+                return {"DATABASE_URL": "postgresql+psycopg://backend-db"}
+            return {}
+
+        with patch.object(module, "ROOT_ENV", Path("/root/.env")), patch.object(
+            module, "BACKEND_ENV", Path("/backend/.env")
+        ), patch.object(module, "read_env_file", side_effect=fake_read_env_file), patch.dict("os.environ", {}, clear=True):
+            env = module.base_env()
+
+        self.assertEqual(env["DATABASE_URL"], "postgresql+psycopg://backend-db")
+
     def test_parse_args_allows_interleaved_log_options(self) -> None:
         module = load_local_compose()
 

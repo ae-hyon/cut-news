@@ -45,6 +45,23 @@ def test_parse_import_observability_extracts_json_payload_from_stdout():
     }
 
 
+def test_parse_crawler_category_stats_extracts_json_payload_from_stdout():
+    output = (
+        'collected 7 articles\n'
+        'crawler category stats: '
+        '{"query_count":40,"count_per_query":2,"collected_count":7,"deduped_count":1,'
+        '"by_category":{"stock":{"requested_count":14,"collected_count":2}}}\n'
+    )
+
+    assert run_news_pipeline_job.parse_crawler_category_stats(output) == {
+        'query_count': 40,
+        'count_per_query': 2,
+        'collected_count': 7,
+        'deduped_count': 1,
+        'by_category': {'stock': {'requested_count': 14, 'collected_count': 2}},
+    }
+
+
 def test_run_pipeline_job_writes_success_report_with_step_results_and_snapshot_generation(tmp_path: Path):
     data_dir = tmp_path / 'data'
     for directory in ['raw', 'json', 'scored', 'summarized', 'verified']:
@@ -62,6 +79,13 @@ def test_run_pipeline_job_writes_success_report_with_step_results_and_snapshot_g
     def fake_runner(step_name: str, command: list[str], cwd: Path, env: dict[str, str]):
         calls.append(step_name)
         stdout = ''
+        if step_name == 'collect':
+            stdout = (
+                'collected 7 articles\n'
+                'crawler category stats: '
+                '{"query_count":40,"count_per_query":2,"collected_count":7,"deduped_count":1,'
+                '"by_category":{"stock":{"requested_count":14,"collected_count":2}}}\n'
+            )
         if step_name == 'import':
             stdout = (
                 'summarizer article import complete: inserted=1 updated=2 deleted=0 skipped=3\n'
@@ -108,6 +132,13 @@ def test_run_pipeline_job_writes_success_report_with_step_results_and_snapshot_g
     assert report['status'] == 'success'
     assert report['failed_step'] is None
     assert report['import_stats'] == {'inserted': 1, 'updated': 2, 'deleted': 0, 'skipped': 3}
+    assert report['crawler_category_stats'] == {
+        'query_count': 40,
+        'count_per_query': 2,
+        'collected_count': 7,
+        'deduped_count': 1,
+        'by_category': {'stock': {'requested_count': 14, 'collected_count': 2}},
+    }
     assert report['quality_gate_skip_counts'] == {'violations': 1}
     assert report['drop_reason_counts'] == {'category_unmapped': 2}
     assert report['classification_source_counts'] == {'source_subcategory': 1}

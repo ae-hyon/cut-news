@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     auth_refresh_cookie_name: str = 'annoyingcap_refresh_token'
     auth_cookie_secure: bool = False
     auth_cookie_samesite: str = 'lax'
+
+    @field_validator('database_url', mode='before')
+    @classmethod
+    def normalize_database_url(cls, value: str) -> str:
+        if isinstance(value, str) and value.startswith('postgresql://'):
+            return 'postgresql+psycopg://' + value.removeprefix('postgresql://')
+        return value
 
     @property
     def resolved_cors_allowed_origins(self) -> list[str]:

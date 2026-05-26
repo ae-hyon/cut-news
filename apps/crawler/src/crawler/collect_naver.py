@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+from dataclasses import dataclass
 from datetime import datetime
 from html import unescape
 from html.parser import HTMLParser
@@ -16,6 +17,114 @@ import httpx
 from crawler.schemas import CrawledArticle
 
 NAVER_SEARCH_URL = 'https://openapi.naver.com/v1/search/news.json'
+CRAWL_CATEGORIES: tuple[dict[str, object], ...] = (
+    {
+        'id': 'stock',
+        'name': '주식시장',
+        'keywords': ['코스피', '나스닥', 'S&P500'],
+        'subcategories': [
+            {'id': 'stock-domestic', 'name': '국내주식'},
+            {'id': 'stock-overseas', 'name': '해외주식'},
+            {'id': 'stock-etf', 'name': 'ETF'},
+            {'id': 'stock-unlisted', 'name': '비상장주식'},
+        ],
+    },
+    {
+        'id': 'crypto',
+        'name': '가상자산',
+        'keywords': ['비트코인', '이더리움', '알트코인'],
+        'subcategories': [
+            {'id': 'crypto-bitcoin', 'name': '비트코인'},
+            {'id': 'crypto-altcoin', 'name': '알트코인'},
+            {'id': 'crypto-defi', 'name': 'DeFi'},
+            {'id': 'crypto-nft', 'name': 'NFT'},
+        ],
+    },
+    {
+        'id': 'realestate',
+        'name': '부동산',
+        'keywords': ['아파트', '청약', '전세'],
+        'subcategories': [
+            {'id': 'realestate-apt', 'name': '아파트'},
+            {'id': 'realestate-subscription', 'name': '청약'},
+            {'id': 'realestate-lease', 'name': '전세/월세'},
+            {'id': 'realestate-commercial', 'name': '상업용'},
+        ],
+    },
+    {
+        'id': 'politics',
+        'name': '정치',
+        'keywords': ['국회', '대통령', '정당'],
+        'subcategories': [
+            {'id': 'politics-domestic', 'name': '국내정치'},
+            {'id': 'politics-diplomacy', 'name': '외교'},
+            {'id': 'politics-policy', 'name': '정책'},
+        ],
+    },
+    {
+        'id': 'economy',
+        'name': '경제',
+        'keywords': ['금리', '환율', 'GDP'],
+        'subcategories': [
+            {'id': 'economy-macro', 'name': '거시경제'},
+            {'id': 'economy-finance', 'name': '금융'},
+            {'id': 'economy-trade', 'name': '무역'},
+        ],
+    },
+    {
+        'id': 'tech',
+        'name': 'IT/테크',
+        'keywords': ['AI', '반도체', '스타트업'],
+        'subcategories': [
+            {'id': 'tech-ai', 'name': 'AI'},
+            {'id': 'tech-semiconductor', 'name': '반도체'},
+            {'id': 'tech-startup', 'name': '스타트업'},
+            {'id': 'tech-bigtech', 'name': '빅테크'},
+        ],
+    },
+    {
+        'id': 'entertainment',
+        'name': '연예',
+        'keywords': ['K-POP', '드라마', '영화'],
+        'subcategories': [
+            {'id': 'entertainment-kpop', 'name': 'K-POP'},
+            {'id': 'entertainment-drama', 'name': '드라마'},
+            {'id': 'entertainment-movie', 'name': '영화'},
+        ],
+    },
+    {
+        'id': 'sports',
+        'name': '스포츠',
+        'keywords': ['축구', '야구', 'NBA'],
+        'subcategories': [
+            {'id': 'sports-soccer', 'name': '축구'},
+            {'id': 'sports-baseball', 'name': '야구'},
+            {'id': 'sports-basketball', 'name': '농구'},
+            {'id': 'sports-esports', 'name': 'e스포츠'},
+        ],
+    },
+    {
+        'id': 'global',
+        'name': '국제',
+        'keywords': ['미국', '중국', 'EU'],
+        'subcategories': [
+            {'id': 'global-us', 'name': '미국'},
+            {'id': 'global-china', 'name': '중국'},
+            {'id': 'global-europe', 'name': '유럽'},
+            {'id': 'global-asia', 'name': '아시아'},
+        ],
+    },
+    {
+        'id': 'lifestyle',
+        'name': '라이프',
+        'keywords': ['건강', '여행', '맛집'],
+        'subcategories': [
+            {'id': 'lifestyle-health', 'name': '건강'},
+            {'id': 'lifestyle-travel', 'name': '여행'},
+            {'id': 'lifestyle-food', 'name': '맛집'},
+        ],
+    },
+)
 DEFAULT_SEEDED_ARTICLES = (
     {'topic': '정부, 5월 중 원유 대체 물량 7462만 배럴 확보 추진', 'url': 'https://www.yna.co.kr/view/AKR20260424118751001'},
     {'topic': '미·이란 협상 기대에 국제유가 5일 만에 하락', 'url': 'https://www.yna.co.kr/view/AKR20260425007300072'},
@@ -31,6 +140,12 @@ HEADERS = {
 
 SearchItems = Callable[[str, int], list[dict[str, Any]]]
 FetchHtml = Callable[[str], str]
+
+
+@dataclass(frozen=True)
+class CategoryQuery:
+    category_id: str
+    query: str
 
 
 class _TextExtractor(HTMLParser):
@@ -135,6 +250,21 @@ def search_naver_items(query: str, count: int) -> list[dict[str, Any]]:
         return [item for item in response.json().get('items', []) if isinstance(item, dict)]
 
 
+def build_category_queries(categories: tuple[dict[str, object], ...] = CRAWL_CATEGORIES) -> list[CategoryQuery]:
+    queries: list[CategoryQuery] = []
+    seen: set[tuple[str, str]] = set()
+    for category in categories:
+        category_id = str(category['id'])
+        values = [str(keyword) for keyword in category.get('keywords', [])]
+        values.extend(str(subcategory['name']) for subcategory in category.get('subcategories', []) if isinstance(subcategory, dict))
+        for value in values:
+            key = (category_id, value)
+            if value and key not in seen:
+                queries.append(CategoryQuery(category_id=category_id, query=value))
+                seen.add(key)
+    return queries
+
+
 def fetch_article_html(url: str) -> str:
     with httpx.Client(timeout=10, headers=HEADERS, follow_redirects=True) as client:
         response = client.get(url)
@@ -148,6 +278,7 @@ def collect_naver_articles(
     *,
     search_items: SearchItems = search_naver_items,
     fetch_html: FetchHtml = fetch_article_html,
+    source_category: str | None = None,
 ) -> list[CrawledArticle]:
     articles: list[CrawledArticle] = []
     seen_article_ids: set[str] = set()
@@ -182,10 +313,53 @@ def collect_naver_articles(
                 date=_format_pub_date(str(item.get('pubDate') or '')),
                 media='naver-news',
                 content_source='body' if body else 'description',
+                source_category=source_category,
+                source_query=query,
                 scraped_at=datetime.now(),
             )
         )
     return articles
+
+
+def collect_all_category_articles(
+    queries: list[CategoryQuery | dict[str, str]] | None = None,
+    *,
+    count_per_query: int,
+    search_items: SearchItems = search_naver_items,
+    fetch_html: FetchHtml = fetch_article_html,
+) -> tuple[list[CrawledArticle], dict[str, object]]:
+    category_queries = queries or build_category_queries()
+    articles: list[CrawledArticle] = []
+    seen_article_ids: set[str] = set()
+    by_category: dict[str, dict[str, int]] = {}
+    deduped_count = 0
+
+    for item in category_queries:
+        query = item if isinstance(item, CategoryQuery) else CategoryQuery(category_id=item['category_id'], query=item['query'])
+        stats = by_category.setdefault(query.category_id, {'requested_count': 0, 'collected_count': 0})
+        stats['requested_count'] += count_per_query
+        for article in collect_naver_articles(
+            query.query,
+            count_per_query,
+            search_items=search_items,
+            fetch_html=fetch_html,
+            source_category=query.category_id,
+        ):
+            if article.article_id and article.article_id in seen_article_ids:
+                deduped_count += 1
+                continue
+            if article.article_id:
+                seen_article_ids.add(article.article_id)
+            articles.append(article)
+            stats['collected_count'] += 1
+
+    return articles, {
+        'query_count': len(category_queries),
+        'count_per_query': count_per_query,
+        'collected_count': len(articles),
+        'deduped_count': deduped_count,
+        'by_category': by_category,
+    }
 
 
 def collect_seeded_articles(
@@ -245,16 +419,24 @@ def main() -> None:
     parser = argparse.ArgumentParser(description='Collect real Naver news into apps/crawler/output/latest.json')
     parser.add_argument('--query', default='경제', help='Naver news search query')
     parser.add_argument('--count', default=20, type=int, help='Number of articles to request')
-    parser.add_argument('--source', choices=('naver-search', 'seeded'), default='naver-search')
+    parser.add_argument('--source', choices=('naver-search', 'naver-all-categories', 'seeded'), default='naver-search')
     parser.add_argument('--output-dir', default=Path('output'), type=Path, help='Crawler output directory')
     args = parser.parse_args()
 
+    crawl_stats: dict[str, object] | None = None
     if args.source == 'seeded':
         articles = collect_seeded_articles()
+    elif args.source == 'naver-all-categories':
+        articles, crawl_stats = collect_all_category_articles(count_per_query=args.count)
     else:
         articles = collect_naver_articles(args.query, args.count)
     latest_path = save_latest_articles(articles, args.output_dir, query=args.query)
     print(f'collected {len(articles)} articles')
+    if crawl_stats is not None:
+        stats_path = args.output_dir / 'crawl_report.json'
+        stats_path.write_text(json.dumps(crawl_stats, ensure_ascii=False, indent=2), encoding='utf-8')
+        print(f'crawler category stats: {json.dumps(crawl_stats, ensure_ascii=False, sort_keys=True)}')
+        print(f'crawl report: {stats_path}')
     print(f'latest: {latest_path}')
 
 

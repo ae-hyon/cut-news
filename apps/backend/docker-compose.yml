@@ -13,7 +13,7 @@ services:
       DEBUG: "true"
       MIGRATE_ON_STARTUP: "true"
       SEED_ON_STARTUP: "true"
-      DATABASE_URL: postgresql+psycopg://annoyingcap:annoyingcap@db:5432/annoyingcap
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://annoyingcap:annoyingcap@db:5432/annoyingcap}
       NEWS_SUMMARIZER_DIR: /app/apps/summarizer
       KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY:-your-kakao-rest-api-key}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-your-kakao-client-secret}

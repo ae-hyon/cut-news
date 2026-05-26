@@ -72,6 +72,45 @@ DEFAULT_SUBCATEGORY_BY_PRIMARY = {
     'lifestyle': 'lifestyle-health',
 }
 
+CRAWLER_SOURCE_QUERY_SUBCATEGORY_ALIASES = {
+    '국내주식': 'stock-domestic',
+    '해외주식': 'stock-overseas',
+    'ETF': 'stock-etf',
+    '비상장주식': 'stock-unlisted',
+    '비트코인': 'crypto-bitcoin',
+    '알트코인': 'crypto-altcoin',
+    'DeFi': 'crypto-defi',
+    'NFT': 'crypto-nft',
+    '아파트': 'realestate-apt',
+    '청약': 'realestate-subscription',
+    '전세/월세': 'realestate-lease',
+    '상업용': 'realestate-commercial',
+    '국내정치': 'politics-domestic',
+    '외교': 'politics-diplomacy',
+    '정책': 'politics-policy',
+    '거시경제': 'economy-macro',
+    '금융': 'economy-finance',
+    '무역': 'economy-trade',
+    'AI': 'tech-ai',
+    '반도체': 'tech-semiconductor',
+    '스타트업': 'tech-startup',
+    '빅테크': 'tech-bigtech',
+    'K-POP': 'entertainment-kpop',
+    '드라마': 'entertainment-drama',
+    '영화': 'entertainment-movie',
+    '축구': 'sports-soccer',
+    '야구': 'sports-baseball',
+    '농구': 'sports-basketball',
+    'e스포츠': 'sports-esports',
+    '미국': 'global-us',
+    '중국': 'global-china',
+    '유럽': 'global-europe',
+    '아시아': 'global-asia',
+    '건강': 'lifestyle-health',
+    '여행': 'lifestyle-travel',
+    '맛집': 'lifestyle-food',
+}
+
 SUPPORTED_SUBCATEGORIES = {
     'stock': {'stock-domestic', 'stock-overseas', 'stock-etf', 'stock-unlisted'},
     'crypto': {'crypto-bitcoin', 'crypto-altcoin', 'crypto-defi', 'crypto-nft'},
@@ -248,7 +287,7 @@ def _derive_categories(article_payload: dict, category_payload: dict) -> Article
         return None
 
     primary = _normalise_primary(raw_primary)
-    if primary not in SUPPORTED_SUBCATEGORIES:
+    if raw_primary and primary not in SUPPORTED_SUBCATEGORIES:
         return None
 
     reliable_pair = RELIABLE_SOURCE_CATEGORY_BY_SUBCATEGORY.get(raw_subcategory)
@@ -265,6 +304,21 @@ def _derive_categories(article_payload: dict, category_payload: dict) -> Article
             primary_category=classified[0],
             subcategory=classified[1],
             classification_source='keyword_rule',
+        )
+
+    source_category = str(article_payload.get('source_category') or '')
+    if source_category in SUPPORTED_SUBCATEGORIES:
+        source_query = str(article_payload.get('source_query') or '')
+        subcategory = CRAWLER_SOURCE_QUERY_SUBCATEGORY_ALIASES.get(
+            source_query,
+            DEFAULT_SUBCATEGORY_BY_PRIMARY[source_category],
+        )
+        if subcategory not in SUPPORTED_SUBCATEGORIES[source_category]:
+            subcategory = DEFAULT_SUBCATEGORY_BY_PRIMARY[source_category]
+        return ArticleDerivedCategory(
+            primary_category=source_category,
+            subcategory=subcategory,
+            classification_source='crawler_source_category',
         )
 
     return None

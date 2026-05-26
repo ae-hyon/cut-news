@@ -55,13 +55,12 @@ def read_env_file(path: Path) -> dict[str, str]:
 
 
 def base_env() -> dict[str, str]:
-    env = os.environ.copy()
+    # Precedence: explicit shell/Make environment > root .env > backend .env > defaults.
+    # This keeps root .env useful for local credentials while allowing one-off smoke
+    # commands like `NEWS_SOURCE=naver-all-categories make local-pipeline`.
+    env = read_env_file(BACKEND_ENV)
     env.update(read_env_file(ROOT_ENV))
-    # Backend .env contains app/backend-specific settings. Root .env wins for shared
-    # pipeline settings such as NEWS_SOURCE and NAVER credentials.
-    backend_values = read_env_file(BACKEND_ENV)
-    for key, value in backend_values.items():
-        env.setdefault(key, value)
+    env.update(os.environ)
     env.setdefault("NEWS_SOURCE", "seeded")
     env.setdefault("NEWS_QUERY", "경제")
     env.setdefault("NEWS_COUNT", "20")

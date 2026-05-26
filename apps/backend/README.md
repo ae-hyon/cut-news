@@ -67,6 +67,31 @@ FRONTEND_APP_URL=http://127.0.0.1:3000
 JWT_SECRET_KEY=change-this-local-dev-secret-at-least-32-chars
 ```
 
+## 외부 Postgres / Neon
+
+Supabase 없이 무료 managed DB를 붙일 때는 Neon Postgres를 권장합니다. Backend는 `DATABASE_URL` 하나로 DB를 선택하고, Alembic도 같은 값을 읽습니다.
+
+루트 `.env` 또는 `apps/backend/.env`에 Neon pooled connection string을 넣습니다. 루트 `.env` 값이 Dockerless local compose와 pipeline 공유 설정의 우선값입니다.
+
+```env
+DATABASE_URL=postgresql://USER:PASSWORD@HOST.neon.tech/DB?sslmode=require
+```
+
+적용 순서:
+
+```bash
+# repo root
+make db-migrate
+make db-current
+make local-up SERVICES="backend crawler scheduler"
+```
+
+운영 주의:
+- `.env`는 commit하지 않습니다.
+- Neon runtime에는 pooled URL을 우선 사용합니다.
+- `make backend-up`/`make full-up`도 `DATABASE_URL`을 전달하지만 로컬 Postgres 컨테이너는 기본 개발 의존성으로 같이 뜰 수 있습니다. 외부 DB만 확인할 때는 host-run `make local-up`이 더 단순합니다.
+- 공유 DB에 seed가 필요 없으면 `SEED_ON_STARTUP=false`를 함께 설정합니다.
+
 ## 주요 API
 
 Public:

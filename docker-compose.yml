@@ -39,7 +39,7 @@ services:
       DEBUG: "true"
       MIGRATE_ON_STARTUP: "true"
       SEED_ON_STARTUP: "true"
-      DATABASE_URL: postgresql+psycopg://annoyingcap:annoyingcap@db:5432/annoyingcap
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://annoyingcap:annoyingcap@db:5432/annoyingcap}
       NEWS_SUMMARIZER_DIR: /app/apps/summarizer
       FRONTEND_APP_URL: http://127.0.0.1:3000
       CORS_ALLOWED_ORIGINS: http://127.0.0.1:3000,http://localhost:3000
@@ -89,7 +89,7 @@ services:
     container_name: annoyingcap-news-scheduler
     command: ["/app/docker/news-scheduler.sh"]
     environment:
-      DATABASE_URL: postgresql+psycopg://annoyingcap:annoyingcap@db:5432/annoyingcap
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://annoyingcap:annoyingcap@db:5432/annoyingcap}
       NEWS_SUMMARIZER_DIR: /app/apps/summarizer
       NEWS_SOURCE: ${NEWS_SOURCE:-seeded}
       NEWS_QUERY: ${NEWS_QUERY:-경제}

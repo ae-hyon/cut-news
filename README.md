@@ -64,6 +64,36 @@ DB까지 초기화:
 make backend-reset
 ```
 
+## 선택: 외부 Postgres / Neon 사용
+
+공유 개발 DB나 간단한 staging DB가 필요하면 Supabase 대신 Neon Postgres를 권장합니다. 기존 SQLAlchemy/Alembic/Postgres 구조를 그대로 쓰므로 코드 변경 없이 `DATABASE_URL`만 바꾸면 됩니다.
+
+1. Neon에서 project/database를 만들고 pooled connection string을 복사합니다.
+2. 루트 `.env`에 `DATABASE_URL`을 추가합니다. 비밀번호는 commit하지 않습니다.
+
+```dotenv
+DATABASE_URL=postgresql://USER:PASSWORD@HOST.neon.tech/DB?sslmode=require
+```
+
+3. migration을 먼저 적용합니다.
+
+```bash
+make db-migrate
+make db-current
+```
+
+4. Dockerless local compose 또는 로컬 pipeline을 실행합니다.
+
+```bash
+make local-up SERVICES="backend crawler scheduler"
+make local-pipeline
+```
+
+주의:
+- Neon은 앱 runtime에는 pooled URL을 우선 사용합니다.
+- `make backend-up` / `make full-up`도 루트 `.env`의 `DATABASE_URL`을 컨테이너에 전달하지만, 로컬 Postgres 컨테이너는 개발 기본 구성으로 함께 뜰 수 있습니다. 외부 DB만 쓰는 smoke에는 `make local-up`이 더 단순합니다.
+- 테스트(`make test`)는 외부 DB가 아니라 repo 기본 test DB를 사용합니다.
+
 ## 백엔드 구성
 
 `apps/backend/docker-compose.yml`은 다음만 띄웁니다.
@@ -217,6 +247,13 @@ Naver Search credential이 있는 경우:
 cp .env.example .env
 # .env에 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 입력 후 NEWS_SOURCE=naver-search 설정
 make pipeline-news NEWS_QUERY=경제 NEWS_COUNT=20
+```
+
+전체 서비스 카테고리 기준으로 Naver를 수집하려면 `naver-all-categories`를 사용합니다. 이 모드에서 `NEWS_COUNT`는 전체 개수가 아니라 카테고리 키워드/중분류 쿼리당 요청 개수입니다. 상세 taxonomy와 발행/아카이브 기준 시간은 `.dev/news-pipeline-category-schedule.md`에 기록되어 있습니다.
+
+```bash
+NEWS_SOURCE=naver-all-categories NEWS_COUNT=2 make local-pipeline
+make local-report
 ```
 
 `Makefile`은 루트 `.env`가 있으면 자동으로 읽기 때문에, 로컬 1회 실행과 `make full-up` 모두 같은 credential 설정을 공유합니다.

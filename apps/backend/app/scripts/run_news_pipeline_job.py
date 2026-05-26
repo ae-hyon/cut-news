@@ -21,6 +21,7 @@ IMPORT_STATS_PATTERN = re.compile(
     r'inserted=(?P<inserted>\d+)\s+updated=(?P<updated>\d+)\s+deleted=(?P<deleted>\d+)\s+skipped=(?P<skipped>\d+)'
 )
 IMPORT_OBSERVABILITY_PATTERN = re.compile(r'summarizer article import observability:\s*(?P<payload>\{.*\})')
+CRAWLER_CATEGORY_STATS_PATTERN = re.compile(r'crawler category stats:\s*(?P<payload>\{.*\})')
 
 
 @dataclass(frozen=True)
@@ -75,6 +76,17 @@ def parse_import_observability(output: str) -> dict[str, dict[str, int]]:
         'drop_reason_counts': dict(payload.get('drop_reason_counts') or {}),
         'classification_source_counts': dict(payload.get('classification_source_counts') or {}),
     }
+
+
+def parse_crawler_category_stats(output: str) -> dict[str, object]:
+    match = CRAWLER_CATEGORY_STATS_PATTERN.search(output)
+    if not match:
+        return {}
+    try:
+        payload = json.loads(match.group('payload'))
+    except json.JSONDecodeError:
+        return {}
+    return dict(payload) if isinstance(payload, dict) else {}
 
 
 def run_command(step_name: str, command: list[str], cwd: Path, env: dict[str, str]) -> StepExecutionResult:
@@ -269,6 +281,7 @@ def run_pipeline_job(
         'drop_reason_counts': {},
         'classification_source_counts': {},
     }
+    crawler_category_stats: dict[str, object] = {}
     status = 'success'
     failed_step: str | None = None
     schedule = _schedule_metadata()
@@ -278,6 +291,8 @@ def run_pipeline_job(
     for step_name, command, cwd, env in _pipeline_steps(repo_root, source=source, query=query, count=count):
         result = runner(step_name, command, cwd, env)
         steps_payload.append(_serialize_step(result))
+        if step_name == 'collect':
+            crawler_category_stats = parse_crawler_category_stats(result.stdout)
         if step_name == 'export_raw' and result.status == 'success':
             _clear_category_map(repo_root)
         if step_name == 'import':
@@ -304,6 +319,7 @@ def run_pipeline_job(
         'schedule': schedule,
         'steps': steps_payload,
         'import_stats': import_stats,
+        'crawler_category_stats': crawler_category_stats,
         'quality_gate_skip_counts': import_observability['quality_gate_skip_counts'],
         'drop_reason_counts': import_observability['drop_reason_counts'],
         'classification_source_counts': import_observability['classification_source_counts'],

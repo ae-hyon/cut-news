@@ -2,160 +2,134 @@
 
 ## Current branch
 - `main`
-- synced with `origin/main`
-- latest origin/main commit: run `git log -1 --oneline origin/main` after fetch/pull
+- latest local commit subject: `feat: add all-category news pipeline support` (run `git log -1 --oneline` for the exact SHA)
+- based on `8ce6849 feat: add dockerless local compose runner`; push state should be verified with `git status -sb` / `git log --oneline --decorate -3` in the next session.
 
-## Recently merged / landed work
-- #33 `feat(frontend): 프론트엔드 초기 UI 구현`
-- #34 `fix: stabilize crawler ids and safe stale import pruning`
-- #35 `fix: gate low-quality summarizer imports`
-- #36 `feat: add pipeline run report wrapper`
-- #38 `feat(frontend): 카카오 로그인 연동 및 인증 인프라 구성`
-- #39 `fix: 카카오 로그인 쿠키/CORS 문제 해결 및 직접 통신 전환`
-- direct/main follow-ups:
-  - `8050f76 fix: resolve PR 33 merge conflicts`
-  - `cb49b5d fix: require auth for article detail`
-  - `a9f14f0 docs: simplify backend docker workflow`
+## Recently landed work
+- `601be69 feat: add daily feed snapshots`
+  - Snapshot backend migration Phase 1~9 complete.
+  - `GET /v1/me/feed` uses daily feed snapshots and marks viewed/check-in.
+  - `GET /v1/me/archive?month=YYYY-MM` returns snapshot day metadata only.
+  - `GET /v1/me/archive/{YYYY-MM-DD}` returns persisted snapshot items and marks viewed.
+  - Article detail routes record read state; optional `snapshot_id` contributes to snapshot completion.
+  - Scheduler/import success generates daily snapshots for onboarded users and writes `run_report.snapshot_generation` counters.
+  - Backend docs/OpenAPI/tests were updated; last known full backend gate: `make test` -> `114 passed`.
+- `8ce6849 feat: add dockerless local compose runner`
+  - Added host-run `scripts/local-compose.py` for frontend/backend/crawler/scheduler without passing AI OAuth credentials into Docker containers.
+  - Added Make targets: `local-up`, `local-down`, `local-ps`, `local-logs`, `local-pipeline`, `local-report`.
+  - Logs/pids are stored under `.local/compose/`.
+  - Default Dockerless DB is `sqlite+pysqlite:///dev-ui-test.db` unless `DATABASE_URL` is set.
 
-## Done in the latest slice
-- Updated local backend/frontend auth wiring for the real Next frontend on port `3000`.
-- Backend now treats `http://127.0.0.1:3000` as the frontend origin by default:
-  - `apps/backend/app/common/config.py`
-  - `apps/backend/docker-compose.yml`
-- Backend adds CORS middleware with `allow_credentials=True` so browser cookie auth works cross-origin from frontend `3000` to backend `8000`.
-- Frontend no longer proxies `/v1/*` through Next rewrites; it calls backend directly through `API_BASE`:
-  - default `NEXT_PUBLIC_API_URL || http://127.0.0.1:8000`
-  - file: `apps/frontend/src/lib/api.ts`
-- Next config now keeps only the crawler rewrite:
-  - `/api/crawler/:path* -> http://localhost:8001/:path*`
-- Article detail route now requires authenticated current-user context instead of exposing the user-scoped detail contract anonymously.
-- Pipeline run report wrapper persists `quality_gate_skip_counts` and now also writes timestamped archives:
-  - `apps/summarizer/data/run_report.json`
-  - archive: `apps/summarizer/data/run_reports/run_*.json`
-  - report observability now includes `quality_gate_skip_counts`, `drop_reason_counts`, and `classification_source_counts` so low imported volume can be attributed to quality gates, missing outputs/fields, category mapping failures, or source-vs-keyword classification.
-- News scheduler now retries failed pipeline runs with `PIPELINE_MAX_ATTEMPTS` / `PIPELINE_RETRY_DELAY_SECONDS`; `RUN_ON_STARTUP=true` fails fast if the startup smoke cannot succeed after retries.
+## Current completed slices
 
-- FastAPI OpenAPI docs were upgraded for frontend/backend contract validation:
-  - app-level docs call out real Next frontend `3000`, `credentials: include`, and deprecated `apps/test-frontend`.
-  - protected routes expose `AccessTokenCookie` cookie auth in Swagger/OpenAPI.
-  - auth/session/feed/preference/article/scrap routes now include actionable summaries/descriptions and 401/404/422 response notes.
-  - key schemas include examples for session states, preference update payloads, and feed shape.
-  - tests cover the OpenAPI contract in `apps/backend/tests/test_openapi_frontend_contract.py`.
-- Phase 5 snapshot archive API is implemented:
-  - `GET /v1/me/archive?month=YYYY-MM` lists persisted snapshot days only and no longer recalculates runtime current-preference archive items.
-  - `GET /v1/me/archive/{YYYY-MM-DD}` reads persisted snapshot items in snapshot sort order, marks the snapshot viewed/check-in, and includes snapshot metadata plus read counts.
-  - Archive response schemas expose `snapshot_id`, `status`, `has_feed`, `read_count`, `total_count`, `first_viewed_at`, and `completed_at`; daily archive preserves article cards and current `is_scrapped` state.
-- Phase 6 read tracking is implemented:
-  - `GET /v1/articles/{article_id}` and `GET /v1/me/articles/{article_id}` mark authenticated article-detail opens as read.
-  - Detail routes accept optional `snapshot_id` query; with a snapshot context, read state contributes to snapshot `read_count` and completion.
-  - Detail opens without `snapshot_id` are allowed and stored as article-only reads without changing any snapshot status.
-  - Re-reading the same article in the same snapshot is idempotent; when all snapshot items are read, the snapshot is saved as `completed` with `completed_at`.
-  - Current scrap state remains separate from read state and is still returned as `is_scrapped`.
-- Phase 7 scheduler snapshot generation is implemented:
-  - After a successful import step, `run_news_pipeline_job` generates today's snapshot for onboarded users using the configured schedule timezone.
-  - Import failure or earlier step failure skips snapshot generation.
-  - Per-user snapshot failures are counted in `snapshot_generation.failed_count` and do not fail the whole pipeline.
-  - `run_report.json` and archived `run_reports/run_*.json` include `feed_date` and `snapshot_generation` counters: `attempted_user_count`, `generated_count`, `skipped_viewed_count`, `failed_count`.
+Committed in local `HEAD` with subject `feat: add all-category news pipeline support`. Run `git log -1 --oneline` for the exact SHA.
 
-## Current runtime ports
+### Neon/external Postgres readiness
+
+User chose Neon instead of Supabase for a free managed external DB.
+
+Implemented in the working tree:
+- Root and backend Compose now pass through `${DATABASE_URL:-postgresql+psycopg://annoyingcap:annoyingcap@db:5432/annoyingcap}` so a root `.env` Neon URL can override the local Compose DB URL.
+- `.env.example` and `apps/backend/.env.example` include commented Neon/external Postgres examples.
+- `Makefile` has DB helper targets:
+  - `make db-migrate` -> `cd apps/backend && PYTHONPATH=. uv run alembic upgrade head`
+  - `make db-current` -> `cd apps/backend && PYTHONPATH=. uv run alembic current`
+- Root `README.md` and `apps/backend/README.md` document Neon setup, migration order, and safety notes.
+- `tests/test_local_compose.py` now covers Dockerless local compose env loading precedence:
+  - explicit shell/Make environment wins over root `.env`
+  - root `.env` wins over `apps/backend/.env`
+  - backend `.env` wins over defaults
+- `scripts/local-compose.py` uses the same precedence, so one-off commands like `NEWS_SOURCE=naver-all-categories NEWS_COUNT=2 make local-pipeline` are not silently overridden by root `.env`.
+- `Makefile` preserves selected explicit shell environment values over included `.env` values before exporting to recipes.
+- Backend settings normalize plain Neon `postgresql://...` URLs to `postgresql+psycopg://...` so copied Neon URLs work with the installed psycopg driver.
+- `apps/backend/tests/test_config.py` covers database URL normalization.
+
+### News pipeline category/schedule slice
+
+Implemented in the working tree:
+- `.dev/news-pipeline-category-schedule.md` records the user-provided service taxonomy and timing notes.
+- `apps/crawler/src/crawler/collect_naver.py` supports `NEWS_SOURCE=naver-all-categories` / `--source naver-all-categories`, builds queries from each category keyword plus subcategory name, dedupes original URLs, and prints/writes crawler category stats.
+- Crawler output now includes `source_category` and `source_query`.
+- Backend import uses `source_category` as fallback classification when category map/keywords are insufficient and counts it as `crawler_source_category`.
+- Pipeline `run_report.json` includes `crawler_category_stats` when category crawl stats are printed.
+
+## Runtime ports
 - Backend API: `http://127.0.0.1:8000`
 - Real Next frontend: `http://127.0.0.1:3000`
-- `apps/test-frontend` / Vite `5173` is deprecated and should not be used for the next backend work.
-- Crawler API when used locally: `http://127.0.0.1:8001`
-- Backend Postgres Docker host port: `54329`
+- Crawler API: `http://127.0.0.1:8001`
+- Local Docker Postgres host port: `54329`
+- `apps/test-frontend` / Vite `5173` is deprecated; do not use it as the E2E target.
 
-## Current repo state
-- current checkout: `main`
-- synced with `origin/main`
-- current HEAD: run `git log -1 --oneline`
-- local-only untracked artifacts currently observed:
-  - `어드민잉캡-Flow.pdf`
-  - `경제_뉴스_클레이션_PRD.docx`
-- `apps/summarizer/data/classification_cache.json` was mentioned in the old handoff but is not currently present.
-
-## Most relevant files now
-- Backend runtime/config:
-  - `apps/backend/app/common/config.py`
-  - `apps/backend/app/main.py`
+## Most relevant files
+- External DB/local runtime:
+  - `.env.example`
+  - `Makefile`
+  - `README.md`
+  - `docker-compose.yml`
+  - `apps/backend/.env.example`
+  - `apps/backend/README.md`
   - `apps/backend/docker-compose.yml`
-  - `apps/backend/app/presentation/api/routes/auth.py`
+  - `scripts/local-compose.py`
+  - `tests/test_local_compose.py`
+- Snapshot backend:
+  - `apps/backend/app/application/services/daily_feed_snapshot_service.py`
+  - `apps/backend/app/application/services/feed_service.py`
+  - `apps/backend/app/presentation/api/routes/users.py`
   - `apps/backend/app/presentation/api/routes/articles.py`
-- Real frontend:
-  - `apps/frontend/src/lib/api.ts`
-  - `apps/frontend/src/hooks/useKakaoLogin.ts`
-  - `apps/frontend/src/services/authApi.ts`
-  - `apps/frontend/src/stores/auth.ts`
-  - `apps/frontend/next.config.ts`
-- Do not modify `apps/frontend` unless explicitly requested; another developer owns frontend implementation. Use these files only to understand the backend-facing contract.
-- Pipeline/reporting:
   - `apps/backend/app/scripts/run_news_pipeline_job.py`
-  - `apps/backend/app/scripts/import_articles_from_summarizer.py`
+  - `apps/backend/alembic/versions/0006_daily_feed_snapshots.py`
+- Category pipeline:
+  - `.dev/news-pipeline-category-schedule.md`
+  - `apps/crawler/src/crawler/collect_naver.py`
+  - `apps/crawler/src/crawler/schemas.py`
+  - `apps/crawler/tests/test_collect_naver.py`
   - `apps/backend/app/application/services/article_ingest_service.py`
-- `apps/test-frontend/` is legacy/deprecated and should not be treated as the source of truth.
+  - `apps/backend/tests/test_article_ingest_service.py`
+- Local runtime/env precedence:
+  - `Makefile`
+  - `scripts/local-compose.py`
+  - `tests/test_local_compose.py`
 
-## Working policy from the user
+## Working policy
+- Backend first. Do not edit `apps/frontend` unless explicitly requested.
 - Backend and real Next frontend must stay contract-synced.
-- Frontend code is owned by another developer; do not edit frontend unless explicitly asked.
-- Backend-side focus is article ingestion/retrieval quality and clear auth/authorization boundaries.
-- Prefer backend tests/API contract checks over test-frontend flows.
+- Prefer backend tests/API contract checks over deprecated `apps/test-frontend` flows.
+- Do not commit secrets or real `.env` values.
 
-## Verification known from current tree
-- Latest main update was a fast-forward from `a9f14f0` to `a2230be`.
-- Files changed by latest commit:
-  - `apps/backend/app/common/config.py`
-  - `apps/backend/app/main.py`
-  - `apps/backend/docker-compose.yml`
-  - `apps/frontend/next.config.ts`
-  - `apps/frontend/src/hooks/useKakaoLogin.ts`
-  - `apps/frontend/src/lib/api.ts`
-- Live servers were not restarted during this handoff update. Re-verify runtime manually before assuming the local browser session reflects current files.
+## Verification for current tree
+- `python3 -m py_compile scripts/local-compose.py` passed.
+- `python3 -m unittest tests/test_local_compose.py -q` -> 6 tests OK.
+- `make test` -> 118 passed after the Neon/external DB and news category/schedule slices.
+- Neon DB migration succeeded: `make db-migrate` ran revisions through `0006_daily_feed_snapshots`; `make db-current` reports `0006_daily_feed_snapshots (head)`.
+- `make -n db-migrate` and `make -n db-current` print the intended Alembic commands.
+- `docker compose config` and `(cd apps/backend && docker compose config)` both render successfully.
+- Dockerless local smoke passed for backend+crawler:
+  - `make local-up SERVICES="backend crawler"`
+  - `curl -sf http://127.0.0.1:8000/health`
+  - `curl -sf http://127.0.0.1:8001/health`
+  - `curl -sf http://127.0.0.1:8000/v1/categories` returned 10 categories.
+  - `make local-down SERVICES="backend crawler"`
+- Real Naver all-category crawler smoke passed with root `.env` Naver credentials:
+  - command: `set -a; . ./.env; set +a; cd apps/crawler && PYTHONPATH=src uv run python -m crawler.collect_naver --source naver-all-categories --count 2 --output-dir /tmp/cut-news-naver-all-categories-smoke`
+  - result: `collected 77 articles`
+  - `crawler category stats`: `query_count=49`, `count_per_query=2`, `deduped_count=21`, by-category collected counts: crypto 7, economy 9, entertainment 6, global 5, lifestyle 5, politics 10, realestate 7, sports 10, stock 11, tech 7.
+- Full all-category pipeline smoke was attempted with `NEWS_SOURCE=naver-all-categories NEWS_COUNT=2 make local-pipeline` after env precedence fixes; it correctly reached all-category crawler mode but timed out at 600s during summarizer processing because the all-category crawl produced ~77-78 raw articles. Generated summarizer data was restored/cleaned from the working tree afterward.
 
-## Remaining mismatches / next best slice
-1. Product direction for `나의 뉴스 피드` / monthly archive is now snapshot-based, not runtime current-preference filtering.
-   - Source workflow doc: `.dev/news-feed-archive-workflow.md`
-   - Development checklist: `.dev/news-feed-snapshot-development-checklist.md`
-2. Snapshot phases 1-7 are complete:
-   - Phase 1: daily feed snapshot/read entities, SQLAlchemy models, Alembic migration, repository protocols, repository implementation, and repository tests.
-   - Phase 2: `FeedService.get_feed()` delegates to reusable `build_feed_blocks_for_preference(...)`, with wide/narrow selector coverage.
-   - Phase 3: `DailyFeedSnapshotService` generates/regenerates unviewed snapshots, preserves viewed snapshots, freezes preference-at-generation and block item metadata, and delegates view/read state.
-   - Phase 4: `GET /v1/me/feed` lazy-generates today's Asia/Seoul snapshot, marks it viewed, and returns required snapshot metadata plus preserved `mode`/`blocks[].articles` card shape.
-   - Phase 5: monthly/daily archive endpoints use persisted snapshots, include snapshot/read metadata, mark daily archive opens viewed, and preserve snapshot item article cards with current scrap state.
-   - Phase 6: authenticated article detail opens mark read; optional `snapshot_id` query links reads to snapshot completion; article-only reads are allowed and do not complete snapshots.
-   - Phase 7: successful scheduler/import runs generate daily snapshots for onboarded users and persist `run_report.snapshot_generation` counters.
-3. Phase 8 docs/API contract is complete:
-   - `apps/backend/README.md` documents `/v1/me/feed`, `/v1/me/archive?month=YYYY-MM`, `/v1/me/archive/{YYYY-MM-DD}`, read tracking, status transitions, calendar mapping, and scheduler `run_report.snapshot_generation` fields.
-   - `.dev/news-feed-archive-workflow.md` now reflects implemented snapshot-backed API behavior instead of the old runtime preference-filtered archive.
-   - OpenAPI schema docs/examples were tightened for feed/archive snapshot fields.
-4. Phase 9 full verification is complete:
-   - `make test`: `114 passed`.
-   - Root compose API was rebuilt with current backend image via `docker compose up -d --build api`.
-   - `api` and `db` are healthy; `/health` and `/v1/categories` smoke checks pass.
-   - DB migration smoke shows `alembic_version=0006_daily_feed_snapshots` and all three snapshot/read tables exist.
-5. Next best slice: cleanup/PR preparation.
-   - Separate real source/doc changes from generated summarizer data churn before committing.
-   - Naver pipeline smoke is still useful later, but snapshot development should not be blocked by real Naver credentials.
-6. A stale shell environment can still override `FRONTEND_APP_URL` to `http://127.0.0.1:5173`; unset it or set it to `http://127.0.0.1:3000` before local backend runtime checks.
+## Next best steps
+1. Decide and implement a bounded all-category full-pipeline smoke mode before rerunning summarizer/import end-to-end. Current `NEWS_COUNT=2` all-category crawl yields ~77 articles and exceeded a 600s smoke timeout in the summarizer stage. Safer options:
+   - add a pipeline-level max article cap for smoke runs after crawl/export,
+   - run summarizer on a sampled subset while retaining crawler category stats,
+   - or use `NEWS_COUNT=1` only after estimating runtime/LLM cost.
+2. Re-run full all-category pipeline only after the bounded smoke path exists:
+   ```bash
+   NEWS_SOURCE=naver-all-categories NEWS_COUNT=1 make local-pipeline
+   make local-report
+   ```
+3. Push `main` if this local commit should be shared remotely, after checking `git status -sb` and remote policy.
 
-## Suggested first commands next session
-```bash
-cd /Users/reddit/Project/cut-news
-git status --short --branch
-git log --oneline -5
-curl -sf http://127.0.0.1:8000/health || true
-curl -sf http://127.0.0.1:3000 | head -n 3 || true
-```
-
-Backend Docker:
-```bash
-make backend-up
-```
-
-Real frontend:
-```bash
-pnpm dev:frontend
-```
-
-Backend tests:
-```bash
-make test
-```
+## Notes
+- Neon runtime should use the pooled connection string and include `sslmode=require` when Neon does not append it. Plain `postgresql://` URLs are accepted and normalized by backend settings.
+- Shared/staging DB may want `SEED_ON_STARTUP=false` to avoid repeated local seed writes.
+- Product category crawl mode is `NEWS_SOURCE=naver-all-categories`; `NEWS_COUNT` is per generated query.
+- AI news generation 기준 시간 is `08:30:00` Asia/Seoul. Product note says `03:08:59` is pre-publication, `09:02:59(+1)` is published, and if there is no access during `09:03:00(+1)` the news archive is not generated for that user.
+- `make backend-up` / `make full-up` can use external `DATABASE_URL`, but the local Postgres container may still start due to Compose dependencies. For external DB-only smoke, prefer `make local-up`.

@@ -53,6 +53,38 @@ def test_load_summarized_articles_builds_backend_article_rows_from_summarizer_ou
     assert rows[0].score_weight == 0.82
 
 
+def test_load_summarized_articles_uses_crawler_source_category_when_category_map_is_absent(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / 'stock-001.json',
+        {
+            'title': '일반 시장 소식',
+            'date': '2026-04-28',
+            'url': 'https://example.com/stock/1',
+            'content': '특정 키워드가 부족해도 수집 쿼리의 서비스 카테고리를 보존해야 합니다.',
+            'source_category': 'stock',
+            'source_query': '국내주식',
+        },
+    )
+    write_json(
+        dataset / 'summarized' / 'stock-001.json',
+        {
+            'headline_34': '일반 시장 소식',
+            'headline_58': '일반 시장 소식',
+            'headline_89': '일반 시장 소식',
+            'summary': '수집 카테고리 기반 분류 확인용 요약입니다.',
+        },
+    )
+    write_json(dataset / 'verified' / 'stock-001.json', {'verdict': 'clean', '_article_id': 'stock-001', '_title': '일반 시장 소식'})
+
+    rows, report = load_summarized_articles_report(dataset)
+
+    assert len(rows) == 1
+    assert rows[0].primary_category == 'stock'
+    assert rows[0].subcategory == 'stock-domestic'
+    assert report['classification_source_counts'] == {'crawler_source_category': 1}
+
+
 def test_load_summarized_articles_skips_items_without_summary(tmp_path: Path):
     dataset = tmp_path
     write_json(

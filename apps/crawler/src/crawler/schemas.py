@@ -16,4 +16,6 @@ class CrawledArticle(BaseModel):
     author: str | None = None
     media: str | None = None
     content_source: str | None = None
+    source_category: str | None = None
+    source_query: str | None = None
     scraped_at: datetime | None = None
