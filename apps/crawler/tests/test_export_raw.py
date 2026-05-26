@@ -33,6 +33,39 @@ def test_load_articles_from_json_accepts_legacy_korean_crawler_output(tmp_path: 
     assert articles[0].content.startswith('사회 뉴스 본문')
 
 
+def test_load_articles_from_json_preserves_crawler_category_metadata(tmp_path: Path):
+    path = tmp_path / 'articles.json'
+    path.write_text(
+        json.dumps(
+            [
+                {
+                    'article_id': 'naver-1',
+                    'title': '카테고리 메타데이터 기사',
+                    'date': '2026-05-26',
+                    'url': 'https://news.example.com/stock/1',
+                    'content': '주식시장 기사 본문입니다.',
+                    'content_source': 'body',
+                    'source_category': 'stock',
+                    'source_query': '코스피',
+                }
+            ],
+            ensure_ascii=False,
+        ),
+        encoding='utf-8',
+    )
+
+    articles = load_articles_from_json(path)
+    raw_dir = tmp_path / 'raw'
+    paths = save_raw_articles(articles, raw_dir)
+
+    assert articles[0].source_category == 'stock'
+    assert articles[0].source_query == '코스피'
+    raw_text = paths[0].read_text(encoding='utf-8')
+    assert '콘텐츠소스: body' in raw_text
+    assert '소스카테고리: stock' in raw_text
+    assert '소스쿼리: 코스피' in raw_text
+
+
 def test_exported_legacy_crawler_output_can_be_saved_as_summarizer_raw(tmp_path: Path):
     input_path = tmp_path / 'articles.json'
     raw_dir = tmp_path / 'raw'

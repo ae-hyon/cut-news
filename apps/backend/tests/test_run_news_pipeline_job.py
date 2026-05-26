@@ -62,6 +62,64 @@ def test_parse_crawler_category_stats_extracts_json_payload_from_stdout():
     }
 
 
+def test_run_pipeline_job_can_start_from_downloaded_crawl_artifact(tmp_path: Path):
+    data_dir = tmp_path / 'data'
+    data_dir.mkdir(parents=True, exist_ok=True)
+    report_path = data_dir / 'run_report.json'
+    crawl_input_path = tmp_path / 'artifact' / 'latest.json'
+    crawl_report_path = tmp_path / 'artifact' / 'crawl_report.json'
+    crawl_input_path.parent.mkdir(parents=True)
+    crawl_input_path.write_text('[]', encoding='utf-8')
+    crawl_report_path.write_text(
+        json.dumps({'query_count': 49, 'count_per_query': 1, 'collected_count': 37, 'deduped_count': 12}),
+        encoding='utf-8',
+    )
+    calls: list[str] = []
+
+    def fake_runner(step_name: str, command: list[str], cwd: Path, env: dict[str, str]):
+        calls.append(step_name)
+        stdout = ''
+        if step_name == 'import':
+            stdout = 'summarizer article import complete: inserted=1 updated=0 deleted=0 skipped=0\n'
+        return run_news_pipeline_job.StepExecutionResult(
+            name=step_name,
+            status='success',
+            command=command,
+            cwd=str(cwd),
+            duration_seconds=0.1,
+            stdout=stdout,
+            stderr='',
+            returncode=0,
+        )
+
+    report = run_news_pipeline_job.run_pipeline_job(
+        repo_root=tmp_path,
+        data_dir=data_dir,
+        report_path=report_path,
+        source='naver-all-categories',
+        query='경제',
+        count=1,
+        runner=fake_runner,
+        snapshot_generator=lambda feed_date, generation_source: run_news_pipeline_job.SnapshotGenerationResult(),
+        crawl_input_path=crawl_input_path,
+        crawl_report_path=crawl_report_path,
+    )
+
+    assert calls == ['export_raw', 'summarize', 'import']
+    assert report['crawl_input_path'] == str(crawl_input_path)
+    assert report['crawl_report_path'] == str(crawl_report_path)
+    assert report['crawler_category_stats'] == {
+        'query_count': 49,
+        'count_per_query': 1,
+        'collected_count': 37,
+        'deduped_count': 12,
+    }
+    steps = report['steps']
+    assert isinstance(steps, list)
+    export_step = next(step for step in steps if step['name'] == 'export_raw')
+    assert str(crawl_input_path) in export_step['command']
+
+
 def test_run_pipeline_job_writes_success_report_with_step_results_and_snapshot_generation(tmp_path: Path):
     data_dir = tmp_path / 'data'
     for directory in ['raw', 'json', 'scored', 'summarized', 'verified']:

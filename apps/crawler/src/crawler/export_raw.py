@@ -29,6 +29,9 @@ def _normalise_article(payload: dict[str, Any]) -> CrawledArticle | None:
     media = _pick(payload, 'media', '언론사', 'source')
     article_id = _pick(payload, 'article_id')
     content_source = _pick(payload, 'content_source')
+    source_category = _pick(payload, 'source_category')
+    source_query = _pick(payload, 'source_query')
+    scraped_at = _pick(payload, 'scraped_at')
     if not (title and content and url):
         return None
     try:
@@ -41,6 +44,9 @@ def _normalise_article(payload: dict[str, Any]) -> CrawledArticle | None:
             author=str(author) if author else None,
             media=str(media) if media else None,
             content_source=str(content_source) if content_source else None,
+            source_category=str(source_category) if source_category else None,
+            source_query=str(source_query) if source_query else None,
+            scraped_at=scraped_at,
         )
     except ValidationError:
         return None

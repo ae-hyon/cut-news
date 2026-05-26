@@ -153,6 +153,12 @@ make local-report
 # Codex OAuth/session runtime that should not be assumed in GitHub Actions.
 gh workflow run crawl-naver.yml -f source=naver-all-categories -f count=1
 
+# Prefer artifact download over re-crawling when a successful GitHub crawl artifact exists.
+# This avoids storing crawl payloads in Neon and keeps Neon as backend runtime DB only.
+make github-crawl-download
+HOME=/Users/reddit NEWS_PIPELINE_MAX_ARTICLES=3 make local-pipeline-from-github
+# Leave NEWS_PIPELINE_MAX_ARTICLES unset/empty only for a product-like full summarizer/import run.
+
 # Single-query Naver collection remains available.
 NEWS_SOURCE=naver-search NEWS_QUERY=경제 NEWS_COUNT=20 make local-pipeline
 
