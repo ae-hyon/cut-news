@@ -87,6 +87,7 @@ coverage/
 *.sqlite-*
 *.sqlite3-*
 apps/crawler/output/
+.local/
 
 # Local agent/tool state
 .agent-learner/
