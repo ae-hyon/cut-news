@@ -185,3 +185,9 @@ NEWS_SOURCE=seeded make local-pipeline
   - final diagnostics: `drop_reason_counts={"missing_summary":2}`, `classification_source_counts={"keyword_rule":9}`, `query_count=49`, `deduped_count=13`.
   - this proves the product-like Naver + Codex OAuth + all-category uncapped path with local SQLite. Neon remains a separate final DB-target smoke if required.
   - pitfall: leaving the native crawler API service running on macOS can accumulate many `127.0.0.1:8001` TIME_WAIT sockets and exhaust ephemeral ports, causing unrelated outbound Naver/Neon/GitHub requests to fail with `[Errno 49] Can't assign requested address`. Stop crawler (`make local-down SERVICES="crawler"`) and wait for sockets to drain before full pipeline or Neon checks.
+- GitHub artifact handoff was verified uncapped after run `26438030302`:
+  - local DB command: `HOME=/Users/reddit NEWS_PIPELINE_MAX_ARTICLES= make local-pipeline-from-github`
+  - result: success in ~12m03s, skipped crawler collection via `NEWS_CRAWL_INPUT_PATH`, summarized for ~706.5s, imported 4 articles, deleted 12 stale articles, generated 1 snapshot, and preserved crawl report stats (`query_count=49`, `collected_count=37`, `deduped_count=12`).
+  - Neon command shape: explicitly pass the root `.env` Neon `DATABASE_URL` in the shell, e.g. `HOME=/Users/reddit DATABASE_URL=<root .env Neon URL> NEWS_PIPELINE_MAX_ARTICLES= make local-pipeline-from-github`.
+  - Neon result: migration at `0006_daily_feed_snapshots (head)`, success in ~16m34s, updated 3 existing articles, deleted 1 stale article, generated 1 snapshot, and Neon contained 14 articles / 1 daily snapshot / 8 snapshot items afterward.
+  - operational requirement: use explicit `DATABASE_URL` for Neon-target runs because `apps/backend/.env` may point local commands at SQLite (`dev-live-smoke.db`) when commands are executed directly under `apps/backend`.
