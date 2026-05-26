@@ -1,4 +1,4 @@
-.PHONY: help backend-up backend-down backend-reset backend-logs full-up full-down local-up local-down local-restart local-status local-ps local-logs local-pipeline local-report github-crawl-download local-pipeline-from-github db-current db-migrate test test-backend dev-backend import-articles pipeline-news clean
+.PHONY: help backend-up backend-down backend-reset backend-logs full-up full-down local-up local-down local-restart local-status local-ps local-logs local-pipeline local-report local-report-check github-crawl-download local-pipeline-from-github db-current db-migrate test test-backend dev-backend import-articles pipeline-news clean
 
 ENV_PRESERVE_VARS := NEWS_SOURCE NEWS_QUERY NEWS_COUNT NEWS_PIPELINE_MAX_ARTICLES NEWS_CRAWL_INPUT_PATH NEWS_CRAWL_REPORT_PATH DATABASE_URL NAVER_CLIENT_ID NAVER_CLIENT_SECRET PIPELINE_LLM_BACKEND PIPELINE_MODEL PIPELINE_CODEX_REASONING_EFFORT RUN_ON_STARTUP CORS_ALLOWED_ORIGINS NEXT_PUBLIC_API_URL
 $(foreach v,$(ENV_PRESERVE_VARS),$(eval ENV_ORIGIN_$(v) := $(origin $(v)))$(eval ENV_VALUE_$(v) := $($(v))))
@@ -45,6 +45,7 @@ help:
 	@echo "  make github-crawl-download - Download latest successful GitHub crawler artifact"
 	@echo "  make local-pipeline-from-github - Download crawl artifact, then summarize/import locally"
 	@echo "  make local-report     - Summarize latest local pipeline run_report.json"
+	@echo "  make local-report-check - Validate latest pipeline report for ops alerting"
 	@echo "  make db-current       - Show current Alembic revision for DATABASE_URL"
 	@echo "  make db-migrate       - Run Alembic migrations against DATABASE_URL"
 	@echo "  make pipeline-news    - Run one crawler -> summarizer -> import job locally"
@@ -100,6 +101,9 @@ local-pipeline-from-github: github-crawl-download
 
 local-report:
 	python3 scripts/local-compose.py report
+
+local-report-check:
+	python3 scripts/check-pipeline-report.py $(REPORT_CHECK_ARGS)
 
 db-current:
 	cd apps/backend && PYTHONPATH=. uv run alembic current

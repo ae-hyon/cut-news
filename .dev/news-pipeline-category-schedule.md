@@ -157,7 +157,11 @@ gh workflow run crawl-naver.yml -f source=naver-all-categories -f count=1
 # This avoids storing crawl payloads in Neon and keeps Neon as backend runtime DB only.
 make github-crawl-download
 HOME=/Users/reddit NEWS_PIPELINE_MAX_ARTICLES=3 make local-pipeline-from-github
+make local-report-check
 # Leave NEWS_PIPELINE_MAX_ARTICLES unset/empty only for a product-like full summarizer/import run.
+# Product-like scheduled/server run should fail fast on any unhealthy report signal:
+HOME=/Users/reddit DATABASE_URL="$DATABASE_URL" NEWS_PIPELINE_MAX_ARTICLES= make local-pipeline-from-github
+make local-report-check REPORT_CHECK_ARGS=--require-uncapped
 
 # Single-query Naver collection remains available.
 NEWS_SOURCE=naver-search NEWS_QUERY=경제 NEWS_COUNT=20 make local-pipeline
