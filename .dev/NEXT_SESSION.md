@@ -127,9 +127,9 @@ Implemented in the working tree:
   - follow-up fix in this tree: future runs with this shape should fail at `failed_step="import"` and skip snapshot generation instead of reporting success.
 
 ## Next best steps
-1. Manually run `crawl-naver.yml` once and verify the uploaded artifact contains `latest.json`, `crawl_report.json`, and `github_action_crawl_summary.json`. Repository secrets were added by the user, and the workflow is pushed on `main`; local `gh` is not authenticated in this environment, so trigger from the GitHub UI or after `gh auth login`.
-2. Fix/validate the local/server LLM runtime auth before another full real-data summarizer/import run. The current actual blocker is Codex CLI `401 Unauthorized: Missing bearer or basic authentication` in generated `_error.json` files.
-3. After auth is fixed, run summarizer/import locally or on a server with Codex OAuth/session support and require `import_stats.inserted + updated > 0`; otherwise the zero-import guard should fail the run and skip snapshot generation.
+1. `crawl-naver.yml` manual workflow dispatch has been verified after GitHub CLI account switching was fixed. Run `26438030302` succeeded and uploaded the expected artifact files: `latest.json`, `crawl_report.json`, and `github_action_crawl_summary.json`. Artifact summary: `source=naver-all-categories`, `count=1`, `article_count=37`, `query_count=49`, `deduped_count=12`.
+2. Fix/re-login the local/server Codex OAuth runtime before another full real-data summarizer/import run. Current direct check `HOME=/Users/reddit codex exec ...` fails with `refresh_token_reused` / `token_expired` and says to log out and sign in again.
+3. After Codex auth is fixed, run summarizer/import locally or on a server with Codex OAuth/session support and require `import_stats.inserted + updated > 0`; otherwise the zero-import guard should fail the run and skip snapshot generation.
 
 ## Notes
 - Neon runtime should use the pooled connection string and include `sslmode=require` when Neon does not append it. Plain `postgresql://` URLs are accepted and normalized by backend settings.
