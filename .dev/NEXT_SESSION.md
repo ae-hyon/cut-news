@@ -128,8 +128,8 @@ Implemented in the working tree:
 
 ## Next best steps
 1. `crawl-naver.yml` manual workflow dispatch has been verified after GitHub CLI account switching was fixed. Run `26438030302` succeeded and uploaded the expected artifact files: `latest.json`, `crawl_report.json`, and `github_action_crawl_summary.json`. Artifact summary: `source=naver-all-categories`, `count=1`, `article_count=37`, `query_count=49`, `deduped_count=12`.
-2. Fix/re-login the local/server Codex OAuth runtime before another full real-data summarizer/import run. Current direct check `HOME=/Users/reddit codex exec ...` fails with `refresh_token_reused` / `token_expired` and says to log out and sign in again.
-3. After Codex auth is fixed, run summarizer/import locally or on a server with Codex OAuth/session support and require `import_stats.inserted + updated > 0`; otherwise the zero-import guard should fail the run and skip snapshot generation.
+2. Codex OAuth was re-logged in and verified from the real user home. Direct check passed with `HOME=/Users/reddit codex exec --skip-git-repo-check --sandbox read-only 'Reply exactly: codex-ok'`. Important pitfall: Hermes profile sessions can have `HOME=/Users/reddit/.hermes/profiles/school/home`; running the pipeline without `HOME=/Users/reddit` still sends Codex toward API-style auth and produced `401 Unauthorized: Missing bearer or basic authentication`.
+3. Bounded local/server summarizer/import verification passed after setting the real HOME: `HOME=/Users/reddit NEWS_SOURCE=naver-all-categories NEWS_COUNT=1 NEWS_PIPELINE_MAX_ARTICLES=3 make local-pipeline` succeeded in ~4m24s, inserted 1 article, generated 1 snapshot, and had empty `drop_reason_counts`. A full uncapped run with `HOME=/Users/reddit NEWS_PIPELINE_MAX_ARTICLES=` was started but exceeded the 600s foreground command timeout; rerun it as a background/long-running job if product-like full verification is required.
 
 ## Notes
 - Neon runtime should use the pooled connection string and include `sslmode=require` when Neon does not append it. Plain `postgresql://` URLs are accepted and normalized by backend settings.
