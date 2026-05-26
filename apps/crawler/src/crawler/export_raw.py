@@ -87,12 +87,16 @@ def export_articles_to_raw(
     *,
     clear: bool = False,
     clear_derived_dirs: list[Path] | None = None,
+    max_articles: int | None = None,
 ) -> list[Path]:
     if clear:
         _clear_directory(output_dir, suffixes=('.txt',))
         for derived_dir in clear_derived_dirs or []:
             _clear_directory(derived_dir)
-    return save_raw_articles(load_articles_from_json(input_path), output_dir)
+    articles = load_articles_from_json(input_path)
+    if max_articles is not None and max_articles > 0:
+        articles = articles[:max_articles]
+    return save_raw_articles(articles, output_dir)
 
 
 def main() -> None:
@@ -107,6 +111,12 @@ def main() -> None:
         type=Path,
         help='also clear downstream summarizer output directories so the next pipeline run only uses the latest raw dataset',
     )
+    parser.add_argument(
+        '--max-articles',
+        type=int,
+        default=None,
+        help='optional cap on exported raw articles for bounded smoke runs; values <= 0 mean no cap',
+    )
     args = parser.parse_args()
 
     paths = export_articles_to_raw(
@@ -114,6 +124,7 @@ def main() -> None:
         args.output_dir,
         clear=args.clear,
         clear_derived_dirs=args.clear_derived_dir,
+        max_articles=args.max_articles,
     )
     print(f'exported {len(paths)} articles to {args.output_dir}')
 

@@ -1,6 +1,6 @@
 .PHONY: help backend-up backend-down backend-reset backend-logs full-up full-down local-up local-down local-restart local-status local-ps local-logs local-pipeline local-report db-current db-migrate test test-backend dev-backend import-articles pipeline-news clean
 
-ENV_PRESERVE_VARS := NEWS_SOURCE NEWS_QUERY NEWS_COUNT DATABASE_URL NAVER_CLIENT_ID NAVER_CLIENT_SECRET PIPELINE_LLM_BACKEND PIPELINE_MODEL PIPELINE_CODEX_REASONING_EFFORT RUN_ON_STARTUP CORS_ALLOWED_ORIGINS NEXT_PUBLIC_API_URL
+ENV_PRESERVE_VARS := NEWS_SOURCE NEWS_QUERY NEWS_COUNT NEWS_PIPELINE_MAX_ARTICLES DATABASE_URL NAVER_CLIENT_ID NAVER_CLIENT_SECRET PIPELINE_LLM_BACKEND PIPELINE_MODEL PIPELINE_CODEX_REASONING_EFFORT RUN_ON_STARTUP CORS_ALLOWED_ORIGINS NEXT_PUBLIC_API_URL
 $(foreach v,$(ENV_PRESERVE_VARS),$(eval ENV_ORIGIN_$(v) := $(origin $(v)))$(eval ENV_VALUE_$(v) := $($(v))))
 
 ifneq (,$(wildcard .env))
@@ -111,7 +111,7 @@ import-articles:
 	cd apps/backend && PYTHONPATH=. DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" uv run python -m app.scripts.import_articles_from_summarizer
 
 pipeline-news:
-	cd apps/backend && NEWS_SOURCE=$(NEWS_SOURCE) NEWS_QUERY="$(NEWS_QUERY)" NEWS_COUNT=$(NEWS_COUNT) DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" PIPELINE_LLM_BACKEND=$(PIPELINE_LLM_BACKEND) PIPELINE_MODEL=$(PIPELINE_MODEL) PIPELINE_CODEX_REASONING_EFFORT=$(PIPELINE_CODEX_REASONING_EFFORT) PYTHONPATH=. uv run python -m app.scripts.run_news_pipeline_job
+	cd apps/backend && NEWS_SOURCE=$(NEWS_SOURCE) NEWS_QUERY="$(NEWS_QUERY)" NEWS_COUNT=$(NEWS_COUNT) NEWS_PIPELINE_MAX_ARTICLES="$(NEWS_PIPELINE_MAX_ARTICLES)" DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" PIPELINE_LLM_BACKEND=$(PIPELINE_LLM_BACKEND) PIPELINE_MODEL=$(PIPELINE_MODEL) PIPELINE_CODEX_REASONING_EFFORT=$(PIPELINE_CODEX_REASONING_EFFORT) PYTHONPATH=. uv run python -m app.scripts.run_news_pipeline_job
 
 clean:
 	find . -type d \( -name "__pycache__" -o -name ".pytest_cache" -o -name ".mypy_cache" -o -name ".ruff_cache" -o -name ".next" -o -name "dist" \) -prune -exec rm -rf {} + 2>/dev/null || true

@@ -89,6 +89,15 @@ def parse_crawler_category_stats(output: str) -> dict[str, object]:
     return dict(payload) if isinstance(payload, dict) else {}
 
 
+def _import_produced_usable_articles(import_stats: dict[str, int]) -> bool:
+    return (import_stats.get('inserted', 0) + import_stats.get('updated', 0)) > 0
+
+
+def _has_import_drop_reasons(import_observability: dict[str, dict[str, int]]) -> bool:
+    drop_reason_counts = import_observability.get('drop_reason_counts', {})
+    return any(count > 0 for count in drop_reason_counts.values())
+
+
 def run_command(step_name: str, command: list[str], cwd: Path, env: dict[str, str]) -> StepExecutionResult:
     started_at = time.time()
     completed = subprocess.run(command, cwd=cwd, env=env, text=True, capture_output=True)
@@ -104,7 +113,14 @@ def run_command(step_name: str, command: list[str], cwd: Path, env: dict[str, st
     )
 
 
-def _pipeline_steps(repo_root: Path, *, source: str, query: str, count: int) -> list[tuple[str, list[str], Path, dict[str, str]]]:
+def _pipeline_steps(
+    repo_root: Path,
+    *,
+    source: str,
+    query: str,
+    count: int,
+    max_articles: int | None = None,
+) -> list[tuple[str, list[str], Path, dict[str, str]]]:
     python = sys.executable
     crawler_cwd = repo_root / 'apps' / 'crawler'
     summarizer_cwd = repo_root / 'apps' / 'summarizer'
@@ -124,6 +140,27 @@ def _pipeline_steps(repo_root: Path, *, source: str, query: str, count: int) -> 
         'DATABASE_URL': os.environ.get('DATABASE_URL', 'sqlite+pysqlite:///dev-ui-test.db'),
     }
 
+    export_raw_command = [
+        python,
+        '-m',
+        'crawler.export_raw',
+        '--input',
+        '../../apps/crawler/output/latest.json',
+        '--output-dir',
+        '../../apps/summarizer/data/raw',
+        '--clear',
+        '--clear-derived-dir',
+        '../../apps/summarizer/data/json',
+        '--clear-derived-dir',
+        '../../apps/summarizer/data/scored',
+        '--clear-derived-dir',
+        '../../apps/summarizer/data/summarized',
+        '--clear-derived-dir',
+        '../../apps/summarizer/data/verified',
+    ]
+    if max_articles is not None and max_articles > 0:
+        export_raw_command.extend(['--max-articles', str(max_articles)])
+
     return [
         (
             'collect',
@@ -133,24 +170,7 @@ def _pipeline_steps(repo_root: Path, *, source: str, query: str, count: int) -> 
         ),
         (
             'export_raw',
-            [
-                python,
-                '-m',
-                'crawler.export_raw',
-                '--input',
-                '../../apps/crawler/output/latest.json',
-                '--output-dir',
-                '../../apps/summarizer/data/raw',
-                '--clear',
-                '--clear-derived-dir',
-                '../../apps/summarizer/data/json',
-                '--clear-derived-dir',
-                '../../apps/summarizer/data/scored',
-                '--clear-derived-dir',
-                '../../apps/summarizer/data/summarized',
-                '--clear-derived-dir',
-                '../../apps/summarizer/data/verified',
-            ],
+            export_raw_command,
             crawler_cwd,
             collect_env,
         ),
@@ -272,6 +292,7 @@ def run_pipeline_job(
     count: int,
     runner: Runner = run_command,
     snapshot_generator: SnapshotGenerator = generate_daily_snapshots,
+    max_articles: int | None = None,
 ) -> dict[str, object]:
     started_at = time.strftime('%Y-%m-%dT%H:%M:%S%z')
     steps_payload: list[dict[str, object]] = []
@@ -288,7 +309,13 @@ def run_pipeline_job(
     feed_date = _current_feed_date(schedule['timezone'])
     snapshot_generation = SnapshotGenerationResult()
 
-    for step_name, command, cwd, env in _pipeline_steps(repo_root, source=source, query=query, count=count):
+    for step_name, command, cwd, env in _pipeline_steps(
+        repo_root,
+        source=source,
+        query=query,
+        count=count,
+        max_articles=max_articles,
+    ):
         result = runner(step_name, command, cwd, env)
         steps_payload.append(_serialize_step(result))
         if step_name == 'collect':
@@ -303,6 +330,14 @@ def run_pipeline_job(
             failed_step = step_name
             break
 
+    if (
+        status == 'success'
+        and _has_import_drop_reasons(import_observability)
+        and not _import_produced_usable_articles(import_stats)
+    ):
+        status = 'failed'
+        failed_step = 'import'
+
     if status == 'success':
         snapshot_generation = snapshot_generator(feed_date, 'news-pipeline')
 
@@ -315,6 +350,7 @@ def run_pipeline_job(
         'source': source,
         'query': query,
         'count': count,
+        'max_articles': max_articles,
         'feed_date': feed_date,
         'schedule': schedule,
         'steps': steps_payload,
@@ -331,11 +367,25 @@ def run_pipeline_job(
     return payload
 
 
+def _optional_positive_int_env(name: str) -> int | None:
+    value = os.environ.get(name)
+    if value in (None, ''):
+        return None
+    parsed = int(value)
+    return parsed if parsed > 0 else None
+
+
 def main() -> None:
     source = os.environ.get('NEWS_SOURCE', 'seeded')
     query = os.environ.get('NEWS_QUERY', '경제')
     count = int(os.environ.get('NEWS_COUNT', '20'))
-    report = run_pipeline_job(source=source, query=query, count=count)
+    max_articles = _optional_positive_int_env('NEWS_PIPELINE_MAX_ARTICLES')
+    report = run_pipeline_job(
+        source=source,
+        query=query,
+        count=count,
+        max_articles=max_articles,
+    )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     if report['status'] != 'success':
         raise SystemExit(1)

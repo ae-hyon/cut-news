@@ -249,11 +249,17 @@ cp .env.example .env
 make pipeline-news NEWS_QUERY=경제 NEWS_COUNT=20
 ```
 
-전체 서비스 카테고리 기준으로 Naver를 수집하려면 `naver-all-categories`를 사용합니다. 이 모드에서 `NEWS_COUNT`는 전체 개수가 아니라 카테고리 키워드/중분류 쿼리당 요청 개수입니다. 상세 taxonomy와 발행/아카이브 기준 시간은 `.dev/news-pipeline-category-schedule.md`에 기록되어 있습니다.
+전체 서비스 카테고리 기준으로 Naver를 수집하려면 `naver-all-categories`를 사용합니다. 이 모드에서 `NEWS_COUNT`는 전체 개수가 아니라 카테고리 키워드/중분류 쿼리당 요청 개수입니다. 상세 taxonomy와 발행/아카이브 기준 시간은 `.dev/news-pipeline-category-schedule.md`에 기록되어 있습니다. 실제 데이터 기반 검증은 `NEWS_PIPELINE_MAX_ARTICLES`를 비워 둡니다. 이 값은 LLM 처리 시간/비용을 의도적으로 제한해야 할 때만 쓰는 진단용 cap입니다.
 
 ```bash
-NEWS_SOURCE=naver-all-categories NEWS_COUNT=2 make local-pipeline
+NEWS_SOURCE=naver-all-categories NEWS_COUNT=1 make local-pipeline
 make local-report
+```
+
+GitHub Actions의 `.github/workflows/crawl-naver.yml`은 크롤링만 스케줄링합니다. 매일 08:00 Asia/Seoul에 Naver 수집을 실행하고 `latest.json`, `crawl_report.json`, `github_action_crawl_summary.json`을 7일 artifact로 업로드합니다. repository secret `NAVER_CLIENT_ID` / `NAVER_CLIENT_SECRET`이 필요합니다. 요약/검증/import는 Codex OAuth/session이 필요한 `codex_exec` 런타임에 의존하므로 GitHub Actions에서는 실행하지 않고 로컬 또는 Codex가 설정된 서버에서 처리합니다.
+
+```bash
+gh workflow run crawl-naver.yml -f source=naver-all-categories -f count=1
 ```
 
 `Makefile`은 루트 `.env`가 있으면 자동으로 읽기 때문에, 로컬 1회 실행과 `make full-up` 모두 같은 credential 설정을 공유합니다.

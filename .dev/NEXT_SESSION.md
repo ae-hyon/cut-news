@@ -40,7 +40,7 @@ Implemented in the working tree:
   - root `.env` wins over `apps/backend/.env`
   - backend `.env` wins over defaults
 - `scripts/local-compose.py` uses the same precedence, so one-off commands like `NEWS_SOURCE=naver-all-categories NEWS_COUNT=2 make local-pipeline` are not silently overridden by root `.env`.
-- `Makefile` preserves selected explicit shell environment values over included `.env` values before exporting to recipes.
+- `Makefile` preserves selected explicit shell environment values over included `.env` values before exporting to recipes, including `NEWS_PIPELINE_MAX_ARTICLES` for bounded pipeline smoke runs.
 - Backend settings normalize plain Neon `postgresql://...` URLs to `postgresql+psycopg://...` so copied Neon URLs work with the installed psycopg driver.
 - `apps/backend/tests/test_config.py` covers database URL normalization.
 
@@ -52,6 +52,9 @@ Implemented in the working tree:
 - Crawler output now includes `source_category` and `source_query`.
 - Backend import uses `source_category` as fallback classification when category map/keywords are insufficient and counts it as `crawler_source_category`.
 - Pipeline `run_report.json` includes `crawler_category_stats` when category crawl stats are printed.
+- `NEWS_PIPELINE_MAX_ARTICLES=<positive-int>` is available as an optional diagnostic cap for local LLM runtime/cost control. It caps crawler raw export before summarizer, preserves crawler stats in the report, and records `max_articles`. Leave it unset for product-like real-data verification.
+- Import diagnostics now distinguish `_error.json` outputs as `summary_error` / `verification_error`; a pipeline that reaches import but produces zero inserted/updated articles while drop reasons exist is marked failed at `failed_step="import"` and does not generate daily snapshots.
+- GitHub Actions crawler-only schedule is defined in `.github/workflows/crawl-naver.yml`: daily 08:00 Asia/Seoul (`0 23 * * *` UTC), manual `workflow_dispatch`, requires repo secrets `NAVER_CLIENT_ID` / `NAVER_CLIENT_SECRET`, runs only `crawler.collect_naver`, and uploads `latest.json`, `crawl_report.json`, and `github_action_crawl_summary.json` as a 7-day artifact. It intentionally does not run summarizer/import because `codex_exec` needs a local/server Codex OAuth/session runtime.
 
 ## Runtime ports
 - Backend API: `http://127.0.0.1:8000`
@@ -79,6 +82,7 @@ Implemented in the working tree:
   - `apps/backend/app/scripts/run_news_pipeline_job.py`
   - `apps/backend/alembic/versions/0006_daily_feed_snapshots.py`
 - Category pipeline:
+  - `.github/workflows/crawl-naver.yml`
   - `.dev/news-pipeline-category-schedule.md`
   - `apps/crawler/src/crawler/collect_naver.py`
   - `apps/crawler/src/crawler/schemas.py`
@@ -99,7 +103,10 @@ Implemented in the working tree:
 ## Verification for current tree
 - `python3 -m py_compile scripts/local-compose.py` passed.
 - `python3 -m unittest tests/test_local_compose.py -q` -> 6 tests OK.
-- `make test` -> 118 passed after the Neon/external DB and news category/schedule slices.
+- `make test` -> 119 passed after adding bounded all-category diagnostic cap, import `_error.json` diagnostics, and zero-import guard.
+- `cd apps/backend && PYTHONPATH=. uv run pytest tests/test_run_news_pipeline_job.py tests/test_article_ingest_service.py::test_load_summarized_articles_report_tracks_import_drop_reasons_and_classification_sources -q` -> 9 passed.
+- `PYTHONPATH=apps/crawler/src uv run pytest apps/crawler/tests/test_collect_naver.py apps/crawler/tests/test_export_raw.py -q` -> 13 passed after adding crawl-only GitHub Actions workflow.
+- `.github/workflows/crawl-naver.yml` parsed successfully with PyYAML smoke; `actionlint` is not installed locally.
 - Neon DB migration succeeded: `make db-migrate` ran revisions through `0006_daily_feed_snapshots`; `make db-current` reports `0006_daily_feed_snapshots (head)`.
 - `make -n db-migrate` and `make -n db-current` print the intended Alembic commands.
 - `docker compose config` and `(cd apps/backend && docker compose config)` both render successfully.
@@ -113,19 +120,17 @@ Implemented in the working tree:
   - command: `set -a; . ./.env; set +a; cd apps/crawler && PYTHONPATH=src uv run python -m crawler.collect_naver --source naver-all-categories --count 2 --output-dir /tmp/cut-news-naver-all-categories-smoke`
   - result: `collected 77 articles`
   - `crawler category stats`: `query_count=49`, `count_per_query=2`, `deduped_count=21`, by-category collected counts: crypto 7, economy 9, entertainment 6, global 5, lifestyle 5, politics 10, realestate 7, sports 10, stock 11, tech 7.
-- Full all-category pipeline smoke was attempted with `NEWS_SOURCE=naver-all-categories NEWS_COUNT=2 make local-pipeline` after env precedence fixes; it correctly reached all-category crawler mode but timed out at 600s during summarizer processing because the all-category crawl produced ~77-78 raw articles. Generated summarizer data was restored/cleaned from the working tree afterward.
+- Full all-category pipeline with real uncapped `NEWS_COUNT=1` was run after the diagnostic-cap policy change:
+  - command: `NEWS_SOURCE=naver-all-categories NEWS_COUNT=1 NEWS_PIPELINE_MAX_ARTICLES= make local-pipeline`
+  - result before the zero-import guard was added: process completed in ~349s; crawler collected 45 articles from 49 queries with `max_articles=null`; import produced zero inserted/updated articles.
+  - actual data diagnostics: `drop_reason_counts={"summary_error":4,"missing_summary":3}`; generated `_error.json` tails show Codex CLI `401 Unauthorized: Missing bearer or basic authentication`, so the blocker is LLM auth/runtime, not crawler query breadth.
+  - follow-up fix in this tree: future runs with this shape should fail at `failed_step="import"` and skip snapshot generation instead of reporting success.
 
 ## Next best steps
-1. Decide and implement a bounded all-category full-pipeline smoke mode before rerunning summarizer/import end-to-end. Current `NEWS_COUNT=2` all-category crawl yields ~77 articles and exceeded a 600s smoke timeout in the summarizer stage. Safer options:
-   - add a pipeline-level max article cap for smoke runs after crawl/export,
-   - run summarizer on a sampled subset while retaining crawler category stats,
-   - or use `NEWS_COUNT=1` only after estimating runtime/LLM cost.
-2. Re-run full all-category pipeline only after the bounded smoke path exists:
-   ```bash
-   NEWS_SOURCE=naver-all-categories NEWS_COUNT=1 make local-pipeline
-   make local-report
-   ```
-3. Push `main` if this local commit should be shared remotely, after checking `git status -sb` and remote policy.
+1. Add `NAVER_CLIENT_ID` and `NAVER_CLIENT_SECRET` as GitHub repository secrets, then manually run `crawl-naver.yml` once and verify the uploaded artifact contains `latest.json`, `crawl_report.json`, and `github_action_crawl_summary.json`.
+2. Fix/validate the local/server LLM runtime auth before another full real-data summarizer/import run. The current actual blocker is Codex CLI `401 Unauthorized: Missing bearer or basic authentication` in generated `_error.json` files.
+3. After auth is fixed, run summarizer/import locally or on a server with Codex OAuth/session support and require `import_stats.inserted + updated > 0`; otherwise the zero-import guard should fail the run and skip snapshot generation.
+4. Push `main` if this local commit should be shared remotely, after checking `git status -sb` and remote policy.
 
 ## Notes
 - Neon runtime should use the pooled connection string and include `sslmode=require` when Neon does not append it. Plain `postgresql://` URLs are accepted and normalized by backend settings.

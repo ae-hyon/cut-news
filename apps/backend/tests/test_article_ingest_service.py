@@ -451,6 +451,29 @@ def test_load_summarized_articles_report_tracks_import_drop_reasons_and_classifi
     write_json(dataset / 'verified' / '003.json', {'verdict': 'clean', 'confidence': 96})
 
     write_json(
+        dataset / 'json' / '004.json',
+        {
+            'title': 'AI 반도체 수요 확대',
+            'date': '2026-04-28',
+            'url': 'https://example.com/4',
+            'content': 'AI 반도체 수요 확대를 다룬 본문입니다.',
+        },
+    )
+    write_json(dataset / 'summarized' / '004_error.json', {'error': 'summary contract violation', '_article_id': '004'})
+
+    write_json(
+        dataset / 'json' / '005.json',
+        {
+            'title': '전기차 배터리 공급망 재편',
+            'date': '2026-04-28',
+            'url': 'https://example.com/5',
+            'content': '전기차 배터리 공급망 재편을 다룬 본문입니다.',
+        },
+    )
+    write_json(dataset / 'summarized' / '005.json', {'headline_34': '전기차 배터리 공급망 재편', 'summary': '전기차 배터리 공급망이 재편되고 있습니다.'})
+    write_json(dataset / 'verified' / '005_error.json', {'error': 'verification failure', '_article_id': '005'})
+
+    write_json(
         dataset / 'category_map.json',
         [
             {'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'},
@@ -468,6 +491,8 @@ def test_load_summarized_articles_report_tracks_import_drop_reasons_and_classifi
     }
     assert report['drop_reason_counts'] == {
         'category_unmapped': 1,
+        'summary_error': 1,
+        'verification_error': 1,
     }
 
 

@@ -114,3 +114,40 @@ def test_export_articles_to_raw_can_clear_downstream_summarizer_outputs_for_fres
 
     assert paths == [raw_dir / 'raw-001.txt']
     assert list(derived_dir.iterdir()) == []
+
+
+def test_export_articles_to_raw_can_limit_latest_dataset_for_bounded_pipeline_smoke(tmp_path: Path):
+    input_path = tmp_path / 'articles.json'
+    raw_dir = tmp_path / 'raw'
+    input_path.write_text(
+        json.dumps(
+            [
+                {
+                    'article_id': 'a1',
+                    'title': '첫 기사',
+                    'url': 'https://news.example.com/1',
+                    'content': '본문 1',
+                },
+                {
+                    'article_id': 'a2',
+                    'title': '둘 기사',
+                    'url': 'https://news.example.com/2',
+                    'content': '본문 2',
+                },
+                {
+                    'article_id': 'a3',
+                    'title': '셋 기사',
+                    'url': 'https://news.example.com/3',
+                    'content': '본문 3',
+                },
+            ],
+            ensure_ascii=False,
+        ),
+        encoding='utf-8',
+    )
+
+    paths = export_articles_to_raw(input_path, raw_dir, max_articles=2)
+
+    assert paths == [raw_dir / 'a1.txt', raw_dir / 'a2.txt']
+    assert sorted(path.name for path in raw_dir.iterdir()) == ['a1.txt', 'a2.txt']
+    assert '첫 기사' in (raw_dir / 'a1.txt').read_text(encoding='utf-8')

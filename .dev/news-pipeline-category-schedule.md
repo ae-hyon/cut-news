@@ -140,11 +140,18 @@ set -a; . ./.env; set +a
 cd apps/crawler
 PYTHONPATH=src uv run python -m crawler.collect_naver --source naver-all-categories --count 2 --output-dir /tmp/cut-news-naver-all-categories-smoke
 
-# Full pipeline. Use cautiously: count=2 produced 77 articles in the 2026-05-26 smoke
-# and exceeded a 600s summarizer timeout. Add/use a bounded smoke mode before relying
-# on this as a quick gate.
+# Full pipeline with real data. NEWS_COUNT is per query; leave NEWS_PIPELINE_MAX_ARTICLES
+# unset for product-like runs. Set NEWS_PIPELINE_MAX_ARTICLES only for a deliberately
+# bounded diagnostic run when LLM runtime/cost must be capped.
 NEWS_SOURCE=naver-all-categories NEWS_COUNT=1 make local-pipeline
 make local-report
+
+# GitHub Actions crawl-only schedule intentionally stops before summarizer/import.
+# It runs at 08:00 Asia/Seoul (23:00 UTC), uploads latest.json/crawl_report.json
+# as a 7-day artifact, and requires repository secrets NAVER_CLIENT_ID / NAVER_CLIENT_SECRET.
+# Summarizing/import remains local or server-side because codex_exec needs a usable
+# Codex OAuth/session runtime that should not be assumed in GitHub Actions.
+gh workflow run crawl-naver.yml -f source=naver-all-categories -f count=1
 
 # Single-query Naver collection remains available.
 NEWS_SOURCE=naver-search NEWS_QUERY=경제 NEWS_COUNT=20 make local-pipeline
@@ -160,3 +167,9 @@ NEWS_SOURCE=seeded make local-pipeline
 - Result: `collected 77 articles`.
 - Stats: `query_count=49`, `count_per_query=2`, `deduped_count=21`; collected by category: crypto 7, economy 9, entertainment 6, global 5, lifestyle 5, politics 10, realestate 7, sports 10, stock 11, tech 7.
 - Full `NEWS_SOURCE=naver-all-categories NEWS_COUNT=2 make local-pipeline` reached all-category crawler mode after env precedence fixes, but exceeded a 600s timeout during summarizer processing because the all-category crawl produced ~77-78 raw articles. Generated summarizer artifacts were restored/cleaned from the working tree.
+- Implemented optional bounded diagnostic cap via `NEWS_PIPELINE_MAX_ARTICLES`; it appends `--max-articles` to crawler raw export, records `max_articles` in `run_report.json`, and keeps crawler category stats from the full collection. Do not set it for product-like real-data runs; use it only when intentionally capping LLM runtime/cost.
+- Full all-category pipeline with real uncapped `NEWS_COUNT=1` was run after the diagnostic cap policy change:
+  - command: `NEWS_SOURCE=naver-all-categories NEWS_COUNT=1 NEWS_PIPELINE_MAX_ARTICLES= make local-pipeline`
+  - result before the zero-import guard was added: process completed in ~349s (`collect` 11.7s, `summarize` 323.2s, `import` 9.7s), crawler collected 45 articles from 49 queries, `max_articles=null`, and import produced zero usable articles.
+  - diagnostics from the actual generated data: `drop_reason_counts={"summary_error":4,"missing_summary":3}`. The `_error.json` tails show Codex CLI `401 Unauthorized: Missing bearer or basic authentication`, so the failure is LLM auth/runtime, not crawler query breadth.
+  - Follow-up fix in this tree: `_error.json` outputs are counted as `summary_error` / `verification_error`, and a zero usable import with drop reasons now marks the pipeline failed at `failed_step="import"` and skips snapshot generation.

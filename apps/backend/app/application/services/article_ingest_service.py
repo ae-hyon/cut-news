@@ -351,10 +351,18 @@ def load_summarized_articles_report(data_dir: Path) -> tuple[list[ArticleIngestR
         summary_path = summarized_dir / f'{article_id}.json'
         verification_path = verified_dir / f'{article_id}.json'
         if not summary_path.exists():
-            _increment(drop_reason_counts, 'missing_summary')
+            summary_error_path = summarized_dir / f'{article_id}_error.json'
+            if summary_error_path.exists():
+                _increment(drop_reason_counts, 'summary_error')
+            else:
+                _increment(drop_reason_counts, 'missing_summary')
             continue
         if not verification_path.exists():
-            _increment(drop_reason_counts, 'missing_verification')
+            verification_error_path = verified_dir / f'{article_id}_error.json'
+            if verification_error_path.exists():
+                _increment(drop_reason_counts, 'verification_error')
+            else:
+                _increment(drop_reason_counts, 'missing_verification')
             continue
 
         article_payload = _read_json(article_path)

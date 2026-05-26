@@ -1,0 +1,117 @@
+name: Crawl Naver news
+
+on:
+  schedule:
+    # 08:00 Asia/Seoul. GitHub Actions cron is UTC; summarization/import stays local or server-side.
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Crawler source mode'
+        required: true
+        default: 'naver-all-categories'
+        type: choice
+        options:
+          - naver-all-categories
+          - naver-search
+      query:
+        description: 'Search query for naver-search mode'
+        required: false
+        default: '경제'
+      count:
+        description: 'Articles to request per query for naver-all-categories; total for naver-search'
+        required: true
+        default: '1'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  crawl:
+    name: Crawl only
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEWS_SOURCE: ${{ inputs.source || 'naver-all-categories' }}
+      NEWS_QUERY: ${{ inputs.query || '경제' }}
+      NEWS_COUNT: ${{ inputs.count || '1' }}
+      NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+      NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+      OUTPUT_DIR: apps/crawler/output/github-actions
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate crawler credentials
+        run: |
+          test -n "$NAVER_CLIENT_ID" || { echo "NAVER_CLIENT_ID secret is required" >&2; exit 1; }
+          test -n "$NAVER_CLIENT_SECRET" || { echo "NAVER_CLIENT_SECRET secret is required" >&2; exit 1; }
+
+      - name: Validate inputs
+        run: |
+          python - <<'PY'
+          import os
+          count = int(os.environ['NEWS_COUNT'])
+          if count < 1:
+              raise SystemExit('NEWS_COUNT must be >= 1')
+          source = os.environ['NEWS_SOURCE']
+          if source not in {'naver-all-categories', 'naver-search'}:
+              raise SystemExit(f'unsupported NEWS_SOURCE: {source}')
+          PY
+
+      - name: Crawl Naver without summarization
+        working-directory: apps/crawler
+        run: |
+          rm -rf output/github-actions
+          PYTHONPATH=src uv run python -m crawler.collect_naver \
+            --source "$NEWS_SOURCE" \
+            --query "$NEWS_QUERY" \
+            --count "$NEWS_COUNT" \
+            --output-dir output/github-actions
+
+      - name: Summarize crawl output metadata
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          out = Path(os.environ['OUTPUT_DIR'])
+          latest = out / 'latest.json'
+          articles = json.loads(latest.read_text(encoding='utf-8')) if latest.exists() else []
+          report_path = out / 'crawl_report.json'
+          report = json.loads(report_path.read_text(encoding='utf-8')) if report_path.exists() else {}
+          summary = {
+              'source': os.environ['NEWS_SOURCE'],
+              'query': os.environ['NEWS_QUERY'],
+              'count': int(os.environ['NEWS_COUNT']),
+              'article_count': len(articles),
+              'crawl_report': report,
+          }
+          (out / 'github_action_crawl_summary.json').write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2),
+              encoding='utf-8',
+          )
+          print(json.dumps(summary, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Upload crawl artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: naver-crawl-${{ github.run_id }}
+          path: |
+            apps/crawler/output/github-actions/latest.json
+            apps/crawler/output/github-actions/crawl_report.json
+            apps/crawler/output/github-actions/github_action_crawl_summary.json
+          if-no-files-found: error
+          retention-days: 7

@@ -123,14 +123,19 @@ def test_run_pipeline_job_writes_success_report_with_step_results_and_snapshot_g
         source='seeded',
         query='경제',
         count=6,
+        max_articles=5,
         runner=fake_runner,
         snapshot_generator=fake_snapshot_generator,
     )
 
     assert calls == ['collect', 'export_raw', 'summarize', 'import']
     assert snapshot_calls == [(report['feed_date'], 'news-pipeline')]
+    persisted = json.loads(report_path.read_text(encoding='utf-8'))
+    export_step = next(step for step in persisted['steps'] if step['name'] == 'export_raw')
+    assert '--max-articles 5' in export_step['command']
     assert report['status'] == 'success'
     assert report['failed_step'] is None
+    assert report['max_articles'] == 5
     assert report['import_stats'] == {'inserted': 1, 'updated': 2, 'deleted': 0, 'skipped': 3}
     assert report['crawler_category_stats'] == {
         'query_count': 40,
@@ -211,6 +216,63 @@ def test_run_pipeline_job_does_not_generate_snapshots_when_import_fails(tmp_path
         'skipped_viewed_count': 0,
         'failed_count': 0,
     }
+
+
+def test_run_pipeline_job_marks_zero_import_with_drop_reasons_as_failed_and_skips_snapshots(tmp_path: Path):
+    data_dir = tmp_path / 'data'
+    data_dir.mkdir(parents=True, exist_ok=True)
+    report_path = data_dir / 'run_report.json'
+
+    def fake_runner(step_name: str, command: list[str], cwd: Path, env: dict[str, str]):
+        stdout = ''
+        if step_name == 'import':
+            stdout = (
+                'summarizer article import complete: inserted=0 updated=0 deleted=0 skipped=0\n'
+                'summarizer article import observability: '
+                '{"quality_gate_skip_counts":{},'
+                '"drop_reason_counts":{"summary_error":4,"missing_summary":3},'
+                '"classification_source_counts":{}}\n'
+            )
+        return run_news_pipeline_job.StepExecutionResult(
+            name=step_name,
+            status='success',
+            command=command,
+            cwd=str(cwd),
+            duration_seconds=0.1,
+            stdout=stdout,
+            stderr='',
+            returncode=0,
+        )
+
+    snapshot_calls: list[tuple[str, str]] = []
+
+    def fake_snapshot_generator(feed_date: str, generation_source: str):
+        snapshot_calls.append((feed_date, generation_source))
+        return run_news_pipeline_job.SnapshotGenerationResult(generated_count=1)
+
+    report = run_news_pipeline_job.run_pipeline_job(
+        repo_root=tmp_path,
+        data_dir=data_dir,
+        report_path=report_path,
+        source='naver-all-categories',
+        query='경제',
+        count=1,
+        runner=fake_runner,
+        snapshot_generator=fake_snapshot_generator,
+    )
+
+    assert report['status'] == 'failed'
+    assert report['failed_step'] == 'import'
+    assert report['drop_reason_counts'] == {'summary_error': 4, 'missing_summary': 3}
+    assert snapshot_calls == []
+    assert report['snapshot_generation'] == {
+        'attempted_user_count': 0,
+        'generated_count': 0,
+        'skipped_viewed_count': 0,
+        'failed_count': 0,
+    }
+
+
 def test_generate_daily_snapshots_counts_generated_skipped_viewed_and_failed_users(monkeypatch):
     engine = create_engine('sqlite+pysqlite:///:memory:', future=True)
     Base.metadata.create_all(engine)

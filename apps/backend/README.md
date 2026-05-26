@@ -194,11 +194,17 @@ read 처리 기준은 article detail endpoint 성공 응답입니다. detail 요
 
 ### Scheduler run report
 
-기사 import 성공 후 scheduler wrapper는 onboarded 사용자별 오늘 snapshot을 생성하고, 최신 report와 archive report에 아래 필드를 기록합니다. import 실패 또는 이전 step 실패 시 snapshot generation은 실행하지 않습니다. 개별 사용자 실패는 전체 pipeline 실패로 만들지 않고 counter에만 반영합니다.
+기사 import 성공 후 scheduler wrapper는 onboarded 사용자별 오늘 snapshot을 생성하고, 최신 report와 archive report에 아래 필드를 기록합니다. import 실패, 이전 step 실패, 또는 drop reason이 있으면서 inserted/updated가 0인 zero-usable-import 상태에서는 snapshot generation을 실행하지 않습니다. 개별 사용자 실패는 전체 pipeline 실패로 만들지 않고 counter에만 반영합니다.
 
 ```json
 {
   "feed_date": "2026-05-20",
+  "max_articles": 12,
+  "crawler_category_stats": {
+    "query_count": 49,
+    "count_per_query": 2,
+    "collected_count": 77
+  },
   "snapshot_generation": {
     "attempted_user_count": 10,
     "generated_count": 9,
@@ -212,6 +218,9 @@ read 처리 기준은 article detail endpoint 성공 응답입니다. detail 요
 - `generated_count`: 새로 생성했거나 미확인 snapshot을 재생성한 수
 - `skipped_viewed_count`: 이미 확인한 snapshot이라 보존한 수
 - `failed_count`: 사용자별 생성 중 예외가 난 수
+- `crawler_category_stats`: `naver-all-categories` 수집 시 category/query별 수집량 진단
+- `max_articles`: `NEWS_PIPELINE_MAX_ARTICLES`로 summarizer raw export를 제한한 diagnostic run이면 제한값, 미설정이면 `null`
+- `_error.json` summarizer outputs are reported as `drop_reason_counts.summary_error` / `verification_error`; zero inserted/updated imports with drop reasons are failed pipeline runs and do not create snapshots.
 
 ## 테스트
 
