@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { useOnboardingStore } from '@/stores/onboarding';
-import { CATEGORIES, MAX_WIDE_CATEGORIES } from '@/constants/categories';
+import { MAX_WIDE_CATEGORIES } from '@/constants/categories';
+import { useCategories } from '@/hooks/useCategories';
 import { showToast } from '@/components/Toast';
 import OnboardingHeader from '../_components/OnboardingHeader';
 import OnboardingProgress from '../_components/OnboardingProgress';
@@ -12,6 +13,7 @@ import OnboardingGuide from '../_components/OnboardingGuide';
 export default function OnboardingWide() {
   const router = useRouter();
   const { selectedCategories, toggleCategory } = useOnboardingStore();
+  const { categories, isLoading, error, refetch } = useCategories();
 
   const handleToggle = (id: string) => {
     const success = toggleCategory(id);
@@ -33,7 +35,25 @@ export default function OnboardingWide() {
 
           {/* Category grid */}
           <div className="grid grid-cols-2 gap-2 py-4 overflow-y-auto flex-1">
-            {CATEGORIES.map((cat, i) => {
+            {isLoading && (
+              <p className="col-span-2 text-center text-white/60 text-[14px] py-8">
+                카테고리를 불러오는 중...
+              </p>
+            )}
+            {error && (
+              <div className="col-span-2 flex flex-col items-center gap-3 py-8">
+                <p className="text-white/60 text-[14px]">
+                  카테고리를 불러올 수 없어요
+                </p>
+                <button
+                  onClick={refetch}
+                  className="text-[#f3782b] text-[14px] font-medium"
+                >
+                  다시 시도
+                </button>
+              </div>
+            )}
+            {categories.map((cat, i) => {
               const selected = selectedCategories.includes(cat.id);
               return (
                 <motion.button
@@ -53,7 +73,7 @@ export default function OnboardingWide() {
                     {cat.name}
                   </p>
                   <p className="font-normal text-[12px] leading-[14px] w-full">
-                    {cat.keywords.join(' ')}
+                    {cat.description}
                   </p>
                 </motion.button>
               );

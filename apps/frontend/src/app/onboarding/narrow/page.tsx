@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useOnboardingStore } from '@/stores/onboarding';
-import { CATEGORIES } from '@/constants/categories';
+import { useCategories } from '@/hooks/useCategories';
+import type { Category } from '@/types';
 import OnboardingHeader from '../_components/OnboardingHeader';
 import OnboardingProgress from '../_components/OnboardingProgress';
 import OnboardingGuide from '../_components/OnboardingGuide';
@@ -16,8 +17,9 @@ export default function OnboardingNarrow() {
     selectedSubCategories,
     toggleSubCategory,
   } = useOnboardingStore();
+  const { categories, isLoading, error, refetch } = useCategories();
 
-  const selectedCat = CATEGORIES.find((c) => c.id === narrowMainCategory);
+  const selectedCat = categories.find((c) => c.id === narrowMainCategory);
   const subs = selectedCat?.subcategories ?? [];
   const canProceed =
     narrowMainCategory !== null && selectedSubCategories.length > 0;
@@ -33,11 +35,29 @@ export default function OnboardingNarrow() {
 
           {/* Category list with inline sub-category expansion */}
           <div className="flex flex-col gap-2 py-4 overflow-y-auto flex-1">
+            {isLoading && (
+              <p className="text-center text-white/60 text-[14px] py-8">
+                카테고리를 불러오는 중...
+              </p>
+            )}
+            {error && (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <p className="text-white/60 text-[14px]">
+                  카테고리를 불러올 수 없어요
+                </p>
+                <button
+                  onClick={refetch}
+                  className="text-[#f3782b] text-[14px] font-medium"
+                >
+                  다시 시도
+                </button>
+              </div>
+            )}
             {(() => {
               const rows: React.ReactNode[] = [];
-              for (let i = 0; i < CATEGORIES.length; i += 2) {
-                const cat1 = CATEGORIES[i];
-                const cat2 = CATEGORIES[i + 1];
+              for (let i = 0; i < categories.length; i += 2) {
+                const cat1 = categories[i];
+                const cat2 = categories[i + 1];
                 const selected1 = narrowMainCategory === cat1.id;
                 const selected2 = cat2 && narrowMainCategory === cat2.id;
                 const showSubPanel = selected1 || selected2;
@@ -153,7 +173,7 @@ function CategoryCard({
   onSelect,
   index,
 }: {
-  cat: (typeof CATEGORIES)[number];
+  cat: Category;
   selected: boolean;
   onSelect: (id: string) => void;
   index: number;
@@ -171,7 +191,7 @@ function CategoryCard({
     >
       <p className="font-bold text-[16px] leading-[19px] w-full">{cat.name}</p>
       <p className="font-normal text-[12px] leading-[14px] w-full">
-        {cat.keywords.join(' ')}
+        {cat.description}
       </p>
     </motion.button>
   );

@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 import { useOnboardingStore } from '@/stores/onboarding';
 import { useKakaoLogin } from '@/hooks/useKakaoLogin';
 import { saveUserPreference } from '@/services/authApi';
-import { CATEGORIES } from '@/constants/categories';
+import { useCategories } from '@/hooks/useCategories';
 import { showToast } from '@/components/Toast';
 import type { PreferenceMode } from '@/lib/types';
 import OnboardingHeader from '../_components/OnboardingHeader';
@@ -22,6 +22,7 @@ export default function OnboardingComplete() {
   } = useOnboardingStore();
 
   const isWide = userType === 'wide';
+  const { categories } = useCategories();
 
   const handleLoginSuccess = useCallback(async () => {
     try {
@@ -54,10 +55,10 @@ export default function OnboardingComplete() {
 
   const selectedNames = isWide
     ? selectedCategories.map(
-        (id) => CATEGORIES.find((c) => c.id === id)?.name ?? id,
+        (id) => categories.find((c) => c.id === id)?.name ?? id,
       )
     : (() => {
-        const main = CATEGORIES.find((c) => c.id === narrowMainCategory);
+        const main = categories.find((c) => c.id === narrowMainCategory);
         if (!main) return [];
         const subNames = selectedSubCategories.map(
           (id) => main.subcategories?.find((s) => s.id === id)?.name ?? id,
@@ -95,7 +96,7 @@ export default function OnboardingComplete() {
             <p className="text-[14px] text-white/60 text-center">
               {isWide
                 ? '선택한 관심 분야'
-                : `${CATEGORIES.find((c) => c.id === narrowMainCategory)?.name} 세부 관심사`}
+                : `${categories.find((c) => c.id === narrowMainCategory)?.name} 세부 관심사`}
             </p>
 
             <div className="flex flex-wrap gap-2 justify-center">

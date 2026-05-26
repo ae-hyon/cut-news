@@ -5,7 +5,7 @@ export type BlockSize = 'large' | 'medium' | 'small';
 export interface Category {
   id: string;
   name: string;
-  keywords: string[];
+  description: string;
   subcategories?: SubCategory[];
 }
 
