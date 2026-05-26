@@ -153,6 +153,12 @@ make local-report
 # Codex OAuth/session runtime that should not be assumed in GitHub Actions.
 gh workflow run crawl-naver.yml -f source=naver-all-categories -f count=1
 
+# Prefer artifact download over re-crawling when a successful GitHub crawl artifact exists.
+# This avoids storing crawl payloads in Neon and keeps Neon as backend runtime DB only.
+make github-crawl-download
+HOME=/Users/reddit NEWS_PIPELINE_MAX_ARTICLES=3 make local-pipeline-from-github
+# Leave NEWS_PIPELINE_MAX_ARTICLES unset/empty only for a product-like full summarizer/import run.
+
 # Single-query Naver collection remains available.
 NEWS_SOURCE=naver-search NEWS_QUERY=경제 NEWS_COUNT=20 make local-pipeline
 
@@ -169,7 +175,13 @@ NEWS_SOURCE=seeded make local-pipeline
 - Full `NEWS_SOURCE=naver-all-categories NEWS_COUNT=2 make local-pipeline` reached all-category crawler mode after env precedence fixes, but exceeded a 600s timeout during summarizer processing because the all-category crawl produced ~77-78 raw articles. Generated summarizer artifacts were restored/cleaned from the working tree.
 - Implemented optional bounded diagnostic cap via `NEWS_PIPELINE_MAX_ARTICLES`; it appends `--max-articles` to crawler raw export, records `max_articles` in `run_report.json`, and keeps crawler category stats from the full collection. Do not set it for product-like real-data runs; use it only when intentionally capping LLM runtime/cost.
 - Full all-category pipeline with real uncapped `NEWS_COUNT=1` was run after the diagnostic cap policy change:
-  - command: `NEWS_SOURCE=naver-all-categories NEWS_COUNT=1 NEWS_PIPELINE_MAX_ARTICLES= make local-pipeline`
+  - first run command: `NEWS_SOURCE=naver-all-categories NEWS_COUNT=1 NEWS_PIPELINE_MAX_ARTICLES= make local-pipeline`
   - result before the zero-import guard was added: process completed in ~349s (`collect` 11.7s, `summarize` 323.2s, `import` 9.7s), crawler collected 45 articles from 49 queries, `max_articles=null`, and import produced zero usable articles.
   - diagnostics from the actual generated data: `drop_reason_counts={"summary_error":4,"missing_summary":3}`. The `_error.json` tails show Codex CLI `401 Unauthorized: Missing bearer or basic authentication`, so the failure is LLM auth/runtime, not crawler query breadth.
   - Follow-up fix in this tree: `_error.json` outputs are counted as `summary_error` / `verification_error`, and a zero usable import with drop reasons now marks the pipeline failed at `failed_step="import"` and skips snapshot generation.
+- Full all-category uncapped local verification later passed once Codex was forced to the real user OAuth home and the crawler service was stopped:
+  - command: `HOME=/Users/reddit DATABASE_URL=sqlite+pysqlite:///dev-ui-test.db NEWS_SOURCE=naver-all-categories NEWS_COUNT=1 NEWS_PIPELINE_MAX_ARTICLES= make local-pipeline`
+  - result: success in ~22m13s (`collect` 7.9s, `summarize` 1323.1s, `import` 0.8s), `max_articles=null`, crawler collected 35 articles from 49 queries, import inserted 9 / deleted 1, and snapshot generation created 1 snapshot.
+  - final diagnostics: `drop_reason_counts={"missing_summary":2}`, `classification_source_counts={"keyword_rule":9}`, `query_count=49`, `deduped_count=13`.
+  - this proves the product-like Naver + Codex OAuth + all-category uncapped path with local SQLite. Neon remains a separate final DB-target smoke if required.
+  - pitfall: leaving the native crawler API service running on macOS can accumulate many `127.0.0.1:8001` TIME_WAIT sockets and exhaust ephemeral ports, causing unrelated outbound Naver/Neon/GitHub requests to fail with `[Errno 49] Can't assign requested address`. Stop crawler (`make local-down SERVICES="crawler"`) and wait for sockets to drain before full pipeline or Neon checks.

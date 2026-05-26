@@ -120,6 +120,7 @@ def _pipeline_steps(
     query: str,
     count: int,
     max_articles: int | None = None,
+    crawl_input_path: Path | None = None,
 ) -> list[tuple[str, list[str], Path, dict[str, str]]]:
     python = sys.executable
     crawler_cwd = repo_root / 'apps' / 'crawler'
@@ -140,12 +141,13 @@ def _pipeline_steps(
         'DATABASE_URL': os.environ.get('DATABASE_URL', 'sqlite+pysqlite:///dev-ui-test.db'),
     }
 
+    export_input = crawl_input_path or Path('../../apps/crawler/output/latest.json')
     export_raw_command = [
         python,
         '-m',
         'crawler.export_raw',
         '--input',
-        '../../apps/crawler/output/latest.json',
+        str(export_input),
         '--output-dir',
         '../../apps/summarizer/data/raw',
         '--clear',
@@ -161,13 +163,17 @@ def _pipeline_steps(
     if max_articles is not None and max_articles > 0:
         export_raw_command.extend(['--max-articles', str(max_articles)])
 
-    return [
-        (
-            'collect',
-            [python, '-m', 'crawler.collect_naver', '--source', source, '--query', query, '--count', str(count), '--output-dir', 'output'],
-            crawler_cwd,
-            collect_env,
-        ),
+    steps: list[tuple[str, list[str], Path, dict[str, str]]] = []
+    if crawl_input_path is None:
+        steps.append(
+            (
+                'collect',
+                [python, '-m', 'crawler.collect_naver', '--source', source, '--query', query, '--count', str(count), '--output-dir', 'output'],
+                crawler_cwd,
+                collect_env,
+            )
+        )
+    steps.extend([
         (
             'export_raw',
             export_raw_command,
@@ -186,7 +192,18 @@ def _pipeline_steps(
             backend_cwd,
             import_env,
         ),
-    ]
+    ])
+    return steps
+
+
+def load_crawler_category_stats(path: Path | None) -> dict[str, object]:
+    if path is None or not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding='utf-8'))
+    except json.JSONDecodeError:
+        return {}
+    return dict(payload) if isinstance(payload, dict) else {}
 
 
 def _serialize_step(step: StepExecutionResult) -> dict[str, object]:
@@ -293,6 +310,8 @@ def run_pipeline_job(
     runner: Runner = run_command,
     snapshot_generator: SnapshotGenerator = generate_daily_snapshots,
     max_articles: int | None = None,
+    crawl_input_path: Path | None = None,
+    crawl_report_path: Path | None = None,
 ) -> dict[str, object]:
     started_at = time.strftime('%Y-%m-%dT%H:%M:%S%z')
     steps_payload: list[dict[str, object]] = []
@@ -302,7 +321,7 @@ def run_pipeline_job(
         'drop_reason_counts': {},
         'classification_source_counts': {},
     }
-    crawler_category_stats: dict[str, object] = {}
+    crawler_category_stats: dict[str, object] = load_crawler_category_stats(crawl_report_path)
     status = 'success'
     failed_step: str | None = None
     schedule = _schedule_metadata()
@@ -315,6 +334,7 @@ def run_pipeline_job(
         query=query,
         count=count,
         max_articles=max_articles,
+        crawl_input_path=crawl_input_path,
     ):
         result = runner(step_name, command, cwd, env)
         steps_payload.append(_serialize_step(result))
@@ -351,6 +371,8 @@ def run_pipeline_job(
         'query': query,
         'count': count,
         'max_articles': max_articles,
+        'crawl_input_path': str(crawl_input_path) if crawl_input_path is not None else None,
+        'crawl_report_path': str(crawl_report_path) if crawl_report_path is not None else None,
         'feed_date': feed_date,
         'schedule': schedule,
         'steps': steps_payload,
@@ -375,6 +397,14 @@ def _optional_positive_int_env(name: str) -> int | None:
     return parsed if parsed > 0 else None
 
 
+def _optional_path_env(name: str, *, base: Path = REPO_ROOT) -> Path | None:
+    value = os.environ.get(name)
+    if value in (None, ''):
+        return None
+    path = Path(value)
+    return path if path.is_absolute() else base / path
+
+
 def main() -> None:
     source = os.environ.get('NEWS_SOURCE', 'seeded')
     query = os.environ.get('NEWS_QUERY', '경제')
@@ -385,6 +415,8 @@ def main() -> None:
         query=query,
         count=count,
         max_articles=max_articles,
+        crawl_input_path=_optional_path_env('NEWS_CRAWL_INPUT_PATH'),
+        crawl_report_path=_optional_path_env('NEWS_CRAWL_REPORT_PATH'),
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     if report['status'] != 'success':

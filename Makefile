@@ -1,6 +1,6 @@
-.PHONY: help backend-up backend-down backend-reset backend-logs full-up full-down local-up local-down local-restart local-status local-ps local-logs local-pipeline local-report db-current db-migrate test test-backend dev-backend import-articles pipeline-news clean
+.PHONY: help backend-up backend-down backend-reset backend-logs full-up full-down local-up local-down local-restart local-status local-ps local-logs local-pipeline local-report github-crawl-download local-pipeline-from-github db-current db-migrate test test-backend dev-backend import-articles pipeline-news clean
 
-ENV_PRESERVE_VARS := NEWS_SOURCE NEWS_QUERY NEWS_COUNT NEWS_PIPELINE_MAX_ARTICLES DATABASE_URL NAVER_CLIENT_ID NAVER_CLIENT_SECRET PIPELINE_LLM_BACKEND PIPELINE_MODEL PIPELINE_CODEX_REASONING_EFFORT RUN_ON_STARTUP CORS_ALLOWED_ORIGINS NEXT_PUBLIC_API_URL
+ENV_PRESERVE_VARS := NEWS_SOURCE NEWS_QUERY NEWS_COUNT NEWS_PIPELINE_MAX_ARTICLES NEWS_CRAWL_INPUT_PATH NEWS_CRAWL_REPORT_PATH DATABASE_URL NAVER_CLIENT_ID NAVER_CLIENT_SECRET PIPELINE_LLM_BACKEND PIPELINE_MODEL PIPELINE_CODEX_REASONING_EFFORT RUN_ON_STARTUP CORS_ALLOWED_ORIGINS NEXT_PUBLIC_API_URL
 $(foreach v,$(ENV_PRESERVE_VARS),$(eval ENV_ORIGIN_$(v) := $(origin $(v)))$(eval ENV_VALUE_$(v) := $($(v))))
 
 ifneq (,$(wildcard .env))
@@ -42,6 +42,8 @@ help:
 	@echo "  make local-ps         - Alias for local-status"
 	@echo "  make local-logs       - Show Dockerless local logs"
 	@echo "  make local-pipeline   - Run one Dockerless crawler -> summarizer -> import job"
+	@echo "  make github-crawl-download - Download latest successful GitHub crawler artifact"
+	@echo "  make local-pipeline-from-github - Download crawl artifact, then summarize/import locally"
 	@echo "  make local-report     - Summarize latest local pipeline run_report.json"
 	@echo "  make db-current       - Show current Alembic revision for DATABASE_URL"
 	@echo "  make db-migrate       - Run Alembic migrations against DATABASE_URL"
@@ -90,6 +92,12 @@ local-logs:
 local-pipeline:
 	python3 scripts/local-compose.py pipeline
 
+github-crawl-download:
+	python3 scripts/download-github-crawl-artifact.py
+
+local-pipeline-from-github: github-crawl-download
+	NEWS_CRAWL_INPUT_PATH="$(CURDIR)/apps/crawler/output/github-actions/latest.json" NEWS_CRAWL_REPORT_PATH="$(CURDIR)/apps/crawler/output/github-actions/crawl_report.json" python3 scripts/local-compose.py pipeline
+
 local-report:
 	python3 scripts/local-compose.py report
 
@@ -111,7 +119,7 @@ import-articles:
 	cd apps/backend && PYTHONPATH=. DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" uv run python -m app.scripts.import_articles_from_summarizer
 
 pipeline-news:
-	cd apps/backend && NEWS_SOURCE=$(NEWS_SOURCE) NEWS_QUERY="$(NEWS_QUERY)" NEWS_COUNT=$(NEWS_COUNT) NEWS_PIPELINE_MAX_ARTICLES="$(NEWS_PIPELINE_MAX_ARTICLES)" DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" PIPELINE_LLM_BACKEND=$(PIPELINE_LLM_BACKEND) PIPELINE_MODEL=$(PIPELINE_MODEL) PIPELINE_CODEX_REASONING_EFFORT=$(PIPELINE_CODEX_REASONING_EFFORT) PYTHONPATH=. uv run python -m app.scripts.run_news_pipeline_job
+	cd apps/backend && NEWS_SOURCE=$(NEWS_SOURCE) NEWS_QUERY="$(NEWS_QUERY)" NEWS_COUNT=$(NEWS_COUNT) NEWS_PIPELINE_MAX_ARTICLES="$(NEWS_PIPELINE_MAX_ARTICLES)" NEWS_CRAWL_INPUT_PATH="$(NEWS_CRAWL_INPUT_PATH)" NEWS_CRAWL_REPORT_PATH="$(NEWS_CRAWL_REPORT_PATH)" DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" PIPELINE_LLM_BACKEND=$(PIPELINE_LLM_BACKEND) PIPELINE_MODEL=$(PIPELINE_MODEL) PIPELINE_CODEX_REASONING_EFFORT=$(PIPELINE_CODEX_REASONING_EFFORT) PYTHONPATH=. uv run python -m app.scripts.run_news_pipeline_job
 
 clean:
 	find . -type d \( -name "__pycache__" -o -name ".pytest_cache" -o -name ".mypy_cache" -o -name ".ruff_cache" -o -name ".next" -o -name "dist" \) -prune -exec rm -rf {} + 2>/dev/null || true

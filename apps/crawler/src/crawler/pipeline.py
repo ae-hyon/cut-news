@@ -6,14 +6,19 @@ from crawler.schemas import CrawledArticle
 
 
 def render_summarizer_raw(article: CrawledArticle) -> str:
-    return (
-        f"제목: {article.title}\n"
-        f"날짜: {article.date or ''}\n"
-        f"기자: {article.author or ''}\n"
-        f"URL: {article.url}\n"
-        f"---\n"
-        f"{article.content}"
-    )
+    metadata_lines = [
+        f"제목: {article.title}",
+        f"날짜: {article.date or ''}",
+        f"기자: {article.author or ''}",
+        f"URL: {article.url}",
+    ]
+    if article.content_source:
+        metadata_lines.append(f"콘텐츠소스: {article.content_source}")
+    if article.source_category:
+        metadata_lines.append(f"소스카테고리: {article.source_category}")
+    if article.source_query:
+        metadata_lines.append(f"소스쿼리: {article.source_query}")
+    return "\n".join([*metadata_lines, "---", article.content])
 
 
 def save_raw_articles(articles: list[CrawledArticle], output_dir: Path) -> list[Path]:

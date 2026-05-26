@@ -284,6 +284,8 @@ def print_run_report() -> None:
     print(json.dumps({
         "status": data.get("status"),
         "failed_step": data.get("failed_step"),
+        "max_articles": data.get("max_articles"),
+        "crawl_input_path": data.get("crawl_input_path"),
         "source": data.get("source"),
         "query": data.get("query"),
         "count": data.get("count"),

@@ -45,6 +45,20 @@ def _normalize_date(raw_date: str) -> str:
     return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
 
 
+def _crawler_metadata(raw_text: str) -> dict[str, str]:
+    metadata = {
+        "content_source": _extract_header_value(raw_text, "콘텐츠소스"),
+        "source_category": _extract_header_value(raw_text, "소스카테고리"),
+        "source_query": _extract_header_value(raw_text, "소스쿼리"),
+    }
+    return {key: value for key, value in metadata.items() if value}
+
+
+def _attach_crawler_metadata(result: dict, raw_text: str) -> dict:
+    result.update(_crawler_metadata(raw_text))
+    return result
+
+
 def _fallback_parse_yonhap(raw_text: str, source_name: str) -> dict:
     title = _extract_header_value(raw_text, "제목")
     raw_date = _extract_header_value(raw_text, "날짜")
@@ -139,13 +153,14 @@ def process_file(raw_path: Path) -> tuple[str, dict | None]:
         response = call_llm(SYSTEM, raw_text, temperature=0.1, timeout=300)
         result = parse_json_response(response)
         result["_source_file"] = raw_path.name
+        _attach_crawler_metadata(result, raw_text)
         save_json(out_path, result)
         if err_path.exists():
             err_path.unlink()
         return "success", result
     except Exception as e:
         try:
-            fallback = _fallback_parse_yonhap(raw_text, raw_path.name)
+            fallback = _attach_crawler_metadata(_fallback_parse_yonhap(raw_text, raw_path.name), raw_text)
             if fallback["title"] and fallback["url"] and fallback["content"]:
                 save_json(out_path, fallback)
                 if err_path.exists():
