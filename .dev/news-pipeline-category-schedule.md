@@ -163,6 +163,9 @@ make local-report-check
 HOME=/Users/reddit DATABASE_URL="$DATABASE_URL" NEWS_PIPELINE_MAX_ARTICLES= make local-pipeline-from-github
 make local-report-check REPORT_CHECK_ARGS=--require-uncapped
 
+# Preferred scheduled wrapper. See .dev/news-pipeline-operations.md.
+HOME=/Users/reddit DATABASE_URL="$DATABASE_URL" make ops-pipeline-from-github
+
 # Single-query Naver collection remains available.
 NEWS_SOURCE=naver-search NEWS_QUERY=경제 NEWS_COUNT=20 make local-pipeline
 

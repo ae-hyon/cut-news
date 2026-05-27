@@ -142,4 +142,4 @@ Implemented in the working tree:
 - Shared/staging DB may want `SEED_ON_STARTUP=false` to avoid repeated local seed writes.
 - Product category crawl mode is `NEWS_SOURCE=naver-all-categories`; `NEWS_COUNT` is per generated query.
 - AI news generation 기준 시간 is `08:30:00` Asia/Seoul. Product note says `03:08:59` is pre-publication, `09:02:59(+1)` is published, and if there is no access during `09:03:00(+1)` the news archive is not generated for that user.
-- `make backend-up` / `make full-up` can use external `DATABASE_URL`, but the local Postgres container may still start due to Compose dependencies. For external DB-only smoke, prefer `make local-up`.
+- `make ops-pipeline-from-github` wraps the scheduled product-like flow: download latest GitHub crawl artifact, run summarizer/import with explicit `HOME`/`DATABASE_URL`, validate the run report with `--require-uncapped`, and optionally alert via `PIPELINE_ALERT_COMMAND` or `PIPELINE_ALERT_WEBHOOK_URL`. Full runbook: `.dev/news-pipeline-operations.md`.
