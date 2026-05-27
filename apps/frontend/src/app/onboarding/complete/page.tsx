@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { useOnboardingStore } from '@/stores/onboarding';
+import { useAuthStore } from '@/stores/auth';
 import { useKakaoLogin } from '@/hooks/useKakaoLogin';
 import { saveUserPreference } from '@/services/authApi';
 import { useCategories } from '@/hooks/useCategories';
@@ -20,11 +21,15 @@ export default function OnboardingComplete() {
     narrowMainCategory,
     selectedSubCategories,
   } = useOnboardingStore();
+  const checkSession = useAuthStore((s) => s.checkSession);
 
   const isWide = userType === 'wide';
   const { categories } = useCategories();
+  const savingRef = useRef(false);
 
-  const handleLoginSuccess = useCallback(async () => {
+  const handleSavePreference = useCallback(async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     try {
       const payload = {
         mode: (userType ?? 'wide') as PreferenceMode,
@@ -38,6 +43,7 @@ export default function OnboardingComplete() {
       await saveUserPreference(payload);
       router.push('/');
     } catch {
+      savingRef.current = false;
       showToast('설정 저장에 실패했어요. 다시 시도해주세요.');
     }
   }, [
@@ -49,9 +55,24 @@ export default function OnboardingComplete() {
     router,
   ]);
 
-  const { startLogin, status, error, isLoading } = useKakaoLogin({
-    onSuccess: handleLoginSuccess,
-  });
+  // 카카오 OAuth 콜백 후 복귀 시 세션을 확인하여 preference 저장
+  useEffect(() => {
+    checkSession()
+      .then((session) => {
+        if (session.authenticated && !session.onboarding_completed) {
+          // 신규 사용자 — preference 저장 후 홈으로 이동
+          handleSavePreference();
+        } else if (session.onboarding_completed) {
+          // 기존 사용자 — preference 업데이트 없이 홈으로 이동
+          router.push('/');
+        }
+      })
+      .catch(() => {
+        // 미인증 상태 — 로그인 버튼 표시 유지
+      });
+  }, [checkSession, handleSavePreference, router]);
+
+  const { startLogin, status, error, isLoading } = useKakaoLogin();
 
   const selectedNames = isWide
     ? selectedCategories.map(
