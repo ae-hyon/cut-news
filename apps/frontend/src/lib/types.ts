@@ -82,6 +82,11 @@ export interface FeedBlock {
 
 export interface FeedResponse {
   user_id: string;
+  snapshot_id: number;
+  feed_date: string;
+  status: string;
+  read_count: number;
+  total_count: number;
   mode: PreferenceMode;
   blocks: FeedBlock[];
 }
@@ -93,8 +98,14 @@ export interface ScrapResponse {
 
 export interface ArchiveDay {
   date: string;
-  count?: number;
-  items: ArticleCard[];
+  snapshot_id: number;
+  status: string;
+  has_feed: boolean;
+  count: number;
+  total_count: number;
+  read_count: number;
+  first_viewed_at: string | null;
+  completed_at: string | null;
 }
 
 export interface ArchiveMonthResponse {
@@ -106,5 +117,9 @@ export interface ArchiveMonthResponse {
 export interface ArchiveDateResponse {
   user_id: string;
   date: string;
+  snapshot_id: number;
+  status: string;
+  read_count: number;
+  total_count: number;
   items: ArticleCard[];
 }

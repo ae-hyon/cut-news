@@ -8,12 +8,17 @@ from app.domain.enums import PreferenceMode
 
 
 class StubKakaoOAuthClient:
-    def build_authorization_url(self, state: str) -> str:
+    def __init__(self):
+        self.redirect_uri: str | None = None
+
+    def build_authorization_url(self, state: str, redirect_uri: str | None = None) -> str:
+        self.redirect_uri = redirect_uri
         return f'https://kauth.kakao.com/oauth/authorize?state={state}'
 
-    def exchange_code_for_identity(self, code: str, state: str) -> ExternalIdentity:
+    def exchange_code_for_identity(self, code: str, state: str, redirect_uri: str | None = None) -> ExternalIdentity:
         assert code == 'issued-code'
         assert '.' in state
+        self.redirect_uri = redirect_uri
         return ExternalIdentity(provider='kakao', provider_subject='kakao-123', user_id='')
 
 
@@ -239,7 +244,7 @@ def test_start_kakao_auth_returns_signed_state_token_not_raw_nonce():
 
 def test_complete_kakao_callback_rejects_tampered_state_before_code_exchange():
     class ExplodingOAuthClient(StubKakaoOAuthClient):
-        def exchange_code_for_identity(self, code: str, state: str) -> ExternalIdentity:
+        def exchange_code_for_identity(self, code: str, state: str, redirect_uri: str | None = None) -> ExternalIdentity:
             raise AssertionError('should not exchange code when state is invalid')
 
     service = AuthService(
@@ -260,7 +265,7 @@ def test_complete_kakao_callback_rejects_tampered_state_before_code_exchange():
 
 def test_complete_kakao_callback_maps_kakao_exchange_failure_to_bad_gateway_auth_error():
     class FailingOAuthClient(StubKakaoOAuthClient):
-        def exchange_code_for_identity(self, code: str, state: str) -> ExternalIdentity:
+        def exchange_code_for_identity(self, code: str, state: str, redirect_uri: str | None = None) -> ExternalIdentity:
             raise AuthError('kakao_token_exchange_failed', 'Kakao token exchange failed.', status_code=502)
 
     service = AuthService(

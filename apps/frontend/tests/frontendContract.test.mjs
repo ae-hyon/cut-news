@@ -48,4 +48,20 @@ describe('real frontend backend contract', () => {
       assert.doesNotMatch(source, /MOCK_NEWS/);
     }
   });
+
+  it('treats monthly archive days as metadata-only snapshot rows', () => {
+    const typesSource = read('src/lib/types.ts');
+    const archiveSource = read('src/app/(main)/archive/page.tsx');
+
+    assert.match(typesSource, /interface ArchiveDay/);
+    assert.match(typesSource, /has_feed:\s*boolean/);
+    assert.match(typesSource, /snapshot_id:\s*number/);
+    const archiveDaySource = typesSource.match(
+      /interface ArchiveDay \{[\s\S]*?\n\}/,
+    )?.[0];
+    assert.ok(archiveDaySource);
+    assert.doesNotMatch(archiveDaySource, /items:\s*ArticleCard\[\]/);
+    assert.match(archiveSource, /archiveDay\?\.has_feed \?\? false/);
+    assert.doesNotMatch(archiveSource, /archiveDay\.items/);
+  });
 });

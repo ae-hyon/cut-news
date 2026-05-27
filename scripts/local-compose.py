@@ -58,8 +58,10 @@ def base_env() -> dict[str, str]:
     # Precedence: explicit shell/Make environment > root .env > backend .env > defaults.
     # This keeps root .env useful for local credentials while allowing one-off smoke
     # commands like `NEWS_SOURCE=naver-all-categories make local-pipeline`.
-    env = read_env_file(BACKEND_ENV)
-    env.update(read_env_file(ROOT_ENV))
+    backend_env = read_env_file(BACKEND_ENV)
+    root_env = read_env_file(ROOT_ENV)
+    env = backend_env
+    env.update(root_env)
     env.update(os.environ)
     env.setdefault("NEWS_SOURCE", "seeded")
     env.setdefault("NEWS_QUERY", "경제")
@@ -68,11 +70,20 @@ def base_env() -> dict[str, str]:
     env.setdefault("PIPELINE_MODEL", "gpt-5.4-mini")
     env.setdefault("PIPELINE_CODEX_REASONING_EFFORT", "low")
     env.setdefault("DATABASE_URL", "sqlite+pysqlite:///dev-ui-test.db")
-    env.setdefault("NEXT_PUBLIC_API_URL", "http://127.0.0.1:8000")
     env.setdefault("AI_NEWS_GENERATION_TIME", "08:30:00")
     env.setdefault("NEWS_SCHEDULE_TIMEZONE", "Asia/Seoul")
     env.setdefault("PYTHONUNBUFFERED", "1")
+    if (
+        "SEED_ON_STARTUP" not in root_env
+        and "SEED_ON_STARTUP" not in os.environ
+        and _is_external_database_url(env.get("DATABASE_URL", ""))
+    ):
+        env["SEED_ON_STARTUP"] = "false"
     return env
+
+
+def _is_external_database_url(database_url: str) -> bool:
+    return database_url.startswith(("postgresql://", "postgresql+psycopg://")) and "localhost" not in database_url and "127.0.0.1" not in database_url
 
 
 def services(env: dict[str, str]) -> dict[str, Service]:
@@ -82,9 +93,9 @@ def services(env: dict[str, str]) -> dict[str, Service]:
         "backend": Service(
             name="backend",
             cwd=ROOT / "apps" / "backend",
-            command=["uv", "run", "uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"],
+            command=["uv", "run", "uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8030"],
             env=backend_env,
-            health_url="http://127.0.0.1:8000/health",
+            health_url="http://127.0.0.1:8030/health",
         ),
         "crawler": Service(
             name="crawler",
@@ -96,9 +107,9 @@ def services(env: dict[str, str]) -> dict[str, Service]:
         "frontend": Service(
             name="frontend",
             cwd=ROOT / "apps" / "frontend",
-            command=["npm", "run", "dev", "--", "--hostname", "127.0.0.1", "--port", "3000"],
+            command=["npm", "run", "dev", "--", "--hostname", "127.0.0.1", "--port", "3030"],
             env=env,
-            health_url="http://127.0.0.1:3000",
+            health_url="http://127.0.0.1:3030",
         ),
         "scheduler": Service(
             name="scheduler",

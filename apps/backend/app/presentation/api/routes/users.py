@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -20,6 +20,15 @@ from app.presentation.schemas import (
 router = APIRouter(tags=['me'])
 
 AUTH_REQUIRED = {401: {'description': 'Authentication required'}}
+
+
+def _current_feed_date() -> str:
+    """Return the article publication date served as today's feed.
+
+    Annoying Cap publishes a daily digest of the previous day's news, so the
+    home feed for a KST calendar day should look up yesterday's article date.
+    """
+    return (datetime.now(ZoneInfo('Asia/Seoul')).date() - timedelta(days=1)).isoformat()
 
 
 @router.get(
@@ -95,7 +104,7 @@ def _update_my_preference(
     response_model=FeedResponseSchema,
     summary='Get my snapshot-backed personalized feed',
     description=(
-        'Returns today\'s persisted daily feed snapshot for the authenticated user. Each article includes '
+        'Returns the persisted daily feed snapshot for yesterday\'s KST article date. Each article includes '
         'is_scrapped so frontend can render saved state without an additional scraps lookup. Opening the feed '
         'marks the snapshot viewed for check-in tracking.'
     ),
@@ -107,7 +116,7 @@ def get_my_feed(
     snapshot_service: DailyFeedSnapshotService = Depends(get_daily_feed_snapshot_service),
 ):
     assert session.user_id is not None
-    feed_date = datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat()
+    feed_date = _current_feed_date()
     try:
         snapshot = snapshot_service.generate_for_user_date(
             session.user_id,

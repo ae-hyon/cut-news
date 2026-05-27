@@ -281,6 +281,38 @@ def test_build_feed_blocks_for_preference_matches_narrow_fallback_selection():
     assert [article.id for article in blocks[0]['articles']] == ['A2', 'A5', 'A7', 'A1']
 
 
+def test_build_feed_blocks_for_preference_limits_wide_articles_to_published_date():
+    service = build_service(
+        UserPreference(
+            user_id='demo-user',
+            mode=PreferenceMode.WIDE,
+            primary_categories=['economy'],
+            subcategories=[],
+            onboarding_completed=True,
+        )
+    )
+
+    blocks = service.build_feed_blocks_for_preference(PreferenceMode.WIDE, ['economy'], [], published_date='2026-04-15')
+
+    assert [article.id for article in blocks[0]['articles']] == ['A5', 'A7']
+
+
+def test_build_feed_blocks_for_preference_does_not_backfill_narrow_from_other_dates():
+    service = build_service(
+        UserPreference(
+            user_id='demo-user',
+            mode=PreferenceMode.NARROW,
+            primary_categories=['economy'],
+            subcategories=['real-estate'],
+            onboarding_completed=True,
+        )
+    )
+
+    blocks = service.build_feed_blocks_for_preference(PreferenceMode.NARROW, ['economy'], ['real-estate'], published_date='2026-04-15')
+
+    assert [article.id for article in blocks[0]['articles']] == ['A5', 'A7']
+
+
 def test_scraps_remain_available_even_when_current_preference_would_filter_them_out():
     service = build_service(
         UserPreference(

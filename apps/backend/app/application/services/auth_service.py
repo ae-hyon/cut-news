@@ -32,17 +32,18 @@ class AuthService:
             token_service=self.token_service,
         )
 
-    def start_kakao_auth(self) -> dict:
-        state = self.state_service.issue()
+    def start_kakao_auth(self, redirect_uri: str | None = None, frontend_origin: str | None = None) -> dict:
+        state = self.state_service.issue(frontend_origin=frontend_origin, redirect_uri=redirect_uri)
         return {
             'provider': 'kakao',
             'state': state,
-            'authorization_url': self.oauth_client.build_authorization_url(state),
+            'authorization_url': self.oauth_client.build_authorization_url(state, redirect_uri=redirect_uri),
         }
 
-    def complete_kakao_callback(self, code: str, state: str) -> AuthTokens:
-        self.state_service.verify(state)
-        identity = self.oauth_client.exchange_code_for_identity(code, state)
+    def complete_kakao_callback(self, code: str, state: str, redirect_uri: str | None = None) -> AuthTokens:
+        state_payload = self.state_service.verify(state)
+        callback_uri = state_payload.get('redirect_uri') or redirect_uri
+        identity = self.oauth_client.exchange_code_for_identity(code, state, redirect_uri=callback_uri)
         existing = self.identity_repository.get_by_provider_subject(identity.provider, identity.provider_subject)
         if existing:
             user_id = existing.user_id
@@ -53,9 +54,13 @@ class AuthService:
                 ExternalIdentity(provider=identity.provider, provider_subject=identity.provider_subject, user_id=user_id)
             )
         preference = self.query_service.ensure_preference_exists(user_id)
-        return self.token_service.issue_tokens(
+        tokens = self.token_service.issue_tokens(
             user_id, identity.provider, identity.provider_subject, preference.onboarding_completed, preference
         )
+        frontend_origin = state_payload.get('frontend_origin')
+        if frontend_origin:
+            return tokens.model_copy(update={'oauth_frontend_url': frontend_origin})
+        return tokens
 
     def issue_tokens(self, user_id: str, auth_provider: str, provider_subject: str | None, onboarding_completed: bool):
         preference = self.query_service.ensure_preference_exists(user_id)

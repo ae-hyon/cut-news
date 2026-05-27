@@ -582,8 +582,8 @@ PYTHONPATH=. uv run pytest tests/test_run_news_pipeline_job.py -q
 - `make test`: `114 passed`
 - root compose API rebuild: `docker compose up -d --build api` 성공
 - compose 상태: `api`/`db` healthy
-- health smoke: `curl -sf http://127.0.0.1:8000/health` 성공
-- categories smoke: `curl -sf http://127.0.0.1:8000/v1/categories` 성공, 10개 category 확인
+- health smoke: `curl -sf http://127.0.0.1:8030/health` 성공
+- categories smoke: `curl -sf http://127.0.0.1:8030/v1/categories` 성공, 10개 category 확인
 - DB migration smoke: `alembic_version=0006_daily_feed_snapshots`, snapshot/read 테이블 3개 확인
 
 참고: backend-only compose(`apps/backend/docker-compose.yml`)는 root full compose가 같은 `annoyingcap-*` container names를 이미 사용 중이면 name conflict가 난다. 이 경우 root compose stack 상태를 확인하거나 root compose의 `api` service를 rebuild/recreate해서 검증한다.
@@ -600,7 +600,7 @@ Compose/E2E 검증은 DB/API 변경이 끝난 뒤 진행:
 ```bash
 cd /Users/reddit/Project/cut-news
 make backend-up
-curl -sf http://127.0.0.1:8000/health
+curl -sf http://127.0.0.1:8030/health
 ```
 
 운영 smoke는 Naver credentials가 필요하므로 별도 승인/환경 확인 후 진행한다.

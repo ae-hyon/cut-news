@@ -27,7 +27,7 @@ PWA/화면 기준
 실행
 - 백엔드
   - `cd ../core-backend`
-  - `DATABASE_URL=sqlite:///./dev-ui.db PYTHONPATH=. python3.11 -m uvicorn app.main:app --host 127.0.0.1 --port 8000`
+  - `DATABASE_URL=sqlite:///./dev-ui.db PYTHONPATH=. python3.11 -m uvicorn app.main:app --host 127.0.0.1 --port 8030`
 - 프론트
   - `npm install`
   - `npm run dev`

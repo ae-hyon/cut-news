@@ -17,7 +17,7 @@ def preflight(origin: str):
 
 
 def test_cors_allows_localhost_and_loopback_frontend_origins():
-    for origin in ('http://127.0.0.1:3000', 'http://localhost:3000'):
+    for origin in ('http://127.0.0.1:3030', 'http://localhost:3030'):
         response = preflight(origin)
 
         assert response.status_code == 200

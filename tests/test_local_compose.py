@@ -101,6 +101,40 @@ class LocalComposeTests(unittest.TestCase):
 
         self.assertEqual(env["DATABASE_URL"], "postgresql+psycopg://backend-db")
 
+    def test_base_env_disables_backend_seed_default_for_external_database(self) -> None:
+        module = load_local_compose()
+
+        def fake_read_env_file(path: Path):
+            if path == Path("/root/.env"):
+                return {"DATABASE_URL": "postgresql://user:pass@external.example/db"}
+            if path == Path("/backend/.env"):
+                return {"SEED_ON_STARTUP": "true"}
+            return {}
+
+        with patch.object(module, "ROOT_ENV", Path("/root/.env")), patch.object(
+            module, "BACKEND_ENV", Path("/backend/.env")
+        ), patch.object(module, "read_env_file", side_effect=fake_read_env_file), patch.dict("os.environ", {}, clear=True):
+            env = module.base_env()
+
+        self.assertEqual(env["SEED_ON_STARTUP"], "false")
+
+    def test_base_env_preserves_explicit_seed_override_for_external_database(self) -> None:
+        module = load_local_compose()
+
+        def fake_read_env_file(path: Path):
+            if path == Path("/root/.env"):
+                return {"DATABASE_URL": "postgresql://user:pass@external.example/db", "SEED_ON_STARTUP": "true"}
+            if path == Path("/backend/.env"):
+                return {"SEED_ON_STARTUP": "false"}
+            return {}
+
+        with patch.object(module, "ROOT_ENV", Path("/root/.env")), patch.object(
+            module, "BACKEND_ENV", Path("/backend/.env")
+        ), patch.object(module, "read_env_file", side_effect=fake_read_env_file), patch.dict("os.environ", {}, clear=True):
+            env = module.base_env()
+
+        self.assertEqual(env["SEED_ON_STARTUP"], "true")
+
     def test_parse_args_allows_interleaved_log_options(self) -> None:
         module = load_local_compose()
 

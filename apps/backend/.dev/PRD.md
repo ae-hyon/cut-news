@@ -167,7 +167,7 @@
 - `python3.11 -m py_compile $(find app alembic tests -name '*.py' | tr '\n' ' ')`
 - DB-backed TestClient smoke test 통과
 - `python3.11 -m alembic upgrade head`
-- `python3.11 -m uvicorn app.main:app --host 127.0.0.1 --port 8000`
+- `python3.11 -m uvicorn app.main:app --host 127.0.0.1 --port 8030`
 - `/health`, `/v1/auth/kakao/start`, `/v1/auth/session`, `/v1/categories`, `/v1/summaries` 실제 HTTP 확인
 
 ### 제품 관점

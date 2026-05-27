@@ -13,14 +13,14 @@ make full-up
 실행 후 확인:
 
 ```bash
-open http://127.0.0.1:3000
-curl http://127.0.0.1:8000/health
-open http://127.0.0.1:8000/docs
+open http://127.0.0.1:3030
+curl http://127.0.0.1:8030/health
+open http://127.0.0.1:8030/docs
 ```
 
 포트:
-- frontend: `http://127.0.0.1:3000`
-- backend API: `http://127.0.0.1:8000`
+- frontend: `http://127.0.0.1:3030`
+- backend API: `http://127.0.0.1:8030`
 - crawler API: `http://127.0.0.1:8001`
 - Postgres: host port `54329`
 
@@ -48,8 +48,8 @@ docker compose up --build
 실행 후 확인:
 
 ```bash
-curl http://127.0.0.1:8000/health
-open http://127.0.0.1:8000/docs
+curl http://127.0.0.1:8030/health
+open http://127.0.0.1:8030/docs
 ```
 
 중지:
@@ -98,7 +98,7 @@ make local-pipeline
 
 `apps/backend/docker-compose.yml`은 다음만 띄웁니다.
 
-- `api`: FastAPI backend, `http://127.0.0.1:8000`
+- `api`: FastAPI backend, `http://127.0.0.1:8030`
 - `db`: Postgres 16, host port `54329`
 
 컨테이너 시작 시 migration과 seed가 자동 실행됩니다. `apps/summarizer/data`에 샘플 요약 데이터가 있으면 기사 seed에 사용하고, 없으면 backend fallback seed를 사용합니다.
@@ -170,8 +170,8 @@ make local-down     # 중지
 ```
 
 포함 서비스:
-- frontend: `http://127.0.0.1:3000`
-- backend API: `http://127.0.0.1:8000`
+- frontend: `http://127.0.0.1:3030`
+- backend API: `http://127.0.0.1:8030`
 - crawler API: `http://127.0.0.1:8001`
 - local scheduler: 매일 `08:30` Asia/Seoul 기준으로 crawler -> summarizer -> backend import 실행
 
@@ -200,8 +200,8 @@ make full-up
 ```
 
 포함 서비스:
-- frontend: `http://127.0.0.1:3000`
-- backend API: `http://127.0.0.1:8000`
+- frontend: `http://127.0.0.1:3030`
+- backend API: `http://127.0.0.1:8030`
 - crawler API: `http://127.0.0.1:8001`
 - news scheduler: 매일 `08:30` Asia/Seoul 기준으로 crawler -> summarizer -> backend import 실행
   - 실패 시 기본 2회까지 재시도합니다. (`PIPELINE_MAX_ATTEMPTS`, `PIPELINE_RETRY_DELAY_SECONDS`)

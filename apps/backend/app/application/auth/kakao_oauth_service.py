@@ -11,28 +11,30 @@ from app.domain.entities import ExternalIdentity
 
 
 class KakaoOAuthClient(Protocol):
-    def build_authorization_url(self, state: str) -> str: ...
+    def build_authorization_url(self, state: str, redirect_uri: str | None = None) -> str: ...
 
-    def exchange_code_for_identity(self, code: str, state: str) -> ExternalIdentity: ...
+    def exchange_code_for_identity(self, code: str, state: str, redirect_uri: str | None = None) -> ExternalIdentity: ...
 
 
 class DefaultKakaoOAuthClient:
-    def build_authorization_url(self, state: str) -> str:
+    def build_authorization_url(self, state: str, redirect_uri: str | None = None) -> str:
+        callback_uri = redirect_uri or settings.kakao_redirect_uri
         query = urlencode(
             {
                 'response_type': 'code',
                 'client_id': settings.kakao_rest_api_key,
-                'redirect_uri': settings.kakao_redirect_uri,
+                'redirect_uri': callback_uri,
                 'state': state,
             }
         )
         return f'{settings.kakao_authorize_url}?{query}'
 
-    def exchange_code_for_identity(self, code: str, state: str) -> ExternalIdentity:
+    def exchange_code_for_identity(self, code: str, state: str, redirect_uri: str | None = None) -> ExternalIdentity:
+        callback_uri = redirect_uri or settings.kakao_redirect_uri
         token_payload = {
             'grant_type': 'authorization_code',
             'client_id': settings.kakao_rest_api_key,
-            'redirect_uri': settings.kakao_redirect_uri,
+            'redirect_uri': callback_uri,
             'code': code,
         }
         if settings.kakao_client_secret:

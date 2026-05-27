@@ -57,8 +57,8 @@ Implemented in the working tree:
 - GitHub Actions crawler-only schedule is defined in `.github/workflows/crawl-naver.yml`: daily 08:00 Asia/Seoul (`0 23 * * *` UTC), manual `workflow_dispatch`, requires repo secrets `NAVER_CLIENT_ID` / `NAVER_CLIENT_SECRET`, runs only `crawler.collect_naver`, and uploads `latest.json`, `crawl_report.json`, and `github_action_crawl_summary.json` as a 7-day artifact. It intentionally does not run summarizer/import because `codex_exec` needs a local/server Codex OAuth/session runtime.
 
 ## Runtime ports
-- Backend API: `http://127.0.0.1:8000`
-- Real Next frontend: `http://127.0.0.1:3000`
+- Backend API: `http://127.0.0.1:8030`
+- Real Next frontend: `http://127.0.0.1:3030`
 - Crawler API: `http://127.0.0.1:8001`
 - Local Docker Postgres host port: `54329`
 - `apps/test-frontend` / Vite `5173` is deprecated; do not use it as the E2E target.
@@ -112,9 +112,9 @@ Implemented in the working tree:
 - `docker compose config` and `(cd apps/backend && docker compose config)` both render successfully.
 - Dockerless local smoke passed for backend+crawler:
   - `make local-up SERVICES="backend crawler"`
-  - `curl -sf http://127.0.0.1:8000/health`
+  - `curl -sf http://127.0.0.1:8030/health`
   - `curl -sf http://127.0.0.1:8001/health`
-  - `curl -sf http://127.0.0.1:8000/v1/categories` returned 10 categories.
+  - `curl -sf http://127.0.0.1:8030/v1/categories` returned 10 categories.
   - `make local-down SERVICES="backend crawler"`
 - Real Naver all-category crawler smoke passed with root `.env` Naver credentials:
   - command: `set -a; . ./.env; set +a; cd apps/crawler && PYTHONPATH=src uv run python -m crawler.collect_naver --source naver-all-categories --count 2 --output-dir /tmp/cut-news-naver-all-categories-smoke`
