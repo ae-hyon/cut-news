@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from app.application.services.daily_feed_snapshot_service import DailyFeedSnapshotService
 from app.domain.entities import Article, DailyFeedSnapshot, DailyFeedSnapshotItem, UserPreference
 from app.domain.enums import PreferenceMode
+from app.domain.exceptions import NotFoundError
 
 
 class StubPreferenceRepository:
@@ -59,11 +60,28 @@ class StubFeedService:
                 ],
             },
         ]
-        self.calls: list[tuple[PreferenceMode, list[str], list[str]]] = []
+        self.article_by_id = {
+            article.id: article
+            for block in self.blocks
+            for article in block.get('articles', [])
+        }
+        self.calls: list[tuple[PreferenceMode, list[str], list[str], str | None]] = []
 
-    def build_feed_blocks_for_preference(self, mode: PreferenceMode, primary_categories: list[str], subcategories: list[str]) -> list[dict]:
-        self.calls.append((mode, list(primary_categories), list(subcategories)))
+    def build_feed_blocks_for_preference(
+        self,
+        mode: PreferenceMode,
+        primary_categories: list[str],
+        subcategories: list[str],
+        published_date: str | None = None,
+    ) -> list[dict]:
+        self.calls.append((mode, list(primary_categories), list(subcategories), published_date))
         return self.blocks
+
+    def get_article(self, article_id: str) -> Article:
+        article = self.article_by_id.get(article_id)
+        if article is None:
+            raise NotFoundError('Article not found')
+        return article
 
 
 class StubSnapshotRepository:
@@ -170,7 +188,7 @@ def test_generate_for_user_date_saves_preference_and_feed_block_items():
     assert snapshot.primary_categories == ['tech', 'economy']
     assert snapshot.subcategories == []
     assert snapshot.generation_source == 'manual-test'
-    assert feed_service.calls == [(PreferenceMode.WIDE, ['tech', 'economy'], [])]
+    assert feed_service.calls == [(PreferenceMode.WIDE, ['tech', 'economy'], [], '2026-05-20')]
     assert [(item.article_id, item.block_key, item.block_title, item.sort_order, item.score_weight) for item in snapshot.items] == [
         ('A2', 'tech-block', 'tech block', 1, 0.88),
         ('A1', 'economy-block', 'economy block', 2, 0.95),
@@ -234,6 +252,34 @@ def test_generate_for_user_date_preserves_viewed_snapshot_when_preference_change
     assert preserved.primary_categories == ['tech', 'economy']
     assert preserved.generation_source == 'first-run'
     assert [item.article_id for item in preserved.items] == ['A2', 'A1']
+
+
+def test_generate_for_user_date_replaces_viewed_snapshot_with_stale_article_ids():
+    snapshot_repository = StubSnapshotRepository()
+    service, _preference_repository, feed_service, _snapshot_repository, _read_repository = build_service(snapshot_repository=snapshot_repository)
+    snapshot_repository.save(
+        DailyFeedSnapshot(
+            id=None,
+            user_id='demo-user',
+            feed_date='2026-05-20',
+            status='viewed',
+            generated_at=datetime(2026, 5, 20, 0, 0, tzinfo=UTC),
+            first_viewed_at=datetime(2026, 5, 20, 8, 0, tzinfo=UTC),
+            preference_mode=PreferenceMode.WIDE,
+            primary_categories=['tech', 'economy'],
+            subcategories=[],
+            generation_source='legacy',
+            items=[DailyFeedSnapshotItem(article_id='OLD', block_key='old', block_title='old', sort_order=1, score_weight=0.9)],
+        )
+    )
+
+    regenerated = service.generate_for_user_date('demo-user', '2026-05-20', generation_source='api:get_me_feed')
+
+    assert regenerated.feed_date == '2026-05-20'
+    assert regenerated.first_viewed_at is None
+    assert regenerated.generation_source == 'api:get_me_feed'
+    assert [item.article_id for item in regenerated.items] == ['A2', 'A1']
+    assert feed_service.calls[-1] == (PreferenceMode.WIDE, ['tech', 'economy'], [], '2026-05-20')
 
 
 def test_list_by_user_month_returns_only_persisted_snapshots_without_regenerating_from_current_preference():

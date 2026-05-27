@@ -10,16 +10,24 @@ from app.presentation.api.routes import auth
 
 
 class StubAuthService:
-    def start_kakao_auth(self) -> dict:
+    def __init__(self):
+        self.start_redirect_uri: str | None = None
+        self.start_frontend_origin: str | None = None
+        self.callback_redirect_uri: str | None = None
+
+    def start_kakao_auth(self, redirect_uri: str | None = None, frontend_origin: str | None = None) -> dict:
+        self.start_redirect_uri = redirect_uri
+        self.start_frontend_origin = frontend_origin
         return {
             'provider': 'kakao',
             'state': 'state-123',
-            'authorization_url': 'https://kauth.kakao.com/oauth/authorize?client_id=test&state=state-123',
+            'authorization_url': f'https://kauth.kakao.com/oauth/authorize?client_id=test&state=state-123&redirect_uri={redirect_uri}',
         }
 
-    def complete_kakao_callback(self, code: str, state: str) -> dict:
+    def complete_kakao_callback(self, code: str, state: str, redirect_uri: str | None = None) -> dict:
         assert code == 'issued-code'
         assert state == 'state-123'
+        self.callback_redirect_uri = redirect_uri
         return {
             'session': {
                 'user_id': 'user-kakao-123',
@@ -99,17 +107,17 @@ class StubAuthService:
 
 
 class InvalidStateAuthService(StubAuthService):
-    def complete_kakao_callback(self, code: str, state: str) -> dict:
+    def complete_kakao_callback(self, code: str, state: str, redirect_uri: str | None = None) -> dict:
         raise AuthError('invalid_oauth_state', 'OAuth state is invalid or expired.', status_code=401)
 
 
 class KakaoFailureAuthService(StubAuthService):
-    def complete_kakao_callback(self, code: str, state: str) -> dict:
+    def complete_kakao_callback(self, code: str, state: str, redirect_uri: str | None = None) -> dict:
         raise AuthError('kakao_token_exchange_failed', 'Kakao token exchange failed.', status_code=502)
 
 
 def build_client(service: StubAuthService | None = None) -> TestClient:
-    settings.frontend_app_url = 'http://127.0.0.1:3000'
+    settings.frontend_app_url = 'http://127.0.0.1:3030'
     app = FastAPI()
     app.include_router(auth.router, prefix='/v1')
     if service is not None:
@@ -137,14 +145,16 @@ def test_me_returns_anonymous_state_when_access_cookie_missing():
 def test_kakao_authorization_returns_authorization_url_and_state():
     client = build_client(StubAuthService())
 
-    response = client.post('/v1/auth/oauth/kakao/authorization')
+    response = client.post('/v1/auth/oauth/kakao/authorization', headers={'origin': 'http://127.0.0.1:3030'})
 
     assert response.status_code == 200
     assert response.json() == {
         'provider': 'kakao',
         'state': 'state-123',
-        'authorization_url': 'https://kauth.kakao.com/oauth/authorize?client_id=test&state=state-123',
+        'authorization_url': 'https://kauth.kakao.com/oauth/authorize?client_id=test&state=state-123&redirect_uri=http://testserver/v1/auth/oauth/kakao/callback',
     }
+    assert client.app.dependency_overrides[get_auth_service]().start_redirect_uri == 'http://testserver/v1/auth/oauth/kakao/callback'
+    assert client.app.dependency_overrides[get_auth_service]().start_frontend_origin == 'http://127.0.0.1:3030'
 
 
 def test_kakao_callback_redirects_to_frontend_and_sets_jwt_cookies_for_new_user():
@@ -153,8 +163,9 @@ def test_kakao_callback_redirects_to_frontend_and_sets_jwt_cookies_for_new_user(
     response = client.get('/v1/auth/oauth/kakao/callback', params={'code': 'issued-code', 'state': 'state-123'}, follow_redirects=False)
 
     assert response.status_code == 302
-    expected_location = 'http://127.0.0.1:3000/onboarding/complete?auth=' + 'kakao'
+    expected_location = 'http://127.0.0.1:3030/onboarding/complete?auth=' + 'kakao'
     assert response.headers['location'] == expected_location
+    assert client.app.dependency_overrides[get_auth_service]().callback_redirect_uri == 'http://testserver/v1/auth/oauth/kakao/callback'
     set_cookie = response.headers.get('set-cookie', '')
     assert 'annoyingcap_access_token=' in set_cookie
     assert 'annoyingcap_refresh_token=' in set_cookie
@@ -235,7 +246,7 @@ def test_kakao_callback_returns_502_for_kakao_exchange_failure():
 
 def test_me_returns_onboarded_state_for_authenticated_kakao_user_after_onboarding():
     class OnboardedKakaoAuthService(StubAuthService):
-        def complete_kakao_callback(self, code: str, state: str) -> dict:
+        def complete_kakao_callback(self, code: str, state: str, redirect_uri: str | None = None) -> dict:
             return {
                 'session': {
                     'user_id': 'user-kakao-123',
@@ -248,6 +259,7 @@ def test_me_returns_onboarded_state_for_authenticated_kakao_user_after_onboardin
                 'access_token': 'access-token-123',
                 'refresh_token': 'refresh-token-123',
                 'token_type': 'bearer',
+                'oauth_frontend_url': 'http://127.0.0.1:3030',
             }
 
         def resolve_session(self, user_id=None, provider=None, provider_subject=None, access_token=None):
@@ -271,7 +283,7 @@ def test_me_returns_onboarded_state_for_authenticated_kakao_user_after_onboardin
     client = build_client(OnboardedKakaoAuthService())
     callback_response = client.get('/v1/auth/oauth/kakao/callback', params={'code': 'issued-code', 'state': 'state-123'}, follow_redirects=False)
     assert callback_response.status_code == 302
-    expected_location = 'http://127.0.0.1:3000/onboarding/complete?auth=' + 'kakao'
+    expected_location = 'http://127.0.0.1:3030/onboarding/complete?auth=' + 'kakao'
     assert callback_response.headers['location'] == expected_location
 
     client.cookies.set('annoyingcap_access_token', 'access-token-123')

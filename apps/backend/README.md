@@ -20,9 +20,9 @@ make backend-up
 확인:
 
 ```bash
-curl http://127.0.0.1:8000/health
-curl http://127.0.0.1:8000/v1/categories
-open http://127.0.0.1:8000/docs
+curl http://127.0.0.1:8030/health
+curl http://127.0.0.1:8030/v1/categories
+open http://127.0.0.1:8030/docs
 ```
 
 중지:
@@ -41,7 +41,7 @@ docker compose down -v
 
 `apps/backend/docker-compose.yml`은 백엔드 실행에 필요한 최소 구성입니다.
 
-- `api`: FastAPI backend, `http://127.0.0.1:8000`
+- `api`: FastAPI backend, `http://127.0.0.1:8030`
 - `db`: Postgres 16, host port `54329`
 
 컨테이너 시작 시 다음이 자동으로 실행됩니다.
@@ -62,8 +62,8 @@ Docker Compose는 개발 기본값을 compose 파일에 넣어두었기 때문�
 ```env
 KAKAO_REST_API_KEY=...
 KAKAO_CLIENT_SECRET=...
-KAKAO_REDIRECT_URI=http://127.0.0.1:8000/v1/auth/oauth/kakao/callback
-FRONTEND_APP_URL=http://127.0.0.1:3000
+KAKAO_REDIRECT_URI=http://127.0.0.1:8030/v1/auth/oauth/kakao/callback
+FRONTEND_APP_URL=http://127.0.0.1:3030
 JWT_SECRET_KEY=change-this-local-dev-secret-at-least-32-chars
 ```
 
@@ -241,7 +241,7 @@ Docker 없이 sqlite로 실행:
 
 ```bash
 cd apps/backend
-PYTHONPATH=. DATABASE_URL=sqlite+pysqlite:///dev-ui-test.db uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+PYTHONPATH=. DATABASE_URL=sqlite+pysqlite:///dev-ui-test.db uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8030
 ```
 
 요약 데이터 수동 import:

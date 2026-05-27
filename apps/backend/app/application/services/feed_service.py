@@ -107,10 +107,21 @@ class FeedService:
             if self._matches_preference(article, preference_mode, primary_categories, subcategories)
         ]
 
-    def _fill_narrow_articles(self, primary_category: str, subcategories: list[str]) -> list[Article]:
+    @staticmethod
+    def _filter_articles_by_published_date(articles: list[Article], published_date: str | None) -> list[Article]:
+        if published_date is None:
+            return articles
+        return [article for article in articles if article.published_at == published_date]
+
+    def _fill_narrow_articles(self, primary_category: str, subcategories: list[str], published_date: str | None = None) -> list[Article]:
         selected = self._dedupe_articles(
             self._feed_eligible_articles(
-                self._sort_articles(self.article_repository.list_by_primary_and_subcategories(primary_category, subcategories))
+                self._sort_articles(
+                    self._filter_articles_by_published_date(
+                        self.article_repository.list_by_primary_and_subcategories(primary_category, subcategories),
+                        published_date,
+                    )
+                )
             )
         )
         if len(selected) >= self.NARROW_BLOCK_ARTICLE_TARGET:
@@ -119,7 +130,14 @@ class FeedService:
         selected_ids = {article.id for article in selected}
         fallback = [
             article
-            for article in self._feed_eligible_articles(self._sort_articles(self.article_repository.list_by_primary(primary_category)))
+            for article in self._feed_eligible_articles(
+                self._sort_articles(
+                    self._filter_articles_by_published_date(
+                        self.article_repository.list_by_primary(primary_category),
+                        published_date,
+                    )
+                )
+            )
             if article.id not in selected_ids
         ]
         return self._dedupe_articles(selected + fallback)[: self.NARROW_BLOCK_ARTICLE_TARGET]
@@ -129,10 +147,11 @@ class FeedService:
         preference_mode: PreferenceMode,
         primary_categories: list[str],
         subcategories: list[str],
+        published_date: str | None = None,
     ) -> list[dict]:
         if preference_mode is PreferenceMode.NARROW:
             primary_category = primary_categories[0] if primary_categories else ''
-            articles = self._fill_narrow_articles(primary_category, subcategories) if primary_category else []
+            articles = self._fill_narrow_articles(primary_category, subcategories, published_date) if primary_category else []
             return [
                 {
                     'key': f'{primary_category}-focus',
@@ -145,7 +164,16 @@ class FeedService:
         blocks = []
         weights = self._wide_weights(len(primary_categories))
         for slug, weight in zip(primary_categories, weights):
-            articles = self._dedupe_articles(self._feed_eligible_articles(self._sort_articles(self.article_repository.list_by_primary(slug))))
+            articles = self._dedupe_articles(
+                self._feed_eligible_articles(
+                    self._sort_articles(
+                        self._filter_articles_by_published_date(
+                            self.article_repository.list_by_primary(slug),
+                            published_date,
+                        )
+                    )
+                )
+            )
             if not articles:
                 continue
             blocks.append(

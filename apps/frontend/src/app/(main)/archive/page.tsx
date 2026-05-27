@@ -161,7 +161,7 @@ export default function ArchivePage() {
           const day = i + 1;
           const dateStr = `${monthKey}-${String(day).padStart(2, '0')}`;
           const archiveDay = dayMap.get(dateStr);
-          const hasNews = !!archiveDay && archiveDay.items.length > 0;
+          const hasNews = archiveDay?.has_feed ?? false;
           const isFuture = dateStr > todayStr;
           const isSelected = selectedDate === dateStr;
           const disabled = loading || isFuture || !hasNews;

@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     app_name: str = 'Annoying Cap Core Backend'
     app_version: str = '0.1.0'
     api_prefix: str = '/v1'
-    frontend_app_url: str = 'http://127.0.0.1:3000'
+    frontend_app_url: str = 'http://127.0.0.1:3030'
     cors_allowed_origins: str = ''
     debug: bool = True
     database_echo: bool = False
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     database_url: str = 'postgresql+psycopg://annoyingcap:annoyingcap@localhost:54329/annoyingcap'
     news_summarizer_dir: Path = (Path(__file__).resolve().parents[3] / 'summarizer').resolve()
     kakao_rest_api_key: str = 'local-kakao-rest-key'
-    kakao_redirect_uri: str = 'http://127.0.0.1:8000/v1/auth/oauth/kakao/callback'
+    kakao_redirect_uri: str = 'http://127.0.0.1:8030/v1/auth/oauth/kakao/callback'
     kakao_client_secret: str | None = None
     kakao_authorize_url: str = 'https://kauth.kakao.com/oauth/authorize'
     kakao_token_url: str = 'https://kauth.kakao.com/oauth/token'
@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     def resolved_cors_allowed_origins(self) -> list[str]:
         origins = {self.frontend_app_url.rstrip('/')}
         if self.app_env == 'development':
-            origins.update({'http://127.0.0.1:3000', 'http://localhost:3000'})
+            origins.update({'http://127.0.0.1:3030', 'http://localhost:3030'})
         origins.update(
             origin.rstrip('/')
             for origin in self.cors_allowed_origins.split(',')

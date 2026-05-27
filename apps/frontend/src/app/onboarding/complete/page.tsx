@@ -1,15 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { useOnboardingStore } from '@/stores/onboarding';
-import { useAuthStore } from '@/stores/auth';
 import { useKakaoLogin } from '@/hooks/useKakaoLogin';
 import { saveUserPreference } from '@/services/authApi';
 import { useCategories } from '@/hooks/useCategories';
 import { showToast } from '@/components/Toast';
-import type { PreferenceMode } from '@/lib/types';
+import type { AuthSessionResponse, PreferenceMode } from '@/lib/types';
 import OnboardingHeader from '../_components/OnboardingHeader';
 import OnboardingProgress from '../_components/OnboardingProgress';
 
@@ -21,58 +20,53 @@ export default function OnboardingComplete() {
     narrowMainCategory,
     selectedSubCategories,
   } = useOnboardingStore();
-  const checkSession = useAuthStore((s) => s.checkSession);
 
   const isWide = userType === 'wide';
   const { categories } = useCategories();
-  const savingRef = useRef(false);
 
-  const handleSavePreference = useCallback(async () => {
-    if (savingRef.current) return;
-    savingRef.current = true;
-    try {
-      const payload = {
-        mode: (userType ?? 'wide') as PreferenceMode,
-        primary_categories: isWide
-          ? selectedCategories
-          : narrowMainCategory
-            ? [narrowMainCategory]
-            : [],
-        subcategories: isWide ? [] : selectedSubCategories,
-      };
-      await saveUserPreference(payload);
-      router.push('/');
-    } catch {
-      savingRef.current = false;
-      showToast('설정 저장에 실패했어요. 다시 시도해주세요.');
-    }
-  }, [
-    userType,
-    isWide,
-    selectedCategories,
-    narrowMainCategory,
-    selectedSubCategories,
-    router,
-  ]);
-
-  // 카카오 OAuth 콜백 후 복귀 시 세션을 확인하여 preference 저장
-  useEffect(() => {
-    checkSession()
-      .then((session) => {
-        if (session.authenticated && !session.onboarding_completed) {
-          // 신규 사용자 — preference 저장 후 홈으로 이동
-          handleSavePreference();
-        } else if (session.onboarding_completed) {
-          // 기존 사용자 — preference 업데이트 없이 홈으로 이동
+  const handleLoginSuccess = useCallback(
+    async (_userId: string, session: AuthSessionResponse) => {
+      try {
+        if (session.onboarding_completed || session.preference) {
           router.push('/');
+          return;
         }
-      })
-      .catch(() => {
-        // 미인증 상태 — 로그인 버튼 표시 유지
-      });
-  }, [checkSession, handleSavePreference, router]);
 
-  const { startLogin, status, error, isLoading } = useKakaoLogin();
+        const payload = {
+          mode: (userType ?? 'wide') as PreferenceMode,
+          primary_categories: isWide
+            ? selectedCategories
+            : narrowMainCategory
+              ? [narrowMainCategory]
+              : [],
+          subcategories: isWide ? [] : selectedSubCategories,
+        };
+
+        if (payload.primary_categories.length === 0) {
+          showToast('관심사를 먼저 선택해주세요.');
+          router.push('/onboarding');
+          return;
+        }
+
+        await saveUserPreference(payload);
+        router.push('/');
+      } catch {
+        showToast('설정 저장에 실패했어요. 다시 시도해주세요.');
+      }
+    },
+    [
+      userType,
+      isWide,
+      selectedCategories,
+      narrowMainCategory,
+      selectedSubCategories,
+      router,
+    ],
+  );
+
+  const { startLogin, status, error, isLoading } = useKakaoLogin({
+    onSuccess: handleLoginSuccess,
+  });
 
   const selectedNames = isWide
     ? selectedCategories.map(

@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from app.domain.entities import Article, AuthSession, DailyFeedSnapshot, DailyFeedSnapshotItem
@@ -112,7 +112,11 @@ class StubDailyFeedSnapshotService:
         self.marked_viewed_id = snapshot_id
         if snapshot_id == 42 and self.generated_for is None:
             return self.archive_snapshot.model_copy(deep=True)
-        user_id, feed_date, generation_source = self.generated_for or ('user-kakao-123', datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat(), 'api:get_me_feed')
+        user_id, feed_date, generation_source = self.generated_for or (
+            'user-kakao-123',
+            (datetime.now(ZoneInfo('Asia/Seoul')).date() - timedelta(days=1)).isoformat(),
+            'api:get_me_feed',
+        )
         snapshot = self.generate_for_user_date(user_id, feed_date, generation_source)
         return snapshot.model_copy(update={'status': 'viewed', 'first_viewed_at': datetime(2026, 5, 20, 1, 2, tzinfo=UTC)})
 
@@ -132,7 +136,7 @@ def build_client(session: AuthSession = CURRENT_SESSION, snapshot_service: StubD
 
 
 def test_me_feed_returns_current_users_snapshot_feed():
-    today = datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat()
+    feed_date = (datetime.now(ZoneInfo('Asia/Seoul')).date() - timedelta(days=1)).isoformat()
     snapshot_service = StubDailyFeedSnapshotService()
     client = build_client(snapshot_service=snapshot_service)
 
@@ -142,7 +146,7 @@ def test_me_feed_returns_current_users_snapshot_feed():
     body = response.json()
     assert body['user_id'] == 'user-kakao-123'
     assert body['snapshot_id'] == 42
-    assert body['feed_date'] == today
+    assert body['feed_date'] == feed_date
     assert body['status'] == 'viewed'
     assert body['read_count'] == 1
     assert body['total_count'] == 2
@@ -152,7 +156,7 @@ def test_me_feed_returns_current_users_snapshot_feed():
     assert body['blocks'][1]['key'] == 'tech-block'
     assert body['blocks'][1]['articles'][0]['id'] == 'A1'
     assert body['blocks'][1]['articles'][0]['is_scrapped'] is True
-    assert snapshot_service.generated_for == ('user-kakao-123', today, 'api:get_me_feed')
+    assert snapshot_service.generated_for == ('user-kakao-123', feed_date, 'api:get_me_feed')
     assert snapshot_service.marked_viewed_id == 42
 
 

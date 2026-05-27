@@ -47,7 +47,7 @@ def test_openapi_frontend_contract_has_examples_and_actionable_descriptions():
     schema = app.openapi()
 
     assert 'credentials: include' in schema['info']['description']
-    assert 'http://127.0.0.1:3000' in schema['info']['description']
+    assert 'http://127.0.0.1:3030' in schema['info']['description']
     assert 'test-frontend' in schema['info']['description']
     assert 'deprecated' in schema['info']['description']
 
@@ -115,7 +115,7 @@ def test_openapi_documents_kakao_cookie_redirect_contract():
     assert 'annoyingcap_access_token' in callback['description']
     assert 'annoyingcap_refresh_token' in callback['description']
     assert callback['responses']['302']['description'].startswith('Redirects to the real Next frontend')
-    assert 'http://127.0.0.1:3000/onboarding/complete' in callback['responses']['302']['description']
+    assert 'http://127.0.0.1:3030/onboarding/complete' in callback['responses']['302']['description']
     assert callback['responses']['401']['description'] == 'Invalid or expired OAuth state.'
 
 
@@ -124,9 +124,9 @@ def test_backend_docs_and_compose_use_current_frontend_contract():
     env_example = (REPO_ROOT / 'apps/backend/.env.example').read_text(encoding='utf-8')
     compose = (REPO_ROOT / 'apps/backend/docker-compose.yml').read_text(encoding='utf-8')
 
-    assert 'FRONTEND_APP_URL=http://127.0.0.1:3000' in readme
-    assert 'FRONTEND_APP_URL=http://127.0.0.1:3000' in env_example
-    assert 'FRONTEND_APP_URL: http://127.0.0.1:3000' in compose
-    assert 'KAKAO_REDIRECT_URI: http://127.0.0.1:8000/v1/auth/oauth/kakao/callback' in compose
+    assert 'FRONTEND_APP_URL=http://127.0.0.1:3030' in readme
+    assert 'FRONTEND_APP_URL=http://127.0.0.1:3030' in env_example
+    assert 'FRONTEND_APP_URL: http://127.0.0.1:3030' in compose
+    assert 'KAKAO_REDIRECT_URI: http://127.0.0.1:8030/v1/auth/oauth/kakao/callback' in compose
     assert 'http://127.0.0.1:5173' not in readme
     assert 'http://127.0.0.1:5173' not in env_example

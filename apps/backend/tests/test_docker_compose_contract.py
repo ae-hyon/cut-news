@@ -18,10 +18,10 @@ def test_root_compose_runs_backend_crawler_summarizer_and_real_frontend():
     assert 'apps/backend/Dockerfile' in compose_text
     assert 'apps/crawler/Dockerfile' in compose_text
     assert 'apps/frontend/Dockerfile' in compose_text
-    assert '"3000:3000"' in compose_text
-    assert 'NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://127.0.0.1:8000}' in compose_text
-    assert 'FRONTEND_APP_URL: http://127.0.0.1:3000' in compose_text
-    assert 'CORS_ALLOWED_ORIGINS: http://127.0.0.1:3000,http://localhost:3000' in compose_text
+    assert '"3030:3030"' in compose_text
+    assert 'NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://127.0.0.1:8030}' in compose_text
+    assert 'FRONTEND_APP_URL: http://127.0.0.1:3030' in compose_text
+    assert 'CORS_ALLOWED_ORIGINS: http://127.0.0.1:3030,http://localhost:3030' in compose_text
     assert 'env_file:' in compose_text
     assert 'path: .env' in compose_text
     assert 'path: apps/backend/.env' in compose_text
@@ -40,7 +40,7 @@ def test_frontend_dockerfile_builds_standalone_next_app():
     assert 'npm run build' in dockerfile_text
     assert 'apps/frontend/.next/standalone' in dockerfile_text
     assert 'HOSTNAME=0.0.0.0' in dockerfile_text
-    assert 'PORT=3000' in dockerfile_text
+    assert 'PORT=3030' in dockerfile_text
 
 
 def test_backend_image_contains_crawler_and_scheduler_entrypoint():
@@ -81,6 +81,6 @@ def test_full_pipeline_exposes_naver_credentials_to_crawler_and_scheduler():
     assert 'NAVER_CLIENT_SECRET=' in env_example_text
     assert 'KAKAO_REST_API_KEY=' in env_example_text
     assert 'KAKAO_CLIENT_SECRET=' in env_example_text
-    assert 'KAKAO_REDIRECT_URI=http://127.0.0.1:8000/v1/auth/oauth/kakao/callback' in env_example_text
+    assert 'KAKAO_REDIRECT_URI=http://127.0.0.1:8030/v1/auth/oauth/kakao/callback' in env_example_text
     assert 'include .env' in makefile_text
     assert 'export' in makefile_text

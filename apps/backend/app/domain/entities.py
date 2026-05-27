@@ -120,6 +120,7 @@ class AuthTokens(DomainModel):
     access_token: str
     refresh_token: str
     token_type: str = 'bearer'
+    oauth_frontend_url: str | None = None
 
 
 class Scrap(DomainModel):

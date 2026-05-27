@@ -121,7 +121,7 @@ test-backend:
 	cd apps/backend && PYTHONPATH=. uv run pytest tests/ -q
 
 dev-backend:
-	cd apps/backend && PYTHONPATH=. DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+	cd apps/backend && PYTHONPATH=. DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8030
 
 import-articles:
 	cd apps/backend && PYTHONPATH=. DATABASE_URL="$${DATABASE_URL:-sqlite+pysqlite:///dev-ui-test.db}" uv run python -m app.scripts.import_articles_from_summarizer

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Cookie, Depends
+from urllib.parse import urlparse
+
+from fastapi import APIRouter, Cookie, Depends, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.application.services.auth_service import AuthError, AuthService
@@ -12,8 +14,42 @@ from app.presentation.schemas import AuthLogoutResponseSchema, AuthSessionRespon
 router = APIRouter(tags=['auth'])
 
 
+def _request_callback_uri(request: Request) -> str:
+    """Return the externally visible Kakao callback URI for this request.
+
+    Local ports are intentionally derived from the incoming backend request so
+    changing 8000 -> 8030 does not require editing KAKAO_REDIRECT_URI. Explicit
+    proxy headers still work for deployed environments behind a gateway.
+    """
+    forwarded_proto = request.headers.get('x-forwarded-proto')
+    forwarded_host = request.headers.get('x-forwarded-host') or request.headers.get('host')
+    path = request.url_for('kakao_callback').components.path
+    if forwarded_proto and forwarded_host:
+        return f'{forwarded_proto}://{forwarded_host}{path}'
+    return str(request.url_for('kakao_callback'))
+
+
+def _callback_uri_from_current_request(request: Request) -> str:
+    return str(request.url.remove_query_params(['code', 'state']))
+
+
+def _frontend_origin_from_request(request: Request) -> str:
+    origin = request.headers.get('origin')
+    allowed_origins = set(settings.resolved_cors_allowed_origins)
+    if origin and origin.rstrip('/') in allowed_origins:
+        return origin.rstrip('/')
+    referer = request.headers.get('referer')
+    if referer:
+        parsed = urlparse(referer)
+        referer_origin = f'{parsed.scheme}://{parsed.netloc}'
+        if referer_origin in allowed_origins:
+            return referer_origin
+    return settings.frontend_app_url.rstrip('/')
+
+
 def _kakao_callback_completion_response(result: dict) -> RedirectResponse:
-    frontend_url = f"{settings.frontend_app_url.rstrip('/')}/onboarding/complete?auth=kakao"
+    frontend_origin = result.get('oauth_frontend_url') or settings.frontend_app_url
+    frontend_url = f"{frontend_origin.rstrip('/')}/onboarding/complete?auth=kakao"
     response = RedirectResponse(url=frontend_url, status_code=302)
     response.set_cookie(
         key=settings.auth_access_cookie_name,
@@ -43,8 +79,13 @@ def _kakao_callback_completion_response(result: dict) -> RedirectResponse:
         'Open this URL in a popup or redirect. The final Kakao callback sets HttpOnly cookies.'
     ),
 )
-def create_kakao_authorization(service: AuthService = Depends(get_auth_service)):
-    return AuthStartResponseSchema.model_validate(service.start_kakao_auth())
+def create_kakao_authorization(request: Request, service: AuthService = Depends(get_auth_service)):
+    return AuthStartResponseSchema.model_validate(
+        service.start_kakao_auth(
+            redirect_uri=_request_callback_uri(request),
+            frontend_origin=_frontend_origin_from_request(request),
+        )
+    )
 
 
 @router.get(
@@ -59,15 +100,15 @@ def create_kakao_authorization(service: AuthService = Depends(get_auth_service))
         302: {
             'description': (
                 'Redirects to the real Next frontend at '
-                'http://127.0.0.1:3000/onboarding/complete with the Kakao auth query after setting auth cookies.'
+                'http://127.0.0.1:3030/onboarding/complete with the Kakao auth query after setting auth cookies.'
             )
         },
         401: {'description': 'Invalid or expired OAuth state.'},
     },
 )
-def kakao_callback(code: str, state: str, service: AuthService = Depends(get_auth_service)):
+def kakao_callback(code: str, state: str, request: Request, service: AuthService = Depends(get_auth_service)):
     try:
-        result = service.complete_kakao_callback(code=code, state=state)
+        result = service.complete_kakao_callback(code=code, state=state, redirect_uri=_callback_uri_from_current_request(request))
     except AuthError as exc:
         return JSONResponse(
             status_code=exc.status_code,

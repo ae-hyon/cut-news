@@ -1,11 +1,17 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+function getApiBase() {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.hostname}:8030`;
+  }
+  return 'http://127.0.0.1:8030';
+}
 
 interface ApiOptions extends RequestInit {
   retryOnUnauthorized?: boolean;
 }
 
 async function request(path: string, options: RequestInit = {}) {
-  return fetch(`${API_BASE}${path}`, {
+  return fetch(`${getApiBase()}${path}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options,
