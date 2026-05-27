@@ -1,4 +1,4 @@
-.PHONY: help backend-up backend-down backend-reset backend-logs full-up full-down local-up local-down local-restart local-status local-ps local-logs local-pipeline local-report local-report-check github-crawl-download local-pipeline-from-github db-current db-migrate test test-backend dev-backend import-articles pipeline-news clean
+.PHONY: help backend-up backend-down backend-reset backend-logs full-up full-down local-up local-down local-restart local-status local-ps local-logs local-pipeline local-report local-report-check github-crawl-download local-pipeline-from-github ops-pipeline-from-github db-current db-migrate test test-backend dev-backend import-articles pipeline-news clean
 
 ENV_PRESERVE_VARS := NEWS_SOURCE NEWS_QUERY NEWS_COUNT NEWS_PIPELINE_MAX_ARTICLES NEWS_CRAWL_INPUT_PATH NEWS_CRAWL_REPORT_PATH DATABASE_URL NAVER_CLIENT_ID NAVER_CLIENT_SECRET PIPELINE_LLM_BACKEND PIPELINE_MODEL PIPELINE_CODEX_REASONING_EFFORT RUN_ON_STARTUP CORS_ALLOWED_ORIGINS NEXT_PUBLIC_API_URL
 $(foreach v,$(ENV_PRESERVE_VARS),$(eval ENV_ORIGIN_$(v) := $(origin $(v)))$(eval ENV_VALUE_$(v) := $($(v))))
@@ -44,6 +44,7 @@ help:
 	@echo "  make local-pipeline   - Run one Dockerless crawler -> summarizer -> import job"
 	@echo "  make github-crawl-download - Download latest successful GitHub crawler artifact"
 	@echo "  make local-pipeline-from-github - Download crawl artifact, then summarize/import locally"
+	@echo "  make ops-pipeline-from-github - Scheduled artifact -> import -> report-check wrapper"
 	@echo "  make local-report     - Summarize latest local pipeline run_report.json"
 	@echo "  make local-report-check - Validate latest pipeline report for ops alerting"
 	@echo "  make db-current       - Show current Alembic revision for DATABASE_URL"
@@ -98,6 +99,9 @@ github-crawl-download:
 
 local-pipeline-from-github: github-crawl-download
 	NEWS_CRAWL_INPUT_PATH="$(CURDIR)/apps/crawler/output/github-actions/latest.json" NEWS_CRAWL_REPORT_PATH="$(CURDIR)/apps/crawler/output/github-actions/crawl_report.json" python3 scripts/local-compose.py pipeline
+
+ops-pipeline-from-github:
+	python3 scripts/run-scheduled-artifact-pipeline.py $(OPS_PIPELINE_ARGS)
 
 local-report:
 	python3 scripts/local-compose.py report
