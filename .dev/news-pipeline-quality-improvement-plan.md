@@ -224,11 +224,15 @@ Do not invent unsupported flags.
 
 ### Task 3.2: Build a fixed-article evaluation command
 
-**Objective:** Compare low/medium/high effort on the exact same article set.
+**Status:** implemented as `scripts/evaluate-fixed-summary-variants.py`; latest output is `.dev/news-pipeline-fixed-variant-eval.json`.
+
+**Current result:** Hermes default profile and explicit `PIPELINE_HERMES_PROVIDER=openai-codex` / `PIPELINE_HERMES_MODEL=gpt-5.5` both passed 3 fixed articles with no headline length violations. Legacy Codex `PIPELINE_CODEX_REASONING_EFFORT=low` failed before evaluation because local Codex OAuth returned `refresh_token_reused`/401; low/medium/high effort remains blocked until re-login.
+
+**Objective:** Compare supported Hermes model/provider settings and legacy Codex low/medium/high effort on the exact same article set.
 
 **Files:**
-- Optional create: `scripts/evaluate-news-quality.py`
-- Or document a manual command in `.dev/news-pipeline-quality-improvement-plan.md` until automated.
+- Created: `scripts/evaluate-fixed-summary-variants.py`
+- Output: `.dev/news-pipeline-fixed-variant-eval.json`
 
 **Method:**
 1. Select a fixed artifact or fixture set of 10-15 articles.
@@ -268,6 +272,8 @@ Do not invent unsupported flags.
 
 ### Task 4.1: Disposable DB final run
 
+**Status:** passed after classifier routing fix. Disposable DB run produced `status=success`, `usable_imports=9`, `classification_source_counts={"crawler_source_query": 9}`, `quality_warnings=[]`, snapshots `attempted=3/generated=3/failed=0`; API smoke confirmed same-day `/v1/me/feed` and `/v1/me/archive/2026-05-28` visibility.
+
 **Objective:** Prove date visibility, classification quality, and summary quality without touching Neon.
 
 **Command shape:**
@@ -293,6 +299,8 @@ make ops-pipeline-from-github
 - Misclassification fixture examples no longer regress.
 
 ### Task 4.2: Real DB trial only after user approval
+
+**Status:** approved in the follow-up request and executed against Neon. The real DB run produced `status=success`, `import_updated=11`, `usable_imports=11`, `drop_reason_counts={}`, `classification_source_counts={"crawler_source_query": 11}`, `quality_warnings=[]`, snapshots `attempted=3/generated=3/failed=0`.
 
 **Objective:** Run against Neon only after the disposable DB gates pass and the user confirms.
 

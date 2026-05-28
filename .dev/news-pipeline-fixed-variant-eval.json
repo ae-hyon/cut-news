@@ -1,0 +1,120 @@
+{
+  "article_files": [
+    "05d506932773.json",
+    "15e31771bf18.json",
+    "5199e600904a.json"
+  ],
+  "variants": [
+    {
+      "name": "hermes-default-profile",
+      "env": {
+        "PIPELINE_LLM_BACKEND": "hermes_cli",
+        "PIPELINE_HERMES_PROFILE": "cut-news-pipeline",
+        "PIPELINE_HERMES_MODEL": "",
+        "PIPELINE_HERMES_PROVIDER": ""
+      },
+      "returncode": 0,
+      "elapsed_seconds": 143.48,
+      "results": [
+        {
+          "article_id": "05d506932773",
+          "title": "갤러리아百, 루드·세인트미카엘 등 해외 브랜드 모자 소개",
+          "elapsed_seconds": 48.15,
+          "headline_lengths": {
+            "headline_34": 31,
+            "headline_58": 55,
+            "headline_89": 83
+          },
+          "violations": [],
+          "summary_chars": 123
+        },
+        {
+          "article_id": "15e31771bf18",
+          "title": "[정지열의 스테이블코인 돌아보기] (8) 가상자산 과세 잔혹사 ― ‘대혼란’ 예상 속 골든타임 놓치지 말아야",
+          "elapsed_seconds": 45.52,
+          "headline_lengths": {
+            "headline_34": 32,
+            "headline_58": 52,
+            "headline_89": 83
+          },
+          "violations": [],
+          "summary_chars": 128
+        },
+        {
+          "article_id": "5199e600904a",
+          "title": "하나금융 두나무 1조원 투자 결단, 이유 뜯어보니[엠블록레터]",
+          "elapsed_seconds": 48.49,
+          "headline_lengths": {
+            "headline_34": 34,
+            "headline_58": 50,
+            "headline_89": 83
+          },
+          "violations": [],
+          "summary_chars": 137
+        }
+      ]
+    },
+    {
+      "name": "hermes-explicit-current",
+      "env": {
+        "PIPELINE_LLM_BACKEND": "hermes_cli",
+        "PIPELINE_HERMES_PROFILE": "cut-news-pipeline",
+        "PIPELINE_HERMES_MODEL": "gpt-5.5",
+        "PIPELINE_HERMES_PROVIDER": "openai-codex"
+      },
+      "returncode": 0,
+      "elapsed_seconds": 134.53,
+      "results": [
+        {
+          "article_id": "05d506932773",
+          "title": "갤러리아百, 루드·세인트미카엘 등 해외 브랜드 모자 소개",
+          "elapsed_seconds": 43.28,
+          "headline_lengths": {
+            "headline_34": 32,
+            "headline_58": 53,
+            "headline_89": 83
+          },
+          "violations": [],
+          "summary_chars": 123
+        },
+        {
+          "article_id": "15e31771bf18",
+          "title": "[정지열의 스테이블코인 돌아보기] (8) 가상자산 과세 잔혹사 ― ‘대혼란’ 예상 속 골든타임 놓치지 말아야",
+          "elapsed_seconds": 47.34,
+          "headline_lengths": {
+            "headline_34": 34,
+            "headline_58": 56,
+            "headline_89": 85
+          },
+          "violations": [],
+          "summary_chars": 137
+        },
+        {
+          "article_id": "5199e600904a",
+          "title": "하나금융 두나무 1조원 투자 결단, 이유 뜯어보니[엠블록레터]",
+          "elapsed_seconds": 43.53,
+          "headline_lengths": {
+            "headline_34": 31,
+            "headline_58": 53,
+            "headline_89": 82
+          },
+          "violations": [],
+          "summary_chars": 102
+        }
+      ]
+    },
+    {
+      "name": "codex-low-auth-smoke",
+      "env": {
+        "PIPELINE_LLM_BACKEND": "codex_exec",
+        "PIPELINE_MODEL": "gpt-5.4-mini",
+        "PIPELINE_CODEX_REASONING_EFFORT": "low",
+        "PIPELINE_CODEX_MAX_ATTEMPTS": "1"
+      },
+      "returncode": 1,
+      "elapsed_seconds": 5.22,
+      "stdout_tail": "",
+      "stderr_tail": "om/backend-api/codex/responses\n2026-05-28T11:18:47.184577Z ERROR codex_login::auth::manager: Failed to refresh token: 401 Unauthorized: {\n  \"error\": {\n    \"message\": \"Your refresh token has already been used to generate a new access token. Please try signing in again.\",\n    \"type\": \"invalid_request_error\",\n    \"param\": null,\n    \"code\": \"refresh_token_reused\"\n  }\n}\n2026-05-28T11:18:48.015851Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 401 Unauthorized, url: wss://chatgpt.com/backend-api/codex/responses\n2026-05-28T11:18:48.418357Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 401 Unauthorized, url: wss://chatgpt.com/backend-api/codex/responses\nERROR: Your access token could not be refreshed because your refresh token was already used. Please log out and sign in again.\nERROR: Your access token could not be refreshed because your refresh token was already used. Please log out and sign in again.\n"
+    }
+  ]
+}

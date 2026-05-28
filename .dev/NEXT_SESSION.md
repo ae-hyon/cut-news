@@ -68,7 +68,10 @@ Implemented in the working tree after the initial quality run:
 - Hermes backend supports optional `PIPELINE_HERMES_MODEL` and `PIPELINE_HERMES_PROVIDER`; reasoning effort remains a legacy Codex-only axis until Hermes CLI exposes a supported flag.
 
 Remaining gap:
-- Re-run the disposable DB pipeline after these fixes to confirm real artifact classifications shift away from `keyword_rule` and home feed/date visibility matches archive visibility.
+- Codex legacy low/medium/high effort comparison is blocked by local Codex OAuth (`refresh_token_reused`/401). Re-run after `HOME=/Users/reddit codex login --device-auth` succeeds, or keep daily operation on Hermes model/provider variants.
+
+Fixed-variant eval:
+- `.dev/news-pipeline-fixed-variant-eval.json` compares Hermes default profile vs explicit `PIPELINE_HERMES_PROVIDER=openai-codex`, `PIPELINE_HERMES_MODEL=gpt-5.5` on 3 stable articles. Both variants returned parseable summaries with no headline length violations.
 
 New planning doc:
 - `.dev/news-pipeline-quality-improvement-plan.md` describes the next implementation order: land Hermes runner support, fix feed-date visibility, add classification fixtures, improve classifier routing, add quality warnings, then evaluate effort/model settings on a fixed article set.

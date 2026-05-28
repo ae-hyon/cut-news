@@ -124,6 +124,14 @@ Follow-up implementation status after the plan started:
 - `scripts/check-pipeline-report.py` now keeps product-like runs passing but emits `quality_warnings=["all_classifications_from_keyword_rule"]` when every usable import came from broad keyword rules.
 - Hermes CLI supports optional `PIPELINE_HERMES_MODEL` and `PIPELINE_HERMES_PROVIDER`. `hermes chat --help` does not expose a reasoning-effort flag, so low/medium/high effort comparison is currently a legacy Codex-axis experiment (`PIPELINE_CODEX_REASONING_EFFORT`) or a model/provider comparison for Hermes.
 
+Follow-up verification after the classifier routing fix:
+
+- Disposable DB run (`apps/backend/dev-quality-flow.db`) with `PIPELINE_LLM_BACKEND=hermes_cli`, `PIPELINE_HERMES_PROFILE=cut-news-pipeline`, `PIPELINE_MAX_WORKERS=3`: `status=success`, `import_inserted=9`, `usable_imports=9`, `drop_reason_counts={"quality_gate:verdict_not_clean": 2}`, `classification_source_counts={"crawler_source_query": 9}`, snapshots `attempted=3/generated=3/failed=0`, `quality_warnings=[]`.
+- Disposable API smoke confirmed `/v1/me/feed` and `/v1/me/archive/2026-05-28` read the same `feed_date=2026-05-28`; persisted snapshot item counts were 3/5/5 across the three preference users.
+- Real Neon run used the same Hermes path and explicit `postgresql+psycopg` URL conversion: `status=success`, `import_inserted=0`, `import_updated=11`, `usable_imports=11`, `drop_reason_counts={}`, `classification_source_counts={"crawler_source_query": 11}`, snapshots `attempted=3/generated=3/failed=0`, `quality_warnings=[]`.
+- Neon post-run counts: `articles=11`, `daily_feed_snapshots=7`, `daily_feed_snapshot_items=11`; snapshot dates included `2026-05-28` with 3 snapshots.
+- Fixed-article variant eval is recorded in `.dev/news-pipeline-fixed-variant-eval.json`. Hermes default profile and explicit `openai-codex/gpt-5.5` both passed headline length contracts on 3 fixed articles; legacy Codex low-effort smoke failed with OAuth `refresh_token_reused`, so Codex low/medium/high comparison is blocked until re-login.
+
 ### 2026-05-28 hash-id summarizer fix
 
 Root cause of the previous partial import/missing summary symptom:
