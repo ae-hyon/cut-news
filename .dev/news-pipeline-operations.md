@@ -11,6 +11,64 @@ Run the production-like daily path without putting Naver crawl payloads in Neon:
 
 Neon is the backend runtime DB only. GitHub artifact storage is the handoff channel for crawler payloads.
 
+## Current production-like verification status
+
+Status: service flow is healthy as of `main` commit `851fe59` (`fix: summarize hash-based article artifacts`).
+
+Verified path:
+
+1. GitHub Actions crawl artifact from `crawl-naver.yml` is downloaded.
+2. The trusted local/server runner exports artifact articles into summarizer input.
+3. Summarizer scores, summarizes, and verifies all artifact JSON article ids, including hash-based ids such as `a6a3cbbe2ed1`.
+4. Backend import writes usable articles into the explicit DB target.
+5. Daily feed snapshots are generated for onboarded users.
+6. `local-report-check --require-uncapped` passes.
+
+Latest verified run report:
+
+- `started_at`: `2026-05-28T12:46:15+0900`
+- `finished_at`: `2026-05-28T13:02:53+0900`
+- `crawl_input_path`: `apps/crawler/output/github-actions/latest.json`
+- `crawl_report_path`: `apps/crawler/output/github-actions/crawl_report.json`
+- `max_articles`: `null` (uncapped product-like run)
+- crawler stats: `query_count=49`, `count_per_query=1`, `collected_count=36`, `deduped_count=12`
+- import stats: `inserted=6`, `updated=5`, `usable_imports=11`
+- `drop_reason_counts`: `{}`
+- snapshot generation: `attempted_user_count=3`, `generated_count=3`, `failed_count=0`
+- report archive: `apps/summarizer/data/run_reports/run_2026-05-28T124615+0900.json`
+
+Local gates after the fix:
+
+```bash
+PYTHONPATH=apps/summarizer .venv/bin/python -m pytest apps/summarizer/tests -q
+# 13 passed
+
+make test
+# 123 passed
+
+make local-report-check REPORT_CHECK_ARGS=--require-uncapped
+# failures: []
+
+python3 -m unittest tests/test_scheduled_artifact_pipeline.py -q
+# OK
+```
+
+Remaining ops step: install/schedule `make ops-pipeline-from-github` on the trusted machine with stable Codex OAuth and the Neon `DATABASE_URL` secret. The code path itself has passed the product-like artifact -> summarize -> import -> snapshot flow.
+
+### 2026-05-28 hash-id summarizer fix
+
+Root cause of the previous partial import/missing summary symptom:
+
+- GitHub crawler artifact article ids are hash-like strings, for example `a6a3cbbe2ed1`.
+- The summarizer pipeline steps 3/4/5 previously selected only `[0-9]*.json` files.
+- Hash ids beginning with letters were silently skipped by score/summarize/verify and later appeared as `missing_summary` at import time.
+
+Fix:
+
+- `apps/summarizer/pipeline/step3_score.py`, `step4_summarize.py`, and `step5_verify.py` now process all `*.json` article files while excluding `*_error.json` outputs.
+- `apps/summarizer/pipeline/common.py` now retries transient `codex_exec` failures/timeouts via `PIPELINE_CODEX_MAX_ATTEMPTS` while failing fast on non-retryable auth/config errors such as `401 Unauthorized` or missing Codex configuration.
+- Regression tests cover hash article ids through step3/4/5 and Codex retry/non-retry behavior.
+
 ## Preconditions
 
 - Repo checkout: `/Users/reddit/Project/cut-news`.

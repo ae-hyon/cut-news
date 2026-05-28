@@ -2,8 +2,8 @@
 
 ## Current branch
 - `main`
-- latest local commit subject before this handoff refresh: `feat: consume GitHub crawl artifacts locally` (`e1b7c7d`).
-- local `main` was one commit ahead of `origin/main` before the final PR/merge cleanup; verify with `git status -sb` / `git log --oneline --decorate -5` in the next session.
+- Latest verified local/remote commit: `851fe59 fix: summarize hash-based article artifacts`.
+- `git status -sb` after push: `## main...origin/main` with a clean working tree.
 
 ## Recently landed work
 - `601be69 feat: add daily feed snapshots`
@@ -22,7 +22,36 @@
 
 ## Current completed slices
 
-Committed in local `HEAD` with subject `feat: add all-category news pipeline support`. Run `git log -1 --oneline` for the exact SHA.
+### Production-like scheduled artifact pipeline
+
+Landed on `main` through `851fe59 fix: summarize hash-based article artifacts`.
+
+Current status: the full service flow is verified healthy for the code path that matters in production-like operation:
+GitHub scheduled crawl artifact -> local/server Codex summarizer -> backend import into explicit DB -> daily feed snapshot generation -> report gate.
+
+Latest verified run report (`apps/summarizer/data/run_report.json`):
+- `status=success`, `failed_step=null`, `max_articles=null`.
+- GitHub artifact input: `apps/crawler/output/github-actions/latest.json` plus `crawl_report.json`.
+- Crawler stats from the artifact: `query_count=49`, `count_per_query=1`, `collected_count=36`, `deduped_count=12`.
+- Import stats: `inserted=6`, `updated=5`, `usable_imports=11`.
+- `drop_reason_counts={}`.
+- Snapshot generation: `attempted_user_count=3`, `generated_count=3`, `failed_count=0`.
+- Archive report: `apps/summarizer/data/run_reports/run_2026-05-28T124615+0900.json`.
+
+Fix included in `851fe59`:
+- Summarizer step3/4/5 file selection now handles hash-based artifact article ids (`*.json` excluding `*_error.json`) instead of only numeric filenames.
+- `codex_exec` now retries transient CLI failures/timeouts and fails fast for non-retryable auth/config errors.
+- Regression tests cover hash-id processing and retry behavior.
+
+Validation after landing:
+- `PYTHONPATH=apps/summarizer .venv/bin/python -m pytest apps/summarizer/tests -q` -> 13 passed.
+- `make test` -> 123 passed.
+- `make local-report-check REPORT_CHECK_ARGS=--require-uncapped` -> `failures: []`.
+- `python3 -m unittest tests/test_scheduled_artifact_pipeline.py -q` -> OK.
+
+Remaining operational work is not a code-flow blocker: install the scheduler on the trusted machine with stable Codex OAuth and an explicit Neon `DATABASE_URL`, then run `make ops-pipeline-from-github` on the desired cadence.
+
+### Earlier local runtime and category-pipeline slices
 
 ### Neon/external Postgres readiness
 
