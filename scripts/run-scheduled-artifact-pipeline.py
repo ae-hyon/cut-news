@@ -92,6 +92,8 @@ def build_runtime_env(args: argparse.Namespace, base: Mapping[str, str] | None =
     env.setdefault("PIPELINE_MODEL", "gpt-5.4-mini")
     env.setdefault("PIPELINE_CODEX_REASONING_EFFORT", "low")
     env.setdefault("PIPELINE_HERMES_PROFILE", "cut-news-pipeline")
+    env.setdefault("PIPELINE_HERMES_MODEL", "")
+    env.setdefault("PIPELINE_HERMES_PROVIDER", "")
     env.setdefault("PYTHONUNBUFFERED", "1")
     env["NEWS_PIPELINE_MAX_ARTICLES"] = str(args.max_articles) if args.max_articles else ""
     return env

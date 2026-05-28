@@ -77,6 +77,23 @@ class CheckPipelineReportTests(unittest.TestCase):
         )
 
         self.assertEqual(failures, [])
+    def test_all_keyword_rule_classifications_emit_quality_warning_not_failure(self) -> None:
+        module = load_check_pipeline_report()
+        failures, summary = module.evaluate_report(
+            {
+                "status": "success",
+                "failed_step": None,
+                "max_articles": None,
+                "import_stats": {"inserted": 2, "updated": 0, "deleted": 0, "skipped": 0},
+                "drop_reason_counts": {},
+                "classification_source_counts": {"keyword_rule": 2},
+                "snapshot_generation": {"failed_count": 0},
+            },
+            require_uncapped=True,
+        )
+
+        self.assertEqual(failures, [])
+        self.assertEqual(summary["quality_warnings"], ["all_classifications_from_keyword_rule"])
 
 
 if __name__ == "__main__":

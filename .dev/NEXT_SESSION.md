@@ -2,8 +2,8 @@
 
 ## Current branch
 - `main`
-- Latest verified local/remote commit: `9d64e73 docs: document verified news pipeline flow`.
-- Current working tree intentionally contains uncommitted Hermes-runner support and planning docs; review before staging.
+- Latest verified local commit: current `HEAD` (`fix: align feed date and source-query classification`).
+- Local branch is ahead of `origin/main`; push is pending unless the user asks to publish.
 
 ## Recently landed work
 - `601be69 feat: add daily feed snapshots`
@@ -24,7 +24,7 @@
 
 ### Production-like scheduled artifact pipeline
 
-Landed on `main` through `9d64e73 docs: document verified news pipeline flow`; `851fe59 fix: summarize hash-based article artifacts` is the source fix commit.
+Landed locally through current `HEAD` (`fix: align feed date and source-query classification`); `851fe59 fix: summarize hash-based article artifacts` is the source fix commit for hash-id summarizer processing.
 
 Current status: the full service flow is verified healthy for the code path that matters in production-like operation:
 GitHub scheduled crawl artifact -> local/server OAuth-backed summarizer -> backend import into explicit DB -> daily feed snapshot generation -> report gate.
@@ -58,13 +58,17 @@ Current working-tree slice:
 - Created/verified dedicated profile `cut-news-pipeline` outside the repo.
 - Verified `make ops-pipeline-from-github` on a disposable SQLite quality DB with user preferences copied but news/feed/read/scrap data empty.
 - Quality-run result: `status=success`, `import inserted=11`, `usable_imports=11`, `drop_reason_counts={}`, snapshots `attempted=3/generated=3/failed=0`, report check `failures=[]`.
-- Tests after the code change: `PYTHONPATH=apps/summarizer .venv/bin/python -m pytest apps/summarizer/tests -q` -> 15 passed; `make test` -> 123 passed.
+- Tests after the code change: `PYTHONPATH=apps/summarizer .venv/bin/python -m pytest apps/summarizer/tests -q` -> 16 passed; `cd apps/backend && PYTHONPATH=. uv run pytest tests/ -q` -> 126 passed.
 
-Observed gaps:
-- Summary prose is usable and fact-preserving, but classification quality is weak.
-- Examples: BTS/K-pop tourism -> `tech/tech-ai`, designer retail hats -> `global/global-us`, legal/crime/current-affairs clip -> `sports/sports-basketball`.
-- `classification_source_counts={"keyword_rule": 11}` shows effort/model tuning alone will not fix category placement until classification routing is improved.
-- Pipeline wrote `feed_date=2026-05-28`, while `GET /v1/me/feed` currently uses the previous KST date. Daily archive showed the generated articles, but home feed can look empty if the policies diverge.
+Implemented in the working tree after the initial quality run:
+- `/v1/me/feed` uses today's KST product feed date to match the scheduler-generated `feed_date`.
+- Source-query classification fixtures cover broad keyword false positives.
+- Import classification now prefers crawler `source_query`/`source_category` metadata before broad keyword rules and reports `crawler_source_query` when applicable.
+- `make local-report-check` emits non-failing `quality_warnings` for all-keyword-rule classification runs.
+- Hermes backend supports optional `PIPELINE_HERMES_MODEL` and `PIPELINE_HERMES_PROVIDER`; reasoning effort remains a legacy Codex-only axis until Hermes CLI exposes a supported flag.
+
+Remaining gap:
+- Re-run the disposable DB pipeline after these fixes to confirm real artifact classifications shift away from `keyword_rule` and home feed/date visibility matches archive visibility.
 
 New planning doc:
 - `.dev/news-pipeline-quality-improvement-plan.md` describes the next implementation order: land Hermes runner support, fix feed-date visibility, add classification fixtures, improve classifier routing, add quality warnings, then evaluate effort/model settings on a fixed article set.

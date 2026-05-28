@@ -89,6 +89,8 @@ Expected: no whitespace errors.
 
 ### Task 1.1: Decide the date policy in code comments/tests
 
+**Status:** implemented. `/v1/me/feed` now uses today's KST product feed date so it matches the scheduled 08:30 pipeline `feed_date` bucket.
+
 **Objective:** Choose one explicit product policy and make it testable.
 
 **Recommended policy:** For the 08:30 KST morning digest, pipeline-generated `feed_date` and `GET /v1/me/feed` should refer to the same product bucket. The most direct behavior is: `feed_date = today in Asia/Seoul` for the morning digest generated at 08:30, and home feed reads today's persisted snapshot.
@@ -134,6 +136,8 @@ Expected: focused and full backend tests pass.
 
 ### Task 2.1: Capture a small misclassification fixture set
 
+**Status:** implemented for broad-keyword false positives via `apps/backend/tests/fixtures/article_classification_cases.json` and `apps/backend/tests/test_article_ingest_classification_quality.py`.
+
 **Objective:** Turn observed bad classifications into repeatable tests/evaluation cases.
 
 **Files:**
@@ -156,6 +160,8 @@ Expected: at least the current misclassified cases fail.
 
 ### Task 2.2: Prefer crawler source query/subcategory metadata before broad keyword rules
 
+**Status:** implemented. `_derive_categories` now tries crawler source metadata before `KEYWORD_RULES`, and uses `classification_source='crawler_source_query'` when a source query maps cleanly to a supported subcategory.
+
 **Objective:** Reduce false positives where generic words like `AI`, `미국`, or `농구` inside an unrelated article push the article to the wrong category.
 
 **Files:**
@@ -175,6 +181,8 @@ make test
 
 ### Task 2.3: Add a report gate for suspicious classification source mix
 
+**Status:** implemented as a non-failing warning. `make local-report-check` now includes `quality_warnings`, and current historical run reports with all `keyword_rule` imports emit `all_classifications_from_keyword_rule` while keeping `failures=[]`.
+
 **Objective:** Surface runs where all articles are classified by weak keyword rules.
 
 **Files:**
@@ -191,6 +199,8 @@ make test
 
 ### Task 3.1: Add explicit Hermes effort/model env names
 
+**Status:** partially implemented for supported Hermes CLI flags. `PIPELINE_HERMES_MODEL` and `PIPELINE_HERMES_PROVIDER` are available. `hermes chat --help` does not expose a reasoning-effort flag, so do not add `PIPELINE_HERMES_REASONING_EFFORT` unless the CLI gains a supported option.
+
 **Objective:** Make effort tunable for Hermes CLI as well as legacy Codex.
 
 **Files:**
@@ -201,8 +211,9 @@ make test
 **Proposed envs:**
 ```bash
 PIPELINE_HERMES_PROFILE=cut-news-pipeline
-PIPELINE_HERMES_MODEL=<optional model override if Hermes CLI supports it>
-PIPELINE_HERMES_REASONING_EFFORT=low|medium|high
+PIPELINE_HERMES_MODEL=<optional model override; passed as hermes chat --model>
+PIPELINE_HERMES_PROVIDER=<optional provider override; passed as hermes chat --provider>
+PIPELINE_CODEX_REASONING_EFFORT=low|medium|high  # legacy codex_exec only
 ```
 
 **Caution:** Only add flags that the installed Hermes CLI actually supports. Verify with:

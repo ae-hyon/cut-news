@@ -1,0 +1,38 @@
+[
+  {
+    "name": "bts_kpop_tourism_uses_crawler_query_over_ai_keyword",
+    "article": {
+      "title": "부산, BTS와 K-POP 관광 코스로 외국인 유치",
+      "content": "부산시는 AI 통역 서비스를 곁들인 K-POP 관광 코스를 운영한다.",
+      "source_category": "entertainment",
+      "source_query": "K-POP"
+    },
+    "expected_primary_category": "entertainment",
+    "expected_subcategory": "entertainment-kpop",
+    "expected_classification_source": "crawler_source_query"
+  },
+  {
+    "name": "travel_article_uses_crawler_query_over_us_keyword",
+    "article": {
+      "title": "부산 여행 상품, 미국 관광객 예약 증가",
+      "content": "여행 업계는 미국과 일본 방문객을 대상으로 항공·숙박 패키지를 확대한다.",
+      "source_category": "lifestyle",
+      "source_query": "여행"
+    },
+    "expected_primary_category": "lifestyle",
+    "expected_subcategory": "lifestyle-travel",
+    "expected_classification_source": "crawler_source_query"
+  },
+  {
+    "name": "food_article_uses_crawler_query_over_global_keyword",
+    "article": {
+      "title": "서울 맛집 거리, 중국 관광객 매출 회복",
+      "content": "중국 단체 관광객 방문이 늘면서 식음료 매장 매출이 증가했다.",
+      "source_category": "lifestyle",
+      "source_query": "맛집"
+    },
+    "expected_primary_category": "lifestyle",
+    "expected_subcategory": "lifestyle-food",
+    "expected_classification_source": "crawler_source_query"
+  }
+]

@@ -49,8 +49,10 @@ def evaluate_report(payload: dict[str, Any], *, require_uncapped: bool) -> tuple
     usable_imports = import_inserted + import_updated
     snapshot_failed = _counter(payload, "snapshot_generation", "failed_count")
     snapshot_attempted = _counter(payload, "snapshot_generation", "attempted_user_count")
+    keyword_rule_classifications = _counter(payload, "classification_source_counts", "keyword_rule")
 
     failures: list[str] = []
+    quality_warnings: list[str] = []
     if payload.get("status") != "success":
         failures.append(f"status={payload.get('status')!r}")
     if payload.get("failed_step"):
@@ -61,6 +63,8 @@ def evaluate_report(payload: dict[str, Any], *, require_uncapped: bool) -> tuple
         failures.append(f"snapshot_generation.failed_count={snapshot_failed}")
     if require_uncapped and payload.get("max_articles") is not None:
         failures.append(f"max_articles={payload.get('max_articles')!r}")
+    if usable_imports > 0 and keyword_rule_classifications == usable_imports:
+        quality_warnings.append("all_classifications_from_keyword_rule")
 
     summary = {
         "status": payload.get("status"),
@@ -76,6 +80,8 @@ def evaluate_report(payload: dict[str, Any], *, require_uncapped: bool) -> tuple
         "usable_imports": usable_imports,
         "drop_reason_counts": payload.get("drop_reason_counts") or {},
         "has_drop_reasons": _has_positive_counter(payload, "drop_reason_counts"),
+        "classification_source_counts": payload.get("classification_source_counts") or {},
+        "quality_warnings": quality_warnings,
         "snapshot_attempted": snapshot_attempted,
         "snapshot_failed": snapshot_failed,
         "archive_report_path": payload.get("archive_report_path"),

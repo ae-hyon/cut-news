@@ -53,7 +53,7 @@ def test_load_summarized_articles_builds_backend_article_rows_from_summarizer_ou
     assert rows[0].score_weight == 0.82
 
 
-def test_load_summarized_articles_uses_crawler_source_category_when_category_map_is_absent(tmp_path: Path):
+def test_load_summarized_articles_uses_crawler_source_query_when_category_map_is_absent(tmp_path: Path):
     dataset = tmp_path
     write_json(
         dataset / 'json' / 'stock-001.json',
@@ -82,7 +82,7 @@ def test_load_summarized_articles_uses_crawler_source_category_when_category_map
     assert len(rows) == 1
     assert rows[0].primary_category == 'stock'
     assert rows[0].subcategory == 'stock-domestic'
-    assert report['classification_source_counts'] == {'crawler_source_category': 1}
+    assert report['classification_source_counts'] == {'crawler_source_query': 1}
 
 
 def test_load_summarized_articles_skips_items_without_summary(tmp_path: Path):

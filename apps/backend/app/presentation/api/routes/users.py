@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -23,12 +23,13 @@ AUTH_REQUIRED = {401: {'description': 'Authentication required'}}
 
 
 def _current_feed_date() -> str:
-    """Return the article publication date served as today's feed.
+    """Return the KST product feed date served by the home feed.
 
-    Annoying Cap publishes a daily digest of the previous day's news, so the
-    home feed for a KST calendar day should look up yesterday's article date.
+    The scheduled 08:30 KST news pipeline writes same-day daily feed
+    snapshots, so the home feed must request the same date instead of
+    looking up the previous day's bucket.
     """
-    return (datetime.now(ZoneInfo('Asia/Seoul')).date() - timedelta(days=1)).isoformat()
+    return datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat()
 
 
 @router.get(
@@ -104,7 +105,7 @@ def _update_my_preference(
     response_model=FeedResponseSchema,
     summary='Get my snapshot-backed personalized feed',
     description=(
-        'Returns the persisted daily feed snapshot for yesterday\'s KST article date. Each article includes '
+        'Returns the persisted daily feed snapshot for today\'s KST product feed date. Each article includes '
         'is_scrapped so frontend can render saved state without an additional scraps lookup. Opening the feed '
         'marks the snapshot viewed for check-in tracking.'
     ),

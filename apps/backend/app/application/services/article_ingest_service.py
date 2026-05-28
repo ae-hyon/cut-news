@@ -277,6 +277,27 @@ def _has_economic_title_signal(title: str) -> bool:
     return bool(ECONOMIC_TITLE_SIGNAL_PATTERN.search(title))
 
 
+def _classify_from_crawler_source(article_payload: dict) -> ArticleDerivedCategory | None:
+    source_category = str(article_payload.get('source_category') or '')
+    if source_category not in SUPPORTED_SUBCATEGORIES:
+        return None
+
+    source_query = str(article_payload.get('source_query') or '')
+    query_subcategory = CRAWLER_SOURCE_QUERY_SUBCATEGORY_ALIASES.get(source_query)
+    if query_subcategory in SUPPORTED_SUBCATEGORIES[source_category]:
+        return ArticleDerivedCategory(
+            primary_category=source_category,
+            subcategory=query_subcategory,
+            classification_source='crawler_source_query',
+        )
+
+    return ArticleDerivedCategory(
+        primary_category=source_category,
+        subcategory=DEFAULT_SUBCATEGORY_BY_PRIMARY[source_category],
+        classification_source='crawler_source_category',
+    )
+
+
 def _derive_categories(article_payload: dict, category_payload: dict) -> ArticleDerivedCategory | None:
     title = str(article_payload.get('title') or '')
     content = str(article_payload.get('content') or '')
@@ -298,27 +319,16 @@ def _derive_categories(article_payload: dict, category_payload: dict) -> Article
             classification_source='source_subcategory',
         )
 
+    crawler_classified = _classify_from_crawler_source(article_payload)
+    if crawler_classified is not None:
+        return crawler_classified
+
     classified = _classify_from_keywords(title, content)
     if classified:
         return ArticleDerivedCategory(
             primary_category=classified[0],
             subcategory=classified[1],
             classification_source='keyword_rule',
-        )
-
-    source_category = str(article_payload.get('source_category') or '')
-    if source_category in SUPPORTED_SUBCATEGORIES:
-        source_query = str(article_payload.get('source_query') or '')
-        subcategory = CRAWLER_SOURCE_QUERY_SUBCATEGORY_ALIASES.get(
-            source_query,
-            DEFAULT_SUBCATEGORY_BY_PRIMARY[source_category],
-        )
-        if subcategory not in SUPPORTED_SUBCATEGORIES[source_category]:
-            subcategory = DEFAULT_SUBCATEGORY_BY_PRIMARY[source_category]
-        return ArticleDerivedCategory(
-            primary_category=source_category,
-            subcategory=subcategory,
-            classification_source='crawler_source_category',
         )
 
     return None

@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 from app.domain.entities import Article, AuthSession, DailyFeedSnapshot, DailyFeedSnapshotItem
@@ -114,7 +114,7 @@ class StubDailyFeedSnapshotService:
             return self.archive_snapshot.model_copy(deep=True)
         user_id, feed_date, generation_source = self.generated_for or (
             'user-kakao-123',
-            (datetime.now(ZoneInfo('Asia/Seoul')).date() - timedelta(days=1)).isoformat(),
+            datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat(),
             'api:get_me_feed',
         )
         snapshot = self.generate_for_user_date(user_id, feed_date, generation_source)
@@ -136,7 +136,7 @@ def build_client(session: AuthSession = CURRENT_SESSION, snapshot_service: StubD
 
 
 def test_me_feed_returns_current_users_snapshot_feed():
-    feed_date = (datetime.now(ZoneInfo('Asia/Seoul')).date() - timedelta(days=1)).isoformat()
+    feed_date = datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat()
     snapshot_service = StubDailyFeedSnapshotService()
     client = build_client(snapshot_service=snapshot_service)
 

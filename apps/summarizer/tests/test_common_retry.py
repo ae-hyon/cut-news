@@ -134,6 +134,24 @@ def test_call_hermes_cli_uses_profile_and_strips_session_id(monkeypatch):
     assert kwargs['timeout'] == 10
 
 
+def test_call_hermes_cli_adds_optional_model_and_provider(monkeypatch):
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return _Proc(returncode=0, stdout='{"ok": true}\n')
+
+    monkeypatch.setattr(common, 'HERMES_PROFILE', 'cut-news-pipeline')
+    monkeypatch.setattr(common, 'HERMES_MODEL', 'openai/gpt-5.5')
+    monkeypatch.setattr(common, 'HERMES_PROVIDER', 'openai-codex')
+    monkeypatch.setattr(common.subprocess, 'run', fake_run)
+
+    assert common._call_hermes_cli('system', 'user', timeout=10) == '{"ok": true}'
+    cmd = calls[0]
+    assert cmd[cmd.index('--model') + 1] == 'openai/gpt-5.5'
+    assert cmd[cmd.index('--provider') + 1] == 'openai-codex'
+
+
 def test_call_hermes_cli_fails_on_empty_clean_output(monkeypatch):
     def fake_run(*args, **kwargs):
         return _Proc(returncode=0, stdout='\nsession_id: only\n')

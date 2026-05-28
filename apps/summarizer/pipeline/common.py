@@ -16,6 +16,8 @@ HERMIT_MODEL = os.getenv("PIPELINE_MODEL", "glm-5.1")
 LLM_BACKEND = os.getenv("PIPELINE_LLM_BACKEND", "hermit_http")  # hermit_http | codex_exec | hermes_cli
 CODEX_REASONING_EFFORT = os.getenv("PIPELINE_CODEX_REASONING_EFFORT", "low")
 HERMES_PROFILE = os.getenv("PIPELINE_HERMES_PROFILE", "cut-news-pipeline")
+HERMES_MODEL = os.getenv("PIPELINE_HERMES_MODEL", "")
+HERMES_PROVIDER = os.getenv("PIPELINE_HERMES_PROVIDER", "")
 HERMIT_API_KEY = None  # 최초 호출 시 ~/.hermit/settings.json에서 로드
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -166,6 +168,10 @@ def _call_hermes_cli(system: str, user: str, timeout: int) -> str:
         "--toolsets",
         "",
     ]
+    if HERMES_MODEL:
+        cmd.extend(["--model", HERMES_MODEL])
+    if HERMES_PROVIDER:
+        cmd.extend(["--provider", HERMES_PROVIDER])
     proc = subprocess.run(
         cmd,
         text=True,

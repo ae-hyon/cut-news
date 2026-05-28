@@ -134,6 +134,9 @@ def _pipeline_steps(
         'PIPELINE_LLM_BACKEND': os.environ.get('PIPELINE_LLM_BACKEND', 'codex_exec'),
         'PIPELINE_MODEL': os.environ.get('PIPELINE_MODEL', 'gpt-5.4-mini'),
         'PIPELINE_CODEX_REASONING_EFFORT': os.environ.get('PIPELINE_CODEX_REASONING_EFFORT', 'low'),
+        'PIPELINE_HERMES_PROFILE': os.environ.get('PIPELINE_HERMES_PROFILE', 'cut-news-pipeline'),
+        'PIPELINE_HERMES_MODEL': os.environ.get('PIPELINE_HERMES_MODEL', ''),
+        'PIPELINE_HERMES_PROVIDER': os.environ.get('PIPELINE_HERMES_PROVIDER', ''),
     }
     import_env = {
         **os.environ,

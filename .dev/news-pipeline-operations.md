@@ -94,7 +94,7 @@ Result:
 - report gate: `make local-report-check REPORT_CHECK_ARGS=--require-uncapped` passed with `failures=[]`.
 - backend/API smoke against the quality DB confirmed `/health` and `GET /v1/me/archive/2026-05-28` can read the generated snapshot articles.
 
-Observed quality findings:
+Observed quality findings before the classifier routing fix:
 
 - Summaries are generally usable: they preserve concrete facts and numbers, for example deal value, rate, share count, dates, and affected counts.
 - Category/subcategory quality is the largest remaining product issue. Examples from the quality run:
@@ -114,7 +114,15 @@ PIPELINE_MAX_WORKERS=3
 # keep NEWS_PIPELINE_MAX_ARTICLES empty for product-like runs
 ```
 
-Do not treat `effort` tuning as the first fix for category quality. Effort can improve summary/verification deliberation, but the observed misclassification is mostly caused by keyword-rule classification and weak taxonomy routing. First make classification observable and testable; then compare effort/model variants on a fixed article fixture set.
+Do not treat `effort` tuning as the first fix for category quality. Effort can improve summary/verification deliberation, but the observed misclassification was mostly caused by keyword-rule classification and weak taxonomy routing. The first code fix now prefers crawler `source_query`/`source_category` metadata before broad keyword rules; compare effort/model variants only on a fixed article fixture set after this routing layer is in place.
+
+Follow-up implementation status after the plan started:
+
+- `GET /v1/me/feed` now uses today's KST product feed date, matching the 08:30 scheduler's `feed_date` bucket.
+- Classification fixtures were added for crawler source-query precedence over broad keyword rules.
+- Import classification now reports `crawler_source_query` when source query maps cleanly to a supported subcategory.
+- `scripts/check-pipeline-report.py` now keeps product-like runs passing but emits `quality_warnings=["all_classifications_from_keyword_rule"]` when every usable import came from broad keyword rules.
+- Hermes CLI supports optional `PIPELINE_HERMES_MODEL` and `PIPELINE_HERMES_PROVIDER`. `hermes chat --help` does not expose a reasoning-effort flag, so low/medium/high effort comparison is currently a legacy Codex-axis experiment (`PIPELINE_CODEX_REASONING_EFFORT`) or a model/provider comparison for Hermes.
 
 ### 2026-05-28 hash-id summarizer fix
 
