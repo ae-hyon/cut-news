@@ -113,3 +113,36 @@ def test_call_codex_retries_timeout(tmp_path, monkeypatch):
 
     assert common._call_codex('system', 'user', timeout=10) == '{"ok": true}'
     assert len(attempts) == 2
+
+
+def test_call_hermes_cli_uses_profile_and_strips_session_id(monkeypatch):
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append((cmd, kwargs))
+        return _Proc(returncode=0, stdout='\nsession_id: 20260528_000000_abcd\n{"ok": true}\n')
+
+    monkeypatch.setattr(common, 'HERMES_PROFILE', 'cut-news-pipeline')
+    monkeypatch.setattr(common.subprocess, 'run', fake_run)
+
+    result = common._call_hermes_cli('system', 'user', timeout=10)
+
+    assert result == '{"ok": true}'
+    cmd, kwargs = calls[0]
+    assert cmd[:3] == ['hermes', '--profile', 'cut-news-pipeline']
+    assert cmd[3:6] == ['chat', '-Q', '-q']
+    assert kwargs['timeout'] == 10
+
+
+def test_call_hermes_cli_fails_on_empty_clean_output(monkeypatch):
+    def fake_run(*args, **kwargs):
+        return _Proc(returncode=0, stdout='\nsession_id: only\n')
+
+    monkeypatch.setattr(common.subprocess, 'run', fake_run)
+
+    try:
+        common._call_hermes_cli('system', 'user', timeout=10)
+    except RuntimeError as exc:
+        assert 'empty output' in str(exc)
+    else:
+        raise AssertionError('expected RuntimeError')

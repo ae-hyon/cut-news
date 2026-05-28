@@ -5,7 +5,7 @@
 Run the production-like daily path without putting Naver crawl payloads in Neon:
 
 1. GitHub Actions runs `crawl-naver.yml` at 08:00 Asia/Seoul and uploads a 7-day crawl artifact.
-2. A trusted local/server runner with Codex OAuth downloads the latest successful artifact.
+2. A trusted local/server runner with an OAuth-backed AI runtime downloads the latest successful artifact.
 3. The runner summarizes/verifies/imports into the explicit backend `DATABASE_URL` target.
 4. The runner validates `apps/summarizer/data/run_report.json` and alerts on unhealthy output.
 
@@ -53,7 +53,68 @@ python3 -m unittest tests/test_scheduled_artifact_pipeline.py -q
 # OK
 ```
 
-Remaining ops step: install/schedule `make ops-pipeline-from-github` on the trusted machine with stable Codex OAuth and the Neon `DATABASE_URL` secret. The code path itself has passed the product-like artifact -> summarize -> import -> snapshot flow.
+Remaining ops step: install/schedule `make ops-pipeline-from-github` on the trusted machine with stable AI runtime credentials and the Neon `DATABASE_URL` secret. The code path itself has passed the product-like artifact -> summarize -> import -> snapshot flow.
+
+## 2026-05-28 local-runner quality check
+
+Decision: use the user's local Mac as the trusted runner for now. OCI Always Free is not available because instance allocation failed; GitHub Actions remains crawl-only because the summarizer needs a persistent OAuth/session runtime.
+
+Implementation direction verified in a quality DB:
+
+- Created a disposable SQLite DB at `apps/backend/dev-quality-flow.db` and copied only user/account preference state into it.
+- Left real Neon/runtime data untouched for the quality check.
+- Started with empty news/feed/read/scrap tables.
+- Created a dedicated Hermes profile, `cut-news-pipeline`, and verified it can answer one-shot prompts.
+- Added/used `PIPELINE_LLM_BACKEND=hermes_cli` with `PIPELINE_HERMES_PROFILE=cut-news-pipeline` instead of direct `codex_exec` after Codex device-auth proved brittle.
+- Ran the same operator path as the scheduled flow:
+
+```bash
+cd /Users/reddit/Project/cut-news
+HOME=/Users/reddit \
+DATABASE_URL="sqlite+pysqlite:///$PWD/apps/backend/dev-quality-flow.db" \
+SEED_ON_STARTUP=false \
+AI_NEWS_GENERATION_TIME=08:30:00 \
+NEWS_SCHEDULE_TIMEZONE=Asia/Seoul \
+PIPELINE_LLM_BACKEND=hermes_cli \
+PIPELINE_HERMES_PROFILE=cut-news-pipeline \
+PIPELINE_MAX_WORKERS=3 \
+NEWS_PIPELINE_MAX_ARTICLES= \
+make ops-pipeline-from-github
+```
+
+Result:
+
+- `status=success`, `failed_step=null`.
+- `started_at=2026-05-28T17:09:30+0900`, `finished_at=2026-05-28T17:22:48+0900`.
+- `feed_date=2026-05-28`, `max_articles=null`.
+- import: `inserted=11`, `updated=0`, `usable_imports=11`.
+- `drop_reason_counts={}`.
+- `classification_source_counts={"keyword_rule": 11}`.
+- snapshot generation: `attempted_user_count=3`, `generated_count=3`, `failed_count=0`.
+- report gate: `make local-report-check REPORT_CHECK_ARGS=--require-uncapped` passed with `failures=[]`.
+- backend/API smoke against the quality DB confirmed `/health` and `GET /v1/me/archive/2026-05-28` can read the generated snapshot articles.
+
+Observed quality findings:
+
+- Summaries are generally usable: they preserve concrete facts and numbers, for example deal value, rate, share count, dates, and affected counts.
+- Category/subcategory quality is the largest remaining product issue. Examples from the quality run:
+  - 부산 BTS/K-pop tourism article was classified as `tech/tech-ai`.
+  - 갤러리아 designer hat retail article was classified as `global/global-us`.
+  - 무인창고 현금/허웅 재판 issue article was classified as `sports/sports-basketball`.
+- The current report showed all 11 classifications came from `keyword_rule`, so the LLM/Hermes improvement did not improve category placement by itself.
+- Product-date behavior needs a policy pass. The scheduler pipeline generated `feed_date=2026-05-28`, while `GET /v1/me/feed` currently serves the previous KST date by route policy. The generated 2026-05-28 snapshot was visible through daily archive, but home feed lookup can appear empty if pipeline and API date policies diverge.
+- Runtime cost/latency: Hermes CLI full run with 11 artifact articles took about 13 minutes with `PIPELINE_MAX_WORKERS=3`. Effort/model settings should be explicit before scheduling daily runs.
+
+Recommended near-term operator settings while quality work continues:
+
+```bash
+PIPELINE_LLM_BACKEND=hermes_cli
+PIPELINE_HERMES_PROFILE=cut-news-pipeline
+PIPELINE_MAX_WORKERS=3
+# keep NEWS_PIPELINE_MAX_ARTICLES empty for product-like runs
+```
+
+Do not treat `effort` tuning as the first fix for category quality. Effort can improve summary/verification deliberation, but the observed misclassification is mostly caused by keyword-rule classification and weak taxonomy routing. First make classification observable and testable; then compare effort/model variants on a fixed article fixture set.
 
 ### 2026-05-28 hash-id summarizer fix
 
@@ -73,8 +134,9 @@ Fix:
 
 - Repo checkout: `/Users/reddit/Project/cut-news`.
 - GitHub CLI can read `ae-hyon/cut-news` workflow artifacts.
-- Codex OAuth works from the real user home:
-  - `HOME=/Users/reddit codex exec --skip-git-repo-check --sandbox read-only 'Reply exactly: codex-ok'`
+- One OAuth-backed summarizer runtime works from the local runner:
+  - Preferred current path: `hermes --profile cut-news-pipeline chat -Q -q 'Reply exactly: ok' --toolsets ''`.
+  - Legacy/direct Codex path, if used: `HOME=/Users/reddit codex exec --skip-git-repo-check --sandbox read-only 'Reply exactly: codex-ok'`.
 - Backend target DB is explicit. For Neon, use the pooled URL and `sslmode=require`.
 - Do not set `NEWS_PIPELINE_MAX_ARTICLES` for scheduled/product-like runs.
 - Recommended shared/staging DB env: `SEED_ON_STARTUP=false` for API service startup.
@@ -87,6 +149,8 @@ Prefer passing `DATABASE_URL` from the scheduler secret store instead of relying
 cd /Users/reddit/Project/cut-news
 HOME=/Users/reddit \
 DATABASE_URL='<Neon pooled DATABASE_URL with sslmode=require>' \
+PIPELINE_LLM_BACKEND=hermes_cli \
+PIPELINE_HERMES_PROFILE=cut-news-pipeline \
 make ops-pipeline-from-github
 ```
 
@@ -112,6 +176,8 @@ Use dry run before installing a scheduler:
 cd /Users/reddit/Project/cut-news
 HOME=/Users/reddit \
 DATABASE_URL='<Neon pooled DATABASE_URL with sslmode=require>' \
+PIPELINE_LLM_BACKEND=hermes_cli \
+PIPELINE_HERMES_PROFILE=cut-news-pipeline \
 make ops-pipeline-from-github OPS_PIPELINE_ARGS='--dry-run'
 ```
 
@@ -136,13 +202,13 @@ Schedule after the 08:00 Asia/Seoul GitHub crawl artifact has had time to comple
 
 ```cron
 # KST host example. Keep DATABASE_URL/alert secrets outside the repository.
-40 8 * * * cd /Users/reddit/Project/cut-news && HOME=/Users/reddit DATABASE_URL='<Neon URL>' make ops-pipeline-from-github >> /Users/reddit/Project/cut-news/.local/compose/logs/ops-pipeline.log 2>&1
+40 8 * * * cd /Users/reddit/Project/cut-news && HOME=/Users/reddit DATABASE_URL='<Neon URL>' PIPELINE_LLM_BACKEND=hermes_cli PIPELINE_HERMES_PROFILE=cut-news-pipeline make ops-pipeline-from-github >> /Users/reddit/Project/cut-news/.local/compose/logs/ops-pipeline.log 2>&1
 ```
 
 For UTC hosts, 08:40 KST is 23:40 UTC on the previous day:
 
 ```cron
-40 23 * * * cd /Users/reddit/Project/cut-news && HOME=/Users/reddit DATABASE_URL='<Neon URL>' make ops-pipeline-from-github >> /Users/reddit/Project/cut-news/.local/compose/logs/ops-pipeline.log 2>&1
+40 23 * * * cd /Users/reddit/Project/cut-news && HOME=/Users/reddit DATABASE_URL='<Neon URL>' PIPELINE_LLM_BACKEND=hermes_cli PIPELINE_HERMES_PROFILE=cut-news-pipeline make ops-pipeline-from-github >> /Users/reddit/Project/cut-news/.local/compose/logs/ops-pipeline.log 2>&1
 ```
 
 ## Failure policy
@@ -161,7 +227,7 @@ Drop reasons such as `missing_summary` are included in the summary for observabi
 
 1. Read the JSON summary printed by `make ops-pipeline-from-github`.
 2. Inspect `apps/summarizer/data/run_report.json` and the archived report path inside it.
-3. If `failed_step=summarize` or errors mention Codex auth, re-check `HOME=/Users/reddit codex exec ...`.
+3. If `failed_step=summarize` or errors mention AI auth, first re-check `hermes --profile cut-news-pipeline chat -Q -q 'Reply exactly: ok' --toolsets ''`; if using legacy Codex, re-check `HOME=/Users/reddit codex exec ...`.
 4. If artifact download failed, inspect `gh run list --workflow crawl-naver.yml --status success --limit 3`.
 5. If Neon connection failed, run `make db-current` with the exact scheduled `DATABASE_URL`.
 6. If imports are zero with drop reasons, inspect generated `_error.json` files under `apps/summarizer/data/summarized` / `verified`.

@@ -13,8 +13,9 @@ import requests
 # Default backend: Hermit gateway (OpenAI-compatible API)
 HERMIT_URL = os.getenv("PIPELINE_LLM_URL", "http://localhost:8765/v1/chat/completions")
 HERMIT_MODEL = os.getenv("PIPELINE_MODEL", "glm-5.1")
-LLM_BACKEND = os.getenv("PIPELINE_LLM_BACKEND", "hermit_http")  # hermit_http | codex_exec
+LLM_BACKEND = os.getenv("PIPELINE_LLM_BACKEND", "hermit_http")  # hermit_http | codex_exec | hermes_cli
 CODEX_REASONING_EFFORT = os.getenv("PIPELINE_CODEX_REASONING_EFFORT", "low")
+HERMES_PROFILE = os.getenv("PIPELINE_HERMES_PROFILE", "cut-news-pipeline")
 HERMIT_API_KEY = None  # 최초 호출 시 ~/.hermit/settings.json에서 로드
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -141,10 +142,53 @@ def _call_codex(system: str, user: str, timeout: int) -> str:
     raise RuntimeError(f"codex exec {max_attempts}회 재시도 실패: {last_error}")
 
 
+def _clean_hermes_stdout(stdout: str) -> str:
+    lines = [line for line in stdout.splitlines() if line.strip()]
+    content_lines = [line for line in lines if not line.strip().startswith("session_id:")]
+    return "\n".join(content_lines).strip()
+
+
+def _call_hermes_cli(system: str, user: str, timeout: int) -> str:
+    prompt = (
+        "다음 system 지시와 user 입력을 따르세요.\n"
+        "최종 답변만 출력하고, 설명/머리말/코드펜스는 붙이지 마세요.\n\n"
+        f"[system]\n{system}\n\n"
+        f"[user]\n{user}\n"
+    )
+    cmd = [
+        "hermes",
+        "--profile",
+        HERMES_PROFILE,
+        "chat",
+        "-Q",
+        "-q",
+        prompt,
+        "--toolsets",
+        "",
+    ]
+    proc = subprocess.run(
+        cmd,
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+        cwd=str(Path(__file__).parent.parent),
+    )
+    if proc.returncode != 0:
+        stderr = (proc.stderr or "").strip()
+        stdout = (proc.stdout or "").strip()
+        raise RuntimeError(stderr or stdout or f"hermes cli failed: {proc.returncode}")
+    output = _clean_hermes_stdout(proc.stdout or "")
+    if not output:
+        raise RuntimeError("hermes cli produced empty output")
+    return output
+
+
 def call_llm(system: str, user: str, temperature: float = 0.3, timeout: int = 300) -> str:
-    """LLM 호출. backend 설정에 따라 Hermit HTTP 또는 Codex CLI 실행."""
+    """LLM 호출. backend 설정에 따라 Hermit HTTP, Codex CLI, Hermes CLI 중 하나를 실행."""
     if LLM_BACKEND == "codex_exec":
         return _call_codex(system, user, timeout)
+    if LLM_BACKEND == "hermes_cli":
+        return _call_hermes_cli(system, user, timeout)
 
     for attempt in range(MAX_RETRIES):
         try:

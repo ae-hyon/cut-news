@@ -86,7 +86,7 @@ class SummarizeRequest(BaseModel):
 class SummarizerSettings(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    backend: Literal["codex_exec", "hermit_http"] = "codex_exec"
+    backend: Literal["codex_exec", "hermit_http", "hermes_cli"] = "codex_exec"
     model: str = "gpt-5.4-mini"
     reasoning_effort: str = "low"
     timeout: int = Field(default=300, ge=1, le=600)

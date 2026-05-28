@@ -2,8 +2,8 @@
 
 ## Current branch
 - `main`
-- Latest verified local/remote commit: `851fe59 fix: summarize hash-based article artifacts`.
-- `git status -sb` after push: `## main...origin/main` with a clean working tree.
+- Latest verified local/remote commit: `9d64e73 docs: document verified news pipeline flow`.
+- Current working tree intentionally contains uncommitted Hermes-runner support and planning docs; review before staging.
 
 ## Recently landed work
 - `601be69 feat: add daily feed snapshots`
@@ -24,10 +24,10 @@
 
 ### Production-like scheduled artifact pipeline
 
-Landed on `main` through `851fe59 fix: summarize hash-based article artifacts`.
+Landed on `main` through `9d64e73 docs: document verified news pipeline flow`; `851fe59 fix: summarize hash-based article artifacts` is the source fix commit.
 
 Current status: the full service flow is verified healthy for the code path that matters in production-like operation:
-GitHub scheduled crawl artifact -> local/server Codex summarizer -> backend import into explicit DB -> daily feed snapshot generation -> report gate.
+GitHub scheduled crawl artifact -> local/server OAuth-backed summarizer -> backend import into explicit DB -> daily feed snapshot generation -> report gate.
 
 Latest verified run report (`apps/summarizer/data/run_report.json`):
 - `status=success`, `failed_step=null`, `max_articles=null`.
@@ -49,7 +49,25 @@ Validation after landing:
 - `make local-report-check REPORT_CHECK_ARGS=--require-uncapped` -> `failures: []`.
 - `python3 -m unittest tests/test_scheduled_artifact_pipeline.py -q` -> OK.
 
-Remaining operational work is not a code-flow blocker: install the scheduler on the trusted machine with stable Codex OAuth and an explicit Neon `DATABASE_URL`, then run `make ops-pipeline-from-github` on the desired cadence.
+Remaining operational work is not a code-flow blocker: install the scheduler on the trusted machine with stable OAuth-backed AI runtime credentials and an explicit Neon `DATABASE_URL`, then run `make ops-pipeline-from-github` on the desired cadence.
+
+### Hermes-profile local runner quality slice
+
+Current working-tree slice:
+- Added Hermes CLI summarizer backend support (`PIPELINE_LLM_BACKEND=hermes_cli`) with profile selection via `PIPELINE_HERMES_PROFILE`.
+- Created/verified dedicated profile `cut-news-pipeline` outside the repo.
+- Verified `make ops-pipeline-from-github` on a disposable SQLite quality DB with user preferences copied but news/feed/read/scrap data empty.
+- Quality-run result: `status=success`, `import inserted=11`, `usable_imports=11`, `drop_reason_counts={}`, snapshots `attempted=3/generated=3/failed=0`, report check `failures=[]`.
+- Tests after the code change: `PYTHONPATH=apps/summarizer .venv/bin/python -m pytest apps/summarizer/tests -q` -> 15 passed; `make test` -> 123 passed.
+
+Observed gaps:
+- Summary prose is usable and fact-preserving, but classification quality is weak.
+- Examples: BTS/K-pop tourism -> `tech/tech-ai`, designer retail hats -> `global/global-us`, legal/crime/current-affairs clip -> `sports/sports-basketball`.
+- `classification_source_counts={"keyword_rule": 11}` shows effort/model tuning alone will not fix category placement until classification routing is improved.
+- Pipeline wrote `feed_date=2026-05-28`, while `GET /v1/me/feed` currently uses the previous KST date. Daily archive showed the generated articles, but home feed can look empty if the policies diverge.
+
+New planning doc:
+- `.dev/news-pipeline-quality-improvement-plan.md` describes the next implementation order: land Hermes runner support, fix feed-date visibility, add classification fixtures, improve classifier routing, add quality warnings, then evaluate effort/model settings on a fixed article set.
 
 ### Earlier local runtime and category-pipeline slices
 
@@ -156,6 +174,15 @@ Implemented in the working tree:
   - follow-up fix in this tree: future runs with this shape should fail at `failed_step="import"` and skip snapshot generation instead of reporting success.
 
 ## Next best steps
+
+Current priority after the Hermes quality run:
+1. Review and commit the current `hermes_cli` backend support plus docs if the diff remains scoped.
+2. Fix product-date/feed visibility so the scheduler-generated `feed_date` is what `/v1/me/feed` serves.
+3. Add classification quality fixtures from the 2026-05-28 quality run and improve category routing before spending time on higher effort.
+4. Run a fixed-article effort/model comparison only after classification is observable; candidate axis: low vs medium/high effort, same artifact set, same output metrics.
+5. Install the local Mac scheduler only after the default backend/profile/worker/effort policy is recorded.
+
+Historical verified steps:
 1. `crawl-naver.yml` manual workflow dispatch has been verified after GitHub CLI account switching was fixed. Run `26438030302` succeeded and uploaded the expected artifact files: `latest.json`, `crawl_report.json`, and `github_action_crawl_summary.json`. Artifact summary: `source=naver-all-categories`, `count=1`, `article_count=37`, `query_count=49`, `deduped_count=12`.
 2. Codex OAuth was re-logged in and verified from the real user home. Direct check passed with `HOME=/Users/reddit codex exec --skip-git-repo-check --sandbox read-only 'Reply exactly: codex-ok'`. Important pitfall: Hermes profile sessions can have `HOME=/Users/reddit/.hermes/profiles/school/home`; running the pipeline without `HOME=/Users/reddit` still sends Codex toward API-style auth and produced `401 Unauthorized: Missing bearer or basic authentication`.
 3. Bounded local/server summarizer/import verification passed after setting the real HOME: `HOME=/Users/reddit NEWS_SOURCE=naver-all-categories NEWS_COUNT=1 NEWS_PIPELINE_MAX_ARTICLES=3 make local-pipeline` succeeded in ~4m24s, inserted 1 article, generated 1 snapshot, and had empty `drop_reason_counts`.
