@@ -362,9 +362,13 @@ def _process_with_timing(json_path: Path) -> tuple[Path, dict | None, float]:
     return json_path, result, elapsed
 
 
+def _input_json_files() -> list[Path]:
+    return sorted(f for f in JSON_DIR.glob("*.json") if not f.name.endswith("_error.json"))
+
+
 def main():
     SUMMARIZED_DIR.mkdir(parents=True, exist_ok=True)
-    json_files = sorted(f for f in JSON_DIR.glob("[0-9]*.json") if "_error" not in f.name)
+    json_files = _input_json_files()
     max_workers = max(1, int(os.getenv("PIPELINE_MAX_WORKERS", "1")))
 
     if not json_files:

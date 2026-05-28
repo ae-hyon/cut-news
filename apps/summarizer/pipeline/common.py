@@ -26,6 +26,19 @@ VERIFIED_DIR = DATA_DIR / "verified"
 
 MAX_RETRIES = 5
 RETRY_BASE_DELAY = 10  # 초
+CODEX_MAX_ATTEMPTS = 5
+
+
+_NON_RETRYABLE_CODEX_MARKERS = (
+    "401 Unauthorized",
+    "Missing bearer or basic authentication",
+    "refresh_token_reused",
+    "token_expired",
+    "not logged in",
+    "login required",
+    "No such file or directory: 'codex'",
+    "command not found: codex",
+)
 
 
 def _get_api_key() -> str:
@@ -37,7 +50,24 @@ def _get_api_key() -> str:
     return HERMIT_API_KEY
 
 
-def _call_codex(system: str, user: str, timeout: int) -> str:
+def _retry_base_delay() -> float:
+    return float(os.getenv("PIPELINE_LLM_RETRY_BASE_DELAY", str(RETRY_BASE_DELAY)))
+
+
+def _codex_max_attempts() -> int:
+    return max(1, int(os.getenv("PIPELINE_CODEX_MAX_ATTEMPTS", str(CODEX_MAX_ATTEMPTS))))
+
+
+def _is_non_retryable_codex_error(message: str) -> bool:
+    lowered = message.lower()
+    return any(marker.lower() in lowered for marker in _NON_RETRYABLE_CODEX_MARKERS)
+
+
+def _codex_retry_delay(attempt: int) -> float:
+    return _retry_base_delay() * (2 ** attempt)
+
+
+def _call_codex_once(system: str, user: str, timeout: int) -> str:
     prompt = (
         "다음 system 지시와 user 입력을 따르세요.\n"
         "최종 답변만 출력하고, 설명/머리말/코드펜스는 붙이지 마세요.\n\n"
@@ -73,12 +103,42 @@ def _call_codex(system: str, user: str, timeout: int) -> str:
             stderr = (proc.stderr or "").strip()
             stdout = (proc.stdout or "").strip()
             raise RuntimeError(stderr or stdout or f"codex exec failed: {proc.returncode}")
-        return Path(output_path).read_text(encoding="utf-8").strip()
+        output = Path(output_path).read_text(encoding="utf-8").strip()
+        if not output:
+            raise RuntimeError("codex exec produced empty output")
+        return output
     finally:
         try:
             Path(output_path).unlink(missing_ok=True)
         except Exception:
             pass
+
+
+def _call_codex(system: str, user: str, timeout: int) -> str:
+    max_attempts = _codex_max_attempts()
+    last_error: Exception | None = None
+
+    for attempt in range(max_attempts):
+        try:
+            return _call_codex_once(system, user, timeout)
+        except subprocess.TimeoutExpired as e:
+            last_error = e
+            message = f"codex exec timed out after {timeout}s"
+        except RuntimeError as e:
+            last_error = e
+            message = str(e)
+            if _is_non_retryable_codex_error(message):
+                raise
+
+        if attempt == max_attempts - 1:
+            break
+
+        delay = _codex_retry_delay(attempt)
+        print(f"\n    ⚠️ Codex Error — {message} — {delay:g}초 대기 후 재시도 ({attempt + 1}/{max_attempts})")
+        if delay > 0:
+            time.sleep(delay)
+
+    raise RuntimeError(f"codex exec {max_attempts}회 재시도 실패: {last_error}")
 
 
 def call_llm(system: str, user: str, temperature: float = 0.3, timeout: int = 300) -> str:

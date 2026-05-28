@@ -79,9 +79,13 @@ def _process_with_timing(article_id: str) -> tuple[str, dict | None, float]:
     return article_id, result, elapsed
 
 
+def _summary_files() -> list[Path]:
+    return sorted(f for f in SUMMARIZED_DIR.glob("*.json") if not f.name.endswith("_error.json"))
+
+
 def main():
     VERIFIED_DIR.mkdir(parents=True, exist_ok=True)
-    sum_files = sorted(SUMMARIZED_DIR.glob("[0-9]*.json"))
+    sum_files = _summary_files()
     max_workers = max(1, int(os.getenv("PIPELINE_MAX_WORKERS", "1")))
 
     if not sum_files:
