@@ -158,24 +158,25 @@ cd apps/backend && PYTHONPATH=. uv run pytest tests/test_article_ingest_classifi
 ```
 Expected: at least the current misclassified cases fail.
 
-### Task 2.2: Prefer crawler source query/subcategory metadata before broad keyword rules
+### Task 2.2: Use crawler metadata only when the article text supports it
 
-**Status:** implemented. `_derive_categories` now tries crawler source metadata before `KEYWORD_RULES`, and uses `classification_source='crawler_source_query'` when a source query maps cleanly to a supported subcategory.
+**Status:** tightened after live DB audit. `_derive_categories` now uses stronger exact source subcategory, then crawler metadata only when title/summary contain supporting evidence for the source query/category, and only then broad keyword rules. Keyword matching now uses title + generated summary rather than raw crawler body, because raw pages can include related-link noise such as unrelated `청약`, `주가`, `미국`, or `농구` text.
 
-**Objective:** Reduce false positives where generic words like `AI`, `미국`, or `농구` inside an unrelated article push the article to the wrong category.
+**Objective:** Reduce false positives where generic words like `AI`, `미국`, `농구`, `청약`, or `주가` inside unrelated crawler page content push the article to the wrong category.
 
 **Files:**
 - Modify: `apps/backend/app/application/services/article_ingest_service.py`
-- Test: `apps/backend/tests/test_article_ingest_classification_quality.py`
+- Test: `apps/backend/tests/test_article_ingest_service.py`
 
 **Implementation direction:**
-1. If the summarizer JSON contains `source_category` plus `source_query`, use `CRAWLER_SOURCE_QUERY_SUBCATEGORY_ALIASES` when it maps cleanly.
-2. Use broad `KEYWORD_RULES` only after stronger source metadata and exact source subcategory checks fail.
-3. Add confidence/observability field if possible: `classification_source` should distinguish `crawler_source_query`, `crawler_source_category`, `keyword_rule`, and future `llm_classifier`.
+1. If the summarizer JSON contains `source_category` plus `source_query`, use `CRAWLER_SOURCE_QUERY_SUBCATEGORY_ALIASES` only when title/summary support the query.
+2. Fall back to `crawler_source_category` only when title/summary support the broad source category.
+3. Use broad `KEYWORD_RULES` only after stronger source metadata and exact source subcategory checks fail.
+4. Keep observability via `classification_source`: `crawler_source_query`, `crawler_source_category`, `source_subcategory`, `keyword_rule`.
 
 **Verification:**
 ```bash
-cd apps/backend && PYTHONPATH=. uv run pytest tests/test_article_ingest_service.py tests/test_article_ingest_classification_quality.py -q
+cd apps/backend && PYTHONPATH=. uv run pytest tests/test_article_ingest_service.py -q
 make test
 ```
 

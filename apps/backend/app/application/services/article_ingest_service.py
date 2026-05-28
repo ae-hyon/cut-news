@@ -110,6 +110,56 @@ CRAWLER_SOURCE_QUERY_SUBCATEGORY_ALIASES = {
     '여행': 'lifestyle-travel',
     '맛집': 'lifestyle-food',
 }
+CRAWLER_SOURCE_QUERY_EVIDENCE_TERMS = {
+    '국내주식': ('국내주식', '국내 주식', '코스피', '코스닥', '증권', '증시', '주가'),
+    '해외주식': ('해외주식', '해외 주식', '나스닥', 's&p', '다우', '뉴욕증시'),
+    'ETF': ('etf', '상장지수펀드'),
+    '비상장주식': ('비상장주식', '비상장 주식'),
+    '비트코인': ('비트코인', 'bitcoin', 'btc'),
+    '알트코인': ('알트코인', '이더리움', 'ethereum', 'eth'),
+    'DeFi': ('defi', '디파이'),
+    'NFT': ('nft',),
+    '아파트': ('아파트', '주택', '부동산'),
+    '청약': ('청약', '분양'),
+    '전세/월세': ('전세', '월세', '임대차'),
+    '상업용': ('상업용', '오피스', '상가'),
+    '국내정치': ('국회', '대통령', '정당', '정부', '정치'),
+    '외교': ('외교', '정상회담', '안보', '북한', '대사'),
+    '정책': ('정책', '법안', '규제', '세제', '예산'),
+    '거시경제': ('거시경제', 'gdp', '성장률', '경기', '물가'),
+    '금융': ('금융', '은행', '대출', '금리', '보험'),
+    '무역': ('무역', '수출', '수입', '관세', '공급망'),
+    'AI': ('ai', '인공지능', '피지컬 ai'),
+    '반도체': ('반도체', '메모리', '파운드리'),
+    '스타트업': ('스타트업', '창업', '벤처'),
+    '빅테크': ('빅테크', '플랫폼', '애플', '구글', '메타', '마이크로소프트'),
+    'K-POP': ('k-pop', 'kpop', 'k팝', '아이돌'),
+    '드라마': ('드라마', 'ott'),
+    '영화': ('영화', '개봉'),
+    '축구': ('축구', '월드컵', 'k리그'),
+    '야구': ('야구', 'kbo', 'mlb'),
+    '농구': ('농구', 'nba', 'kbl'),
+    'e스포츠': ('e스포츠', 'esports', '리그오브레전드'),
+    '미국': ('미국', '워싱턴', '뉴욕'),
+    '중국': ('중국', '베이징', '상하이'),
+    '유럽': ('유럽', 'eu'),
+    '아시아': ('아시아', '일본', '동남아'),
+    '건강': ('건강', '의료', '병원', '헬스케어', '웰니스'),
+    '여행': ('여행', '관광', '항공'),
+    '맛집': ('맛집', '식음료', '외식'),
+}
+CRAWLER_SOURCE_CATEGORY_EVIDENCE_TERMS = {
+    'stock': ('주식', '증권', '증시', '코스피', '코스닥', '나스닥', 'etf'),
+    'crypto': ('가상자산', '암호화폐', '코인', '비트코인', '두나무', '업비트', '블록체인'),
+    'realestate': ('부동산', '아파트', '주택', '청약', '분양', '전세', '월세'),
+    'politics': ('정치', '국회', '대통령', '정부', '정당', '외교', '북한', '공정위', '검찰'),
+    'economy': ('경제', '금융', '은행', '대출', '매출', '실적', '투자', '공정거래', '공정위'),
+    'tech': ('ai', '인공지능', '반도체', '스타트업', '빅테크', '로봇', '플랫폼'),
+    'entertainment': ('k-pop', 'kpop', 'k팝', '드라마', '영화', '아이돌'),
+    'sports': ('축구', '야구', '농구', '스포츠', 'kbo', 'k리그', 'nba'),
+    'global': ('미국', '중국', '유럽', '아시아', '워싱턴', '베이징', '국제'),
+    'lifestyle': ('건강', '의료', '여행', '관광', '맛집', '식음료', '외식', '패션'),
+}
 
 SUPPORTED_SUBCATEGORIES = {
     'stock': {'stock-domestic', 'stock-overseas', 'stock-etf', 'stock-unlisted'},
@@ -155,7 +205,7 @@ KEYWORD_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     ('economy', 'economy-trade', ('원유', '유가', '정유', '에너지', '무역', '수출', '수입', '공급망', '관세', 'opec')),
     ('economy', 'economy-finance', ('환율', '달러-원', '달러원', '금리', '국채', '물가', '인플레', 'cpi', 'fomc', '금융')),
     ('economy', 'economy-macro', ('gdp', '성장률', '거시', '경기')),
-    ('politics', 'politics-policy', ('정부', '기재부', '예산', '추경', '세제', '세금', '재정', '규제', '법안', '정책')),
+    ('politics', 'politics-policy', ('정부', '기재부', '예산', '추경', '세제', '세금', '소득세', '과세', '국세청', '재정', '규제', '법안', '정책')),
     ('politics', 'politics-domestic', ('국회', '대통령', '정당', '청와대')),
     ('politics', 'politics-diplomacy', ('외교', '정상회담', '안보')),
     ('tech', 'tech-semiconductor', ('반도체', '메모리', '파운드리', '리노공업', 'sk하이닉스', '삼성전자')),
@@ -277,30 +327,40 @@ def _has_economic_title_signal(title: str) -> bool:
     return bool(ECONOMIC_TITLE_SIGNAL_PATTERN.search(title))
 
 
-def _classify_from_crawler_source(article_payload: dict) -> ArticleDerivedCategory | None:
+def _has_any_term(haystack: str, terms: tuple[str, ...]) -> bool:
+    return any(term.lower() in haystack for term in terms)
+
+
+def _classify_from_crawler_source(article_payload: dict, summary: str) -> ArticleDerivedCategory | None:
     source_category = str(article_payload.get('source_category') or '')
     if source_category not in SUPPORTED_SUBCATEGORIES:
         return None
 
+    title = str(article_payload.get('title') or '')
+    haystack = f'{title} {summary}'.lower()
     source_query = str(article_payload.get('source_query') or '')
     query_subcategory = CRAWLER_SOURCE_QUERY_SUBCATEGORY_ALIASES.get(source_query)
-    if query_subcategory in SUPPORTED_SUBCATEGORIES[source_category]:
+    query_terms = CRAWLER_SOURCE_QUERY_EVIDENCE_TERMS.get(source_query, (source_query,))
+    if query_subcategory in SUPPORTED_SUBCATEGORIES[source_category] and _has_any_term(haystack, query_terms):
         return ArticleDerivedCategory(
             primary_category=source_category,
             subcategory=query_subcategory,
             classification_source='crawler_source_query',
         )
 
-    return ArticleDerivedCategory(
-        primary_category=source_category,
-        subcategory=DEFAULT_SUBCATEGORY_BY_PRIMARY[source_category],
-        classification_source='crawler_source_category',
-    )
+    category_terms = CRAWLER_SOURCE_CATEGORY_EVIDENCE_TERMS.get(source_category, ())
+    if _has_any_term(haystack, category_terms):
+        return ArticleDerivedCategory(
+            primary_category=source_category,
+            subcategory=DEFAULT_SUBCATEGORY_BY_PRIMARY[source_category],
+            classification_source='crawler_source_category',
+        )
+
+    return None
 
 
-def _derive_categories(article_payload: dict, category_payload: dict) -> ArticleDerivedCategory | None:
+def _derive_categories(article_payload: dict, category_payload: dict, summary: str = '') -> ArticleDerivedCategory | None:
     title = str(article_payload.get('title') or '')
-    content = str(article_payload.get('content') or '')
     raw_primary = str(category_payload.get('primary_category') or '')
     raw_subcategory = str(category_payload.get('subcategory') or '')
 
@@ -319,11 +379,11 @@ def _derive_categories(article_payload: dict, category_payload: dict) -> Article
             classification_source='source_subcategory',
         )
 
-    crawler_classified = _classify_from_crawler_source(article_payload)
+    crawler_classified = _classify_from_crawler_source(article_payload, summary)
     if crawler_classified is not None:
         return crawler_classified
 
-    classified = _classify_from_keywords(title, content)
+    classified = _classify_from_keywords(title, summary)
     if classified:
         return ArticleDerivedCategory(
             primary_category=classified[0],
@@ -400,6 +460,7 @@ def load_summarized_articles_report(data_dir: Path) -> tuple[list[ArticleIngestR
         derived = _derive_categories(
             article_payload,
             category_payload,
+            summary,
         )
         if derived is None:
             _increment(drop_reason_counts, 'category_unmapped')

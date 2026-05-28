@@ -20,6 +20,39 @@ STEPS = {
 }
 DATA_DIR = Path(__file__).resolve().parent / 'data'
 RUN_MANIFEST_PATH = DATA_DIR / 'run_manifest.json'
+STEP_OUTPUTS = {
+    1: ('raw',),
+    2: ('json',),
+    3: ('scored',),
+    4: ('summarized',),
+    5: ('verified',),
+}
+ROOT_OUTPUTS_BY_STEP = {
+    1: ('category_map.json', 'run_report.json'),
+    2: ('category_map.json',),
+}
+
+
+def _remove_directory_files(directory: Path) -> None:
+    if not directory.exists():
+        return
+    for path in directory.iterdir():
+        if path.is_file():
+            path.unlink()
+
+
+def _prepare_pipeline_run(*, start_step: int) -> None:
+    for step, directories in STEP_OUTPUTS.items():
+        if step < start_step:
+            continue
+        for directory in directories:
+            _remove_directory_files(DATA_DIR / directory)
+    for step, filenames in ROOT_OUTPUTS_BY_STEP.items():
+        if step < start_step:
+            continue
+        for filename in filenames:
+            (DATA_DIR / filename).unlink(missing_ok=True)
+    _write_run_manifest(complete=False)
 
 
 def run_step(step_num: int):
@@ -48,20 +81,22 @@ def _write_run_manifest(*, complete: bool) -> None:
 
 def main():
     args = sys.argv[1:]
-    _write_run_manifest(complete=False)
 
     if "--step" in args:
         idx = args.index("--step")
         step = int(args[idx + 1])
+        _prepare_pipeline_run(start_step=step)
         run_step(step)
 
     elif "--from" in args:
         idx = args.index("--from")
         start = int(args[idx + 1])
+        _prepare_pipeline_run(start_step=start)
         for s in range(start, 6):
             run_step(s)
 
     else:
+        _prepare_pipeline_run(start_step=1)
         for s in STEPS:
             run_step(s)
 

@@ -61,7 +61,7 @@ def test_load_summarized_articles_uses_crawler_source_query_when_category_map_is
             'title': '일반 시장 소식',
             'date': '2026-04-28',
             'url': 'https://example.com/stock/1',
-            'content': '특정 키워드가 부족해도 수집 쿼리의 서비스 카테고리를 보존해야 합니다.',
+            'content': '국내주식 시장을 다루는 기사처럼 수집 쿼리의 서비스 카테고리를 보존해야 합니다.',
             'source_category': 'stock',
             'source_query': '국내주식',
         },
@@ -72,7 +72,7 @@ def test_load_summarized_articles_uses_crawler_source_query_when_category_map_is
             'headline_34': '일반 시장 소식',
             'headline_58': '일반 시장 소식',
             'headline_89': '일반 시장 소식',
-            'summary': '수집 카테고리 기반 분류 확인용 요약입니다.',
+            'summary': '국내주식 수집 카테고리 기반 분류 확인용 요약입니다.',
         },
     )
     write_json(dataset / 'verified' / 'stock-001.json', {'verdict': 'clean', '_article_id': 'stock-001', '_title': '일반 시장 소식'})
@@ -83,6 +83,82 @@ def test_load_summarized_articles_uses_crawler_source_query_when_category_map_is
     assert rows[0].primary_category == 'stock'
     assert rows[0].subcategory == 'stock-domestic'
     assert report['classification_source_counts'] == {'crawler_source_query': 1}
+
+
+def test_load_summarized_articles_prefers_text_signal_over_mismatched_crawler_source_query(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / 'ai-001.json',
+        {
+            'title': 'ETRI, K-피지컬 AI 전략 첫 공개·로봇지능 연구 집중',
+            'date': '2026-05-28',
+            'url': 'https://example.com/ai/1',
+            'content': 'ETRI는 피지컬 AI 시대 전략을 공개하고 AI 로봇 생태계를 핵심 전략으로 제시했다.',
+            'source_category': 'global',
+            'source_query': '중국',
+        },
+    )
+    write_json(dataset / 'summarized' / 'ai-001.json', {'headline_34': 'ETRI, K-피지컬 AI 전략 첫 공개', 'summary': 'ETRI가 피지컬 AI 전략을 공개했습니다.'})
+    write_json(dataset / 'verified' / 'ai-001.json', {'verdict': 'clean', 'confidence': 96})
+
+    rows, report = load_summarized_articles_report(dataset)
+
+    assert len(rows) == 1
+    assert rows[0].primary_category == 'tech'
+    assert rows[0].subcategory == 'tech-ai'
+    assert report['classification_source_counts'] == {'keyword_rule': 1}
+
+
+def test_load_summarized_articles_drops_mismatched_crawler_source_query_without_text_signal(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / 'realestate-001.json',
+        {
+            'title': '공정위, 중고 아이폰몰 6억 피해·대표 안모 씨 검찰 고발',
+            'date': '2026-05-28',
+            'url': 'https://example.com/consumer/1',
+            'content': '공정거래위원회가 중고 아이폰 판매 업체에 제재를 내리고 대표를 검찰에 고발했다. 관련 기사 목록에는 청약과 주가 뉴스도 함께 노출된다.',
+            'source_category': 'realestate',
+            'source_query': '청약',
+        },
+    )
+    write_json(dataset / 'summarized' / 'realestate-001.json', {'headline_34': '공정위, 중고 아이폰몰 피해 제재', 'summary': '공정위가 중고 아이폰몰 피해 건을 제재했습니다.'})
+    write_json(dataset / 'verified' / 'realestate-001.json', {'verdict': 'clean', 'confidence': 96})
+
+    rows, report = load_summarized_articles_report(dataset)
+
+    assert rows == []
+    assert report['drop_reason_counts'] == {'category_unmapped': 1}
+
+
+def test_load_summarized_articles_keeps_tax_policy_article_without_noisy_content_stock_match(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / 'policy-001.json',
+        {
+            'title': '가상자산 소득세 2027년 시행 앞두고 폐지론·혼란 심화',
+            'date': '2026-05-28',
+            'url': 'https://example.com/policy/1',
+            'content': '가상자산 과세 논란을 다루는 본문이다. 관련 기사 영역에는 증권과 미국 뉴스 링크가 섞여 있다.',
+            'source_category': 'politics',
+            'source_query': '국내정치',
+        },
+    )
+    write_json(
+        dataset / 'summarized' / 'policy-001.json',
+        {
+            'headline_34': '가상자산 소득세 시행 앞두고 혼란',
+            'summary': '가상자산 소득세 시행을 앞두고 폐지론이 커지고 국세청은 과세 시스템 준비를 이어가고 있습니다.',
+        },
+    )
+    write_json(dataset / 'verified' / 'policy-001.json', {'verdict': 'clean', 'confidence': 96})
+
+    rows, report = load_summarized_articles_report(dataset)
+
+    assert len(rows) == 1
+    assert rows[0].primary_category == 'politics'
+    assert rows[0].subcategory == 'politics-policy'
+    assert report['classification_source_counts'] == {'keyword_rule': 1}
 
 
 def test_load_summarized_articles_skips_items_without_summary(tmp_path: Path):

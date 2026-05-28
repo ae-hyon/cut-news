@@ -2,8 +2,8 @@
 
 ## Current branch
 - `main`
-- Latest verified local commit: current `HEAD` (`fix: align feed date and source-query classification`).
-- Local branch is ahead of `origin/main`; push is pending unless the user asks to publish.
+- Latest verified local commit: current `HEAD`; latest pushed baseline was `0ab84de`, with a new classifier/stale-artifact cleanup slice in progress.
+- Local branch may be ahead of `origin/main`; check `git status --short --branch` before continuing.
 
 ## Recently landed work
 - `601be69 feat: add daily feed snapshots`
@@ -62,8 +62,9 @@ Current working-tree slice:
 
 Implemented in the working tree after the initial quality run:
 - `/v1/me/feed` uses today's KST product feed date to match the scheduler-generated `feed_date`.
-- Source-query classification fixtures cover broad keyword false positives.
-- Import classification now prefers crawler `source_query`/`source_category` metadata before broad keyword rules and reports `crawler_source_query` when applicable.
+- Source-query classification fixtures cover broad keyword false positives and live-audit cases where crawler source queries were wrong (`global/중국` for ETRI AI, `realestate/청약` for a consumer fraud article, noisy stock/global links inside tax-policy content).
+- Import classification now trusts crawler `source_query`/`source_category` only when title/summary contain supporting evidence, and broad keyword rules use title + generated summary instead of raw crawler body to avoid related-link/page chrome noise.
+- `apps/summarizer/run_pipeline.py` clears stale downstream artifacts at run start so old JSON/scored/summarized/verified files cannot be imported into the next completed run.
 - `make local-report-check` emits non-failing `quality_warnings` for all-keyword-rule classification runs.
 - Hermes backend supports optional `PIPELINE_HERMES_MODEL` and `PIPELINE_HERMES_PROVIDER`; reasoning effort remains a legacy Codex-only axis until Hermes CLI exposes a supported flag.
 
