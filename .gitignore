@@ -82,12 +82,28 @@ coverage/
 # Local databases / runtime state
 *.db
 *.db-*
+*.db.bak.*
 *.sqlite
 *.sqlite3
 *.sqlite-*
 *.sqlite3-*
 apps/crawler/output/
 .local/
+
+# Local frontend/compiler caches
+*.tsbuildinfo
+
+# Local summarizer/pipeline run artifacts
+# Existing tracked fixtures under apps/summarizer/data stay tracked; use git add -f
+# when intentionally adding a new fixture that matches these generated paths.
+apps/summarizer/data/run_manifest.json
+apps/summarizer/data/run_report.json
+apps/summarizer/data/run_reports/
+apps/summarizer/data/raw/*
+apps/summarizer/data/json/*
+apps/summarizer/data/scored/*
+apps/summarizer/data/summarized/*
+apps/summarizer/data/verified/*
 
 # Local agent/tool state
 .agent-learner/
