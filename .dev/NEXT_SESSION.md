@@ -61,8 +61,9 @@ Current working-tree slice:
 - Tests after the code change: `PYTHONPATH=apps/summarizer .venv/bin/python -m pytest apps/summarizer/tests -q` -> 16 passed; `cd apps/backend && PYTHONPATH=. uv run pytest tests/ -q` -> 126 passed.
 
 Implemented in the working tree after the initial quality run:
-- `/v1/me/feed` uses today's KST product feed date to match the scheduler-generated `feed_date`.
+- `/v1/me/feed` uses today's KST product feed date to match the scheduler-generated `feed_date`; snapshot generation now selects articles from the previous publication date for that product bucket (for example `feed_date=2026-05-29` uses `published_at=2026-05-28`).
 - Source-query classification fixtures cover broad keyword false positives and live-audit cases where crawler source queries were wrong (`global/중국` for ETRI AI, `realestate/청약` for a consumer fraud article, noisy stock/global links inside tax-policy content).
+- Import quality gate now also drops summary/article topic mismatches (`quality_gate:topic_mismatch`) when a generated headline/summary has no salient overlap with the original source title; this targets mixed-content cases such as the observed `허웅 재판` article being summarized as unrelated `무인창고 68억 은닉` content.
 - Import classification now trusts crawler `source_query`/`source_category` only when title/summary contain supporting evidence, and broad keyword rules use title + generated summary instead of raw crawler body to avoid related-link/page chrome noise.
 - `apps/summarizer/run_pipeline.py` clears stale downstream artifacts at run start so old JSON/scored/summarized/verified files cannot be imported into the next completed run.
 - `make local-report-check` emits non-failing `quality_warnings` for all-keyword-rule classification runs.

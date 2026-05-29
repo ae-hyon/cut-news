@@ -356,7 +356,7 @@ def test_generate_daily_snapshots_counts_generated_skipped_viewed_and_failed_use
                 content='c',
                 primary_category='economy',
                 subcategory='macro',
-                published_at='2026-05-20',
+                published_at='2026-05-19',
                 original_url='https://news.example/a1',
                 score_weight=0.95,
             )

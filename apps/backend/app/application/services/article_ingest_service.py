@@ -178,6 +178,12 @@ SOURCE_CATEGORIES_REQUIRING_ECONOMIC_TITLE_SIGNAL = {'정치', '사회', '문화
 MIN_VERIFICATION_CONFIDENCE = 80
 MIN_DESCRIPTION_SOURCE_VERIFICATION_CONFIDENCE = 90
 MAX_SUMMARY_RETRY_COUNT = 2
+TOPIC_TOKEN_PATTERN = re.compile(r'[0-9A-Za-z가-힣]+')
+TITLE_TOPIC_STOPWORDS = {
+    '단독', '속보', '종합', '오늘', '내일', '어제', '이번', '관련', '기자', '뉴스', '보도', '사진',
+    '확대', '증가', '감소', '상승', '하락', '강세', '약세', '논란', '전망', '추진', '개최', '공개',
+    '정부', '시장', '업계', '올해', '내년', '최근', '최대', '최초', '종료', '시작', '발표',
+}
 RELIABLE_SOURCE_CATEGORY_BY_SUBCATEGORY = {
     '증권': ('stock', 'stock-domestic'),
     '주식시장': ('stock', 'stock-domestic'),
@@ -289,6 +295,43 @@ def _published_at(article_payload: dict) -> str:
     return str(article_payload.get('date') or '').strip()[:10]
 
 
+def _topic_token_list(text: str) -> list[str]:
+    tokens: list[str] = []
+    for raw_token in TOPIC_TOKEN_PATTERN.findall(text.lower()):
+        token = raw_token.strip()
+        if len(token) < 2 or token in TITLE_TOPIC_STOPWORDS:
+            continue
+        tokens.append(token)
+    return tokens
+
+
+def _topic_tokens(text: str) -> set[str]:
+    return set(_topic_token_list(text))
+
+
+def _summary_topic_mismatch(article_payload: dict, summary_payload: dict) -> bool:
+    source_title = str(article_payload.get('title') or '')
+    title_tokens = _topic_tokens(source_title)
+    if len(title_tokens) < 3:
+        return False
+
+    summary_text = ' '.join(
+        str(summary_payload.get(field) or '')
+        for field in ('headline_34', 'headline_58', 'headline_89', 'summary')
+    )
+    summary_tokens = _topic_tokens(summary_text)
+    overlap = title_tokens.intersection(summary_tokens)
+    if not overlap:
+        return True
+
+    headline_tokens = _topic_token_list(str(summary_payload.get('headline_34') or ''))
+    title_overlap_positions = [index for index, token in enumerate(headline_tokens) if token in title_tokens]
+    if title_overlap_positions and min(title_overlap_positions) >= 4:
+        return True
+
+    return False
+
+
 def _quality_gate_failure_reason(article_payload: dict, summary_payload: dict, verification_payload: dict) -> str | None:
     verdict = str(verification_payload.get('verdict') or '').strip().lower()
     if verdict != 'clean':
@@ -308,6 +351,9 @@ def _quality_gate_failure_reason(article_payload: dict, summary_payload: dict, v
     violations = summary_payload.get('_violations')
     if isinstance(violations, list) and any(str(item).strip() for item in violations):
         return 'violations'
+
+    if _summary_topic_mismatch(article_payload, summary_payload):
+        return 'topic_mismatch'
 
     retry_count = summary_payload.get('_retry_count')
     if isinstance(retry_count, int | float) and int(retry_count) > MAX_SUMMARY_RETRY_COUNT:

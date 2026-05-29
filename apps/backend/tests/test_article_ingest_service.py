@@ -475,16 +475,38 @@ def test_load_summarized_articles_report_tracks_quality_gate_skips(tmp_path: Pat
         },
     )
     write_json(dataset / 'verified' / '002.json', {'verdict': 'clean', 'confidence': 96, '_article_id': '002', '_title': '동남아 물류 재편에 해운 운임 변동성 확대'})
+
+    write_json(
+        dataset / 'json' / '003.json',
+        {
+            'title': '농구 허웅 전 연인 명예훼손 재판',
+            'date': '2026-04-28',
+            'url': 'https://example.com/3',
+            'content': '허웅 전 연인의 명예훼손 재판 절차를 다룬 기사 본문입니다.',
+        },
+    )
+    write_json(
+        dataset / 'summarized' / '003.json',
+        {
+            'headline_34': '무인창고 현금 68억 은닉·허웅 명예훼손 재판',
+            'headline_58': '무인창고에서 현금 68억 원이 발견되며 자금 은닉 수사가 확대됐다',
+            'headline_89': '무인창고에서 현금 68억 원이 발견되며 자금 은닉 수사가 확대됐고 관계자 조사가 이어지고 있다',
+            'summary': '무인창고에서 현금 68억 원이 발견되며 자금 은닉 수사가 확대됐습니다.',
+        },
+    )
+    write_json(dataset / 'verified' / '003.json', {'verdict': 'clean', 'confidence': 97, '_article_id': '003', '_title': '농구 허웅 전 연인 명예훼손 재판'})
     write_json(dataset / 'category_map.json', [
         {'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'},
         {'article_id': '002', 'primary_category': '경제', 'subcategory': '일반'},
+        {'article_id': '003', 'primary_category': '스포츠', 'subcategory': '농구'},
     ])
 
     rows, report = load_summarized_articles_report(dataset)
 
     assert len(rows) == 1
     assert rows[0].id == 'SUM-002'
-    assert report['quality_gate_skip_counts'] == {'low_confidence': 1}
+    assert report['quality_gate_skip_counts'] == {'low_confidence': 1, 'topic_mismatch': 1}
+    assert report['drop_reason_counts']['quality_gate:topic_mismatch'] == 1
 
 
 

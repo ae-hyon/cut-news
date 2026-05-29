@@ -89,7 +89,7 @@ Expected: no whitespace errors.
 
 ### Task 1.1: Decide the date policy in code comments/tests
 
-**Status:** implemented. `/v1/me/feed` now uses today's KST product feed date so it matches the scheduled 08:30 pipeline `feed_date` bucket.
+**Status:** implemented. `/v1/me/feed` now uses today's KST product feed date so it matches the scheduled 08:30 pipeline `feed_date` bucket. Snapshot generation maps that product bucket to the previous article publication date, so a 2026-05-29 morning feed is populated from 2026-05-28 articles instead of looking for same-day articles that do not exist yet.
 
 **Objective:** Choose one explicit product policy and make it testable.
 
@@ -160,7 +160,7 @@ Expected: at least the current misclassified cases fail.
 
 ### Task 2.2: Use crawler metadata only when the article text supports it
 
-**Status:** tightened after live DB audit. `_derive_categories` now uses stronger exact source subcategory, then crawler metadata only when title/summary contain supporting evidence for the source query/category, and only then broad keyword rules. Keyword matching now uses title + generated summary rather than raw crawler body, because raw pages can include related-link noise such as unrelated `청약`, `주가`, `미국`, or `농구` text.
+**Status:** tightened after live DB audit. `_derive_categories` now uses stronger exact source subcategory, then crawler metadata only when title/summary contain supporting evidence for the source query/category, and only then broad keyword rules. Keyword matching now uses title + generated summary rather than raw crawler body, because raw pages can include related-link noise such as unrelated `청약`, `주가`, `미국`, or `농구` text. Import quality gates also reject source-title/generated-summary topic mismatches as `quality_gate:topic_mismatch`, covering mixed-content extraction/summarization failures like the observed `허웅 재판` title paired with an unrelated `무인창고 68억 은닉` summary.
 
 **Objective:** Reduce false positives where generic words like `AI`, `미국`, `농구`, `청약`, or `주가` inside unrelated crawler page content push the article to the wrong category.
 

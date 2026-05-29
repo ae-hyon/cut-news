@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from app.application.services.feed_service import FeedService
 from app.domain.entities import Article, DailyFeedSnapshot, DailyFeedSnapshotItem
@@ -32,12 +32,13 @@ class DailyFeedSnapshotService:
         force: bool = False,
     ) -> DailyFeedSnapshot:
         existing = self.snapshot_repository.get_by_user_date(user_id, feed_date)
+        publication_date = self._publication_date_for_feed(feed_date)
         if (
             existing is not None
             and existing.first_viewed_at is not None
             and existing.items
             and not force
-            and self._snapshot_items_match_feed_date(existing, feed_date)
+            and self._snapshot_items_match_publication_date(existing, publication_date)
         ):
             return existing
 
@@ -51,7 +52,7 @@ class DailyFeedSnapshotService:
             preference.mode,
             preference.primary_categories,
             preference.subcategories,
-            published_date=feed_date,
+            published_date=publication_date,
         )
         items = self._snapshot_items_from_blocks(blocks)
         snapshot = DailyFeedSnapshot(
@@ -68,13 +69,20 @@ class DailyFeedSnapshotService:
         )
         return self.snapshot_repository.save(snapshot)
 
-    def _snapshot_items_match_feed_date(self, snapshot: DailyFeedSnapshot, feed_date: str) -> bool:
+    @staticmethod
+    def _publication_date_for_feed(feed_date: str) -> str:
+        try:
+            return (datetime.fromisoformat(feed_date).date() - timedelta(days=1)).isoformat()
+        except ValueError:
+            return feed_date
+
+    def _snapshot_items_match_publication_date(self, snapshot: DailyFeedSnapshot, publication_date: str) -> bool:
         for item in snapshot.items:
             try:
                 article = self.feed_service.get_article(item.article_id)
             except NotFoundError:
                 return False
-            if article.published_at != feed_date:
+            if article.published_at != publication_date:
                 return False
         return True
 

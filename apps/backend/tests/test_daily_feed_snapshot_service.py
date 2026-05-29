@@ -35,7 +35,7 @@ class StubFeedService:
                         content='c',
                         primary_category='tech',
                         subcategory='ai',
-                        published_at='2026-05-20',
+                        published_at='2026-05-19',
                         original_url='https://news.example/a2',
                         score_weight=0.88,
                     ),
@@ -53,7 +53,7 @@ class StubFeedService:
                         content='c',
                         primary_category='economy',
                         subcategory='macro',
-                        published_at='2026-05-20',
+                        published_at='2026-05-19',
                         original_url='https://news.example/a1',
                         score_weight=0.95,
                     ),
@@ -188,7 +188,7 @@ def test_generate_for_user_date_saves_preference_and_feed_block_items():
     assert snapshot.primary_categories == ['tech', 'economy']
     assert snapshot.subcategories == []
     assert snapshot.generation_source == 'manual-test'
-    assert feed_service.calls == [(PreferenceMode.WIDE, ['tech', 'economy'], [], '2026-05-20')]
+    assert feed_service.calls == [(PreferenceMode.WIDE, ['tech', 'economy'], [], '2026-05-19')]
     assert [(item.article_id, item.block_key, item.block_title, item.sort_order, item.score_weight) for item in snapshot.items] == [
         ('A2', 'tech-block', 'tech block', 1, 0.88),
         ('A1', 'economy-block', 'economy block', 2, 0.95),
@@ -214,7 +214,7 @@ def test_generate_for_user_date_regenerates_unviewed_snapshot_with_latest_prefer
                     content='c',
                     primary_category='economy',
                     subcategory='macro',
-                    published_at='2026-05-20',
+                    published_at='2026-05-19',
                     original_url='https://news.example/a1',
                     score_weight=0.95,
                 )
@@ -279,7 +279,7 @@ def test_generate_for_user_date_replaces_viewed_snapshot_with_stale_article_ids(
     assert regenerated.first_viewed_at is None
     assert regenerated.generation_source == 'api:get_me_feed'
     assert [item.article_id for item in regenerated.items] == ['A2', 'A1']
-    assert feed_service.calls[-1] == (PreferenceMode.WIDE, ['tech', 'economy'], [], '2026-05-20')
+    assert feed_service.calls[-1] == (PreferenceMode.WIDE, ['tech', 'economy'], [], '2026-05-19')
 
 
 def test_list_by_user_month_returns_only_persisted_snapshots_without_regenerating_from_current_preference():
