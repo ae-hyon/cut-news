@@ -35,7 +35,7 @@
 
   body {
     font-family: var(--font-body);
-    background: var(--color-bg);
+    background: radial-gradient(ellipse at 46% 8%, rgba(86,44,17,1) 0%, rgba(51,30,17,1) 25%, rgba(34,23,16,1) 45%, rgba(16,16,16,1) 70%);
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
