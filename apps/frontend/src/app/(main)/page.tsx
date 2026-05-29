@@ -20,7 +20,11 @@ export default function NewsHome() {
       .then((feed) => {
         if (!active) return;
         const items = feed.blocks.flatMap((block) => block.articles);
-        setNews(items.map((item, index) => mapArticleToNewsItem(item, index)));
+        setNews(
+          items.map((item, index) =>
+            mapArticleToNewsItem(item, index, feed.snapshot_id),
+          ),
+        );
         setError(null);
       })
       .catch((err) => {
@@ -83,7 +87,13 @@ export default function NewsHome() {
             key={item.id}
             news={item}
             index={i}
-            onClick={(id) => router.push(`/news/${id}`)}
+            onClick={(id, snapshotId) =>
+              router.push(
+                snapshotId
+                  ? `/news/${id}?snapshot_id=${snapshotId}`
+                  : `/news/${id}`,
+              )
+            }
           />
         ))}
       </div>

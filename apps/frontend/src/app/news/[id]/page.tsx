@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
 import { addMyScrap, getMyArticle, removeMyScrap } from '@/services/contentApi';
 import type { ArticleDetail } from '@/lib/types';
@@ -9,7 +9,9 @@ import type { ArticleDetail } from '@/lib/types';
 export default function NewsDetail() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id as string;
+  const snapshotId = searchParams.get('snapshot_id') ?? undefined;
   const [news, setNews] = useState<ArticleDetail | null>(null);
   const [scrapped, setScrapped] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ export default function NewsDetail() {
   useEffect(() => {
     let active = true;
 
-    getMyArticle(id)
+    getMyArticle(id, snapshotId)
       .then((article) => {
         if (!active) return;
         setNews(article);
@@ -36,7 +38,7 @@ export default function NewsDetail() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, snapshotId]);
 
   const toggleScrap = async () => {
     if (!news) return;

@@ -18,9 +18,11 @@ function blockSizeForIndex(index: number): BlockSize {
 export function mapArticleToNewsItem(
   article: ArticleCard,
   index = 0,
+  snapshotId?: number,
 ): NewsItem {
   return {
     id: article.id,
+    snapshotId,
     title: article.title,
     summary: article.summary,
     category: article.primary_category,
@@ -35,8 +37,11 @@ export function getMyFeed() {
   return api<FeedResponse>('/v1/me/feed');
 }
 
-export function getMyArticle(articleId: string) {
-  return api<ArticleDetail>(`/v1/me/articles/${articleId}`);
+export function getMyArticle(articleId: string, snapshotId?: string | number) {
+  const query = snapshotId
+    ? `?snapshot_id=${encodeURIComponent(snapshotId)}`
+    : '';
+  return api<ArticleDetail>(`/v1/me/articles/${articleId}${query}`);
 }
 
 export function getMyScraps() {

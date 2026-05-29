@@ -6,7 +6,7 @@ import type { NewsItem } from '@/types';
 interface NewsBlockProps {
   news: NewsItem;
   index: number;
-  onClick: (id: string) => void;
+  onClick: (id: string, snapshotId?: number) => void;
 }
 
 const sizeStyles = {
@@ -29,7 +29,7 @@ export default function NewsBlock({ news, index, onClick }: NewsBlockProps) {
       transition={{ duration: 0.4, delay: index * 0.06 }}
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.98 }}
-      onClick={() => onClick(news.id)}
+      onClick={() => onClick(news.id, news.snapshotId)}
       className={`${sizeStyles[news.blockSize]} w-full text-left p-5 rounded-lg border border-border-default bg-bg-card hover:border-text-tertiary transition-colors duration-200 flex flex-col justify-between group break-inside-avoid mb-3`}
     >
       <div>

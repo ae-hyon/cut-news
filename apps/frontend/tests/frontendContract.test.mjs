@@ -64,4 +64,22 @@ describe('real frontend backend contract', () => {
     assert.match(archiveSource, /archiveDay\?\.has_feed \?\? false/);
     assert.doesNotMatch(archiveSource, /archiveDay\.items/);
   });
+
+  it('passes snapshot_id from feed and archive article opens into detail reads', () => {
+    const apiSource = read('src/services/contentApi.ts');
+    const typesSource = read('src/types/index.ts');
+    const homeSource = read('src/app/(main)/page.tsx');
+    const archiveSource = read('src/app/(main)/archive/page.tsx');
+    const detailSource = read('src/app/news/[id]/page.tsx');
+
+    assert.match(typesSource, /snapshotId\?:\s*number/);
+    assert.match(
+      apiSource,
+      /snapshot_id=\$\{encodeURIComponent\(snapshotId\)\}/,
+    );
+    assert.match(homeSource, /feed\.snapshot_id/);
+    assert.match(archiveSource, /response\.snapshot_id/);
+    assert.match(detailSource, /useSearchParams/);
+    assert.match(detailSource, /getMyArticle\(id, snapshotId\)/);
+  });
 });

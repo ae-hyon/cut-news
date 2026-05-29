@@ -76,7 +76,9 @@ export default function ArchivePage() {
     try {
       const response = await getMyArchiveDate(date);
       setSelectedNews(
-        response.items.map((item, index) => mapArticleToNewsItem(item, index)),
+        response.items.map((item, index) =>
+          mapArticleToNewsItem(item, index, response.snapshot_id),
+        ),
       );
       setError(null);
     } catch (err) {
@@ -211,7 +213,13 @@ export default function ArchivePage() {
                   key={item.id}
                   news={item}
                   index={i}
-                  onClick={(id) => router.push(`/news/${id}`)}
+                  onClick={(id, snapshotId) =>
+                    router.push(
+                      snapshotId
+                        ? `/news/${id}?snapshot_id=${snapshotId}`
+                        : `/news/${id}`,
+                    )
+                  }
                 />
               ))}
             </div>

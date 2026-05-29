@@ -16,6 +16,7 @@ export interface SubCategory {
 
 export interface NewsItem {
   id: string;
+  snapshotId?: number;
   title: string;
   summary: string;
   category: string;
