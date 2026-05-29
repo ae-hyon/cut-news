@@ -316,11 +316,10 @@ make ops-pipeline-from-github
 
 ## Next best implementation order
 
-1. Commit the verified candidate-first + selective best-of summarizer slice.
-2. If the user approves touching Neon, re-run the artifact import path against Neon with the `.env` defaults and confirm `drop_reason_counts={}` after the health-category mapping fix.
-3. Record the selected daily policy in the scheduler/cron secret store; keep `NEWS_PIPELINE_MAX_ARTICLES` empty for product-like runs.
-4. Install the local Mac scheduler only after the operator env is final and secrets stay outside git.
-5. Revisit Codex low/medium/high effort only after `HOME=/Users/reddit codex login --device-auth` succeeds; otherwise continue Hermes model/provider comparisons.
+1. Commit and push the reporter-metadata prompt hardening found during the Neon run.
+2. Record the selected daily policy in the scheduler/cron secret store; keep `NEWS_PIPELINE_MAX_ARTICLES` empty for product-like runs.
+3. Install the local Mac scheduler only after the operator env is final and secrets stay outside git.
+4. Revisit Codex low/medium/high effort only after `HOME=/Users/reddit codex login --device-auth` succeeds; otherwise continue Hermes model/provider comparisons.
 
 ## Suggested first commands next session
 

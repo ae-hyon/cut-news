@@ -61,6 +61,7 @@ def _build_initial_prompt(article: dict) -> str:
         "headline_34는 29~34자, headline_58는 50~58자, headline_89는 76~89자 범위를 반드시 지키세요.",
         "세 headline 모두 범위만 맞추지 말고 가능한 한 상한에 가깝게 채우세요.",
         "짧다고 느슨하게 끝내지 말고, 원문 사실을 더 넣어 의미 밀도를 높이세요.",
+        "author/기자명 필드는 출처 메타데이터입니다. 기사의 핵심 사건이 아닌 기자 이름이나 '기자' 표현을 headline/summary에 넣지 마세요.",
     ]
 
     title = article.get("title", "")
@@ -138,6 +139,7 @@ def _build_density_retry_prompt(article: dict, result: dict) -> str | None:
         "이전 응답은 허용 범위 안이지만 headline 길이가 아직 너무 짧습니다.\n"
         "원문에 있는 사실만 사용해 더 구체적이고 밀도 있게 작성하세요.\n"
         "불필요한 수식어 대신 주체, 대상, 결과, 장소 같은 핵심 사실을 보강하세요.\n"
+        "author/기자명 필드는 출처 메타데이터이므로 기자 이름이나 '기자' 표현으로 길이를 채우지 마세요.\n"
         f"{guidance_text}\n"
         f"이전 응답: {json.dumps(result, ensure_ascii=False)}\n\n"
         f"기사: {json.dumps(article, ensure_ascii=False, indent=2)}"
@@ -252,6 +254,10 @@ def _build_retry_prompt(article: dict, hallucinations: list[str]) -> str:
     if any(keyword in issues for keyword in ["상승", "하락", "반납", "마감", "WTI", "유가", "환율"]):
         extra_guidance.append(
             "특히 방향·변동률·마감가 오류를 고치세요. 장중 고점/저점이나 상승분 반납을 최종 등락 방향으로 오해하면 안 됩니다."
+        )
+    if any(keyword in issues for keyword in ["기자", "author", "기자명"]):
+        extra_guidance.append(
+            "author/기자명 필드는 출처 메타데이터입니다. 기자 이름이나 '기자' 표현을 headline/summary에 넣지 말고 본문 핵심 사실로만 다시 작성하세요."
         )
     guidance_block = ""
     if extra_guidance:

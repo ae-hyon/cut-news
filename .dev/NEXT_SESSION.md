@@ -33,6 +33,7 @@ Current working-tree slice after the Hermes/profile quality work:
 - Operator/Make env propagation includes `PIPELINE_SELECTED_PER_CATEGORY`, `PIPELINE_BEST_OF_N`, and `PIPELINE_BEST_OF_SCORE_THRESHOLD`. Root `.env` is locally configured with the Hermes/profile/candidate-first defaults; it is gitignored and should not be committed.
 - Step 4 writes `apps/summarizer/data/summary_selection.json`; backend import reads it so intentionally unselected low-score JSON files are not counted as `missing_summary`.
 - Backend import now maps reproductive-health terms such as `심부전`, `폐경`, and `호르몬` to `lifestyle/lifestyle-health`, fixing the 2026-05-29 disposable run's single `category_unmapped` drop.
+- Step 4 prompt/retry guidance now treats `author`/기자명 as metadata and blocks reporter names/`기자` phrasing from being used to pad headlines or summaries; this fixed the first Neon run's single `quality_gate:verdict_not_clean` drop.
 - Docs updated: `.dev/news-pipeline-operations.md`, `.dev/news-pipeline-quality-improvement-plan.md`, and `BE_AI_ARCHITECTURE_NOTES.md`.
 
 Verified for this slice:
@@ -51,6 +52,7 @@ Latest disposable quality evidence:
 - Follow-up code added `summary_selection.json` and backend import filtering for selected article ids.
 - Second run with `.env` threshold `80`: `status=success`, `feed_date=2026-05-29`, `selected_count=9/10`, Step 4 summarized 9 and verified 9, best-of applied to 3 articles, report gate `failures=[]`, snapshots `attempted=3/generated=3/failed=0`.
 - Re-loading the same artifacts after the health-category mapping fix yields 9 importable rows and `drop_reason_counts={}`.
+- Neon run after push: first run found one reporter-metadata hallucination drop; after prompt/retry guidance fix, second Neon run `run_2026-05-29T220733+0900.json` produced 9 clean summaries, `usable_imports=9`, `drop_reason_counts={}`, snapshots `attempted=3/generated=3/failed=0`, report-check `failures=[]`.
 
 Suggested disposable quality run after tests pass:
 
@@ -231,11 +233,10 @@ Implemented in the working tree:
 ## Next best steps
 
 Current priority after the candidate-first/best-of slice:
-1. Commit the verified working tree once the diff remains scoped to Step 3/4 summarizer selection/best-of behavior, operator env propagation, backend import filtering/classification, tests, and docs.
-2. If the user approves touching Neon, re-run the artifact import path against Neon with the `.env` defaults and confirm `drop_reason_counts={}` in the scheduled run report.
-3. Record the final scheduled env in the actual scheduler/cron secret store and keep DB/alert secrets outside git.
-4. Install the local Mac scheduler only after the operator env is final and secrets stay outside git.
-5. Codex low/medium/high effort comparison remains blocked until `HOME=/Users/reddit codex login --device-auth` succeeds; otherwise continue Hermes profile/model-provider evaluation.
+1. Commit and push the reporter-metadata prompt hardening plus Neon run documentation.
+2. Record the final scheduled env in the actual scheduler/cron secret store and keep DB/alert secrets outside git.
+3. Install the local Mac scheduler only after the operator env is final and secrets stay outside git.
+4. Codex low/medium/high effort comparison remains blocked until `HOME=/Users/reddit codex login --device-auth` succeeds; otherwise continue Hermes profile/model-provider evaluation.
 
 Historical verified steps:
 1. `crawl-naver.yml` manual workflow dispatch has been verified after GitHub CLI account switching was fixed. Run `26438030302` succeeded and uploaded the expected artifact files: `latest.json`, `crawl_report.json`, and `github_action_crawl_summary.json`. Artifact summary: `source=naver-all-categories`, `count=1`, `article_count=37`, `query_count=49`, `deduped_count=12`.

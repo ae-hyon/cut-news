@@ -173,6 +173,29 @@ Result from `apps/summarizer/data/run_report.json`:
 
 Operational implication: keep the default best-of threshold at `80` for the current Step 3 score scale. A threshold of `85` was too high for the latest artifact set and did not trigger best-of on any article.
 
+
+## 2026-05-29 Neon production-like artifact run
+
+After pushing `df65b9d`, the same `.env` defaults were run against the configured Neon `DATABASE_URL` with:
+
+```bash
+HOME=/Users/reddit make ops-pipeline-from-github OPS_PIPELINE_ARGS='--load-dotenv'
+```
+
+First Neon run (`run_2026-05-29T215135+0900.json`) succeeded but imported 8 usable rows because one short market flash article was rejected with `quality_gate:verdict_not_clean`; the generated summary had used the reporter name from `author` metadata to pad headline/summary text. Follow-up fix: Step 4 prompts now explicitly treat `author`/기자명 as source metadata and tell the model not to use reporter names or `기자` phrasing in headline/summary content unless it is the article subject. Retry prompts add the same guidance when verifier feedback mentions reporter metadata.
+
+Second Neon run (`run_2026-05-29T220733+0900.json`) passed cleanly:
+
+- `status=success`, `failed_step=null`, `feed_date=2026-05-29`, `max_articles=null`.
+- `summary_selection.json`: `selected_count=9`, `total_json_count=10`, `selected_per_category=3`, `best_of_n=3`, `best_of_score_threshold=80`.
+- Step 4 verdicts: 9 clean summaries. Best-of applied to 4 selected articles; 5 used single summary.
+- Import: `inserted=1`, `updated=8`, `deleted=0`, `skipped=0`, `usable_imports=9`.
+- `drop_reason_counts={}`, `quality_gate_skip_counts={}`, `quality_warnings=[]`.
+- Snapshot: `attempted_user_count=3`, `generated_count=3`, `skipped_viewed_count=0`, `failed_count=0`.
+- `local-report-check --require-uncapped` returned `failures=[]`.
+
+This is the current best evidence that the candidate-first + selective best-of policy is safe for the scheduled operator path.
+
 ## Preconditions
 
 - Repo checkout: `/Users/reddit/Project/cut-news`.

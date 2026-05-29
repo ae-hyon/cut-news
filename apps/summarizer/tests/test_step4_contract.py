@@ -55,12 +55,14 @@ def test_initial_prompt_adds_directional_fact_guard_for_market_articles():
     article = {
         "title": "미·이란 협상재개 기대에 국제유가 5일만에 하락…WTI 1.5%↓",
         "content": "WTI는 전장 대비 1.51% 내렸고 장초반 상승분을 반납했다.",
+        "author": "권오석",
     }
 
     prompt = _build_initial_prompt(article)
 
     assert "상승/하락 방향, 변동률, 마감가를 원문과 다르게 바꾸지 마세요." in prompt
     assert "장중 움직임과 최종 마감 결과를 혼동하지 말고" in prompt
+    assert "기자 이름이나 '기자' 표현을 headline/summary에 넣지 마세요" in prompt
 
 
 def test_retry_prompt_adds_directional_fact_fix_guidance_for_hallucination_feedback():
@@ -73,6 +75,19 @@ def test_retry_prompt_adds_directional_fact_fix_guidance_for_hallucination_feedb
 
     assert "특히 방향·변동률·마감가 오류를 고치세요." in prompt
     assert "상승/하락 방향, 변동률, 마감가를 원문과 다르게 바꾸지 마세요." in prompt
+
+
+def test_retry_prompt_adds_author_metadata_guidance_for_reporter_hallucination():
+    article = {
+        "title": "[속보] 코스피 , 2.43% 오른 8384.31 시작…코스닥은 1112.15",
+        "author": "권오석",
+        "content": "코스피, 2.43% 오른 8384.31 시작…코스닥은 1112.15",
+    }
+
+    prompt = _build_retry_prompt(article, ["요약문은 원문에 없는 '권오석 기자'라는 인물/기자 정보를 추가했습니다."])
+
+    assert "author/기자명 필드는 출처 메타데이터입니다" in prompt
+    assert "기자 이름이나 '기자' 표현을 headline/summary에 넣지 말고" in prompt
 
 
 def test_process_file_salvages_small_overflow_by_trimming_last_retry_result(tmp_path, monkeypatch):
