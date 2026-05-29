@@ -11,7 +11,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from pipeline.common import (
-    JSON_DIR, SUMMARIZED_DIR, call_llm, parse_json_response, save_json, load_json
+    DATA_DIR, JSON_DIR, SCORED_DIR, SUMMARIZED_DIR, call_llm, parse_json_response, save_json, load_json
 )
 
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
@@ -265,6 +265,147 @@ def _build_retry_prompt(article: dict, hallucinations: list[str]) -> str:
     )
 
 
+def _best_of_n_limit() -> int:
+    raw_value = os.getenv("PIPELINE_BEST_OF_N", "").strip()
+    if not raw_value:
+        return 1
+    try:
+        value = int(raw_value)
+    except ValueError:
+        return 1
+    return min(max(value, 1), 5)
+
+
+def _best_of_score_threshold() -> float:
+    raw_value = os.getenv("PIPELINE_BEST_OF_SCORE_THRESHOLD", "80").strip()
+    try:
+        return float(raw_value)
+    except ValueError:
+        return 80.0
+
+
+def _score_for_article(article_id: str) -> float | None:
+    score_path = SCORED_DIR / f"{article_id}.json"
+    if not score_path.exists():
+        return None
+    try:
+        payload = load_json(score_path)
+    except Exception:
+        return None
+    score = payload.get("score")
+    if isinstance(score, int | float):
+        return float(score)
+    return None
+
+
+def _best_of_candidate_count(article_id: str) -> int:
+    limit = _best_of_n_limit()
+    if limit <= 1:
+        return 1
+    score = _score_for_article(article_id)
+    if score is None or score < _best_of_score_threshold():
+        return 1
+    return limit
+
+
+def _quality_score_for_summary(result: dict) -> float:
+    verify = result.get("_verify", {}) if isinstance(result.get("_verify"), dict) else {}
+    verdict = verify.get("verdict", "unknown")
+    score = 0.0
+    if verdict == "clean":
+        score += 1000.0 + float(verify.get("confidence") or 0)
+    elif verdict == "skipped":
+        score += 300.0
+    elif verdict == "unknown":
+        score += 100.0
+    elif verdict == "suspicious":
+        score -= 1000.0
+
+    preferred_max = {"headline_34": 34, "headline_58": 58, "headline_89": 89}
+    for field, max_len in preferred_max.items():
+        score += min(len(result.get(field, "")), max_len) / max_len * 10.0
+    score -= float(result.get("_retry_count") or 0)
+    return score
+
+
+def _generate_summary_candidate(article: dict, candidate_index: int = 0) -> dict:
+    user_prompt = _build_initial_prompt(article)
+    if candidate_index > 0:
+        user_prompt += (
+            "\n\n추가 지시: 같은 원문에서 사실은 그대로 유지하되, 표현과 사실 배치를 독립적으로 다시 선택해 "
+            "가장 밀도 높은 대안을 만드세요. 원문에 없는 정보는 추가하지 마세요."
+        )
+
+    MAX_RETRIES = 2
+    SKIP_INLINE_VERIFY = os.getenv("PIPELINE_SKIP_INLINE_VERIFY", "0") == "1"
+    verdict_info = {}
+
+    for attempt in range(MAX_RETRIES + 1):
+        response = call_llm(SYSTEM, user_prompt, temperature=0.3, timeout=300)
+        result = parse_json_response(response)
+        _normalize_result_texts(result)
+
+        # 글자 수 검증
+        violations = _compute_length_violations(result)
+
+        if violations and attempt < MAX_RETRIES:
+            user_prompt = _build_length_retry_prompt(article, result, violations)
+            continue
+
+        if violations:
+            repaired_fields = _repair_overlong_headlines(result)
+            if repaired_fields:
+                violations = _compute_length_violations(result)
+
+        if violations and attempt == MAX_RETRIES and _can_attempt_final_underlength_rescue(violations):
+            rescue_prompt = _build_final_underlength_rescue_prompt(article, result, violations)
+            rescue_response = call_llm(SYSTEM, rescue_prompt, temperature=0.2, timeout=300)
+            result = parse_json_response(rescue_response)
+            _normalize_result_texts(result)
+            violations = _compute_length_violations(result)
+            if violations:
+                repaired_fields = _repair_overlong_headlines(result)
+                if repaired_fields:
+                    violations = _compute_length_violations(result)
+            result["_final_length_rescue"] = True
+
+        if violations:
+            raise ValueError(
+                "Summary length contract violated after retries: "
+                + ", ".join(violations)
+            )
+
+        density_feedback = _build_density_retry_prompt(article, result)
+        if density_feedback and attempt < MAX_RETRIES:
+            user_prompt = density_feedback
+            continue
+
+        if SKIP_INLINE_VERIFY:
+            verdict_info = {"verdict": "skipped", "hallucinations": [], "confidence": 0}
+            break
+
+        # 인라인 할루시네이션 검증
+        try:
+            verdict_info = _check_hallucination(article, result)
+        except Exception:
+            verdict_info = {"verdict": "unknown", "hallucinations": [], "confidence": 0}
+
+        verdict = verdict_info.get("verdict", "unknown")
+        hallucinations = verdict_info.get("hallucinations", [])
+
+        if verdict != "suspicious" or attempt == MAX_RETRIES:
+            break
+
+        # suspicious → 피드백 포함 재시도
+        user_prompt = _build_retry_prompt(article, hallucinations)
+
+    result["_verify"] = verdict_info
+    result["_retry_count"] = attempt
+    result["_best_of_candidate_index"] = candidate_index
+    result["_best_of_quality_score"] = _quality_score_for_summary(result)
+    return result
+
+
 def process_file(json_path: Path) -> dict | None:
     article_id = json_path.stem
     out_path = SUMMARIZED_DIR / f"{article_id}.json"
@@ -277,76 +418,35 @@ def process_file(json_path: Path) -> dict | None:
     if "error" in article:
         return None
 
-    user_prompt = _build_initial_prompt(article)
-
-    MAX_RETRIES = 2
-    SKIP_INLINE_VERIFY = os.getenv("PIPELINE_SKIP_INLINE_VERIFY", "0") == "1"
-    verdict_info = {}
-
     try:
-        for attempt in range(MAX_RETRIES + 1):
-            response = call_llm(SYSTEM, user_prompt, temperature=0.3, timeout=300)
-            result = parse_json_response(response)
-            _normalize_result_texts(result)
-
-            # 글자 수 검증
-            violations = _compute_length_violations(result)
-
-            if violations and attempt < MAX_RETRIES:
-                user_prompt = _build_length_retry_prompt(article, result, violations)
-                continue
-
-            if violations:
-                repaired_fields = _repair_overlong_headlines(result)
-                if repaired_fields:
-                    violations = _compute_length_violations(result)
-
-            if violations and attempt == MAX_RETRIES and _can_attempt_final_underlength_rescue(violations):
-                rescue_prompt = _build_final_underlength_rescue_prompt(article, result, violations)
-                rescue_response = call_llm(SYSTEM, rescue_prompt, temperature=0.2, timeout=300)
-                result = parse_json_response(rescue_response)
-                _normalize_result_texts(result)
-                violations = _compute_length_violations(result)
-                if violations:
-                    repaired_fields = _repair_overlong_headlines(result)
-                    if repaired_fields:
-                        violations = _compute_length_violations(result)
-                result["_final_length_rescue"] = True
-
-            if violations:
-                raise ValueError(
-                    "Summary length contract violated after retries: "
-                    + ", ".join(violations)
-                )
-
-            density_feedback = _build_density_retry_prompt(article, result)
-            if density_feedback and attempt < MAX_RETRIES:
-                user_prompt = density_feedback
-                continue
-
-            if SKIP_INLINE_VERIFY:
-                verdict_info = {"verdict": "skipped", "hallucinations": [], "confidence": 0}
-                break
-
-            # 인라인 할루시네이션 검증
+        candidate_count = _best_of_candidate_count(article_id)
+        candidates: list[dict] = []
+        errors: list[str] = []
+        for candidate_index in range(candidate_count):
             try:
-                verdict_info = _check_hallucination(article, result)
-            except Exception:
-                verdict_info = {"verdict": "unknown", "hallucinations": [], "confidence": 0}
+                candidates.append(_generate_summary_candidate(article, candidate_index))
+            except Exception as exc:
+                errors.append(str(exc))
 
-            verdict = verdict_info.get("verdict", "unknown")
-            hallucinations = verdict_info.get("hallucinations", [])
+        if not candidates:
+            raise ValueError("All summary candidates failed: " + "; ".join(errors))
 
-            if verdict != "suspicious" or attempt == MAX_RETRIES:
-                break
-
-            # suspicious → 피드백 포함 재시도
-            user_prompt = _build_retry_prompt(article, hallucinations)
-
+        result = max(candidates, key=_quality_score_for_summary)
         result["_article_id"] = article_id
         result["_title"] = article.get("title", "")
-        result["_verify"] = verdict_info
-        result["_retry_count"] = attempt
+        result["_best_of_n"] = candidate_count
+        if candidate_count > 1:
+            result["_best_of_candidates"] = [
+                {
+                    "candidate_index": item.get("_best_of_candidate_index"),
+                    "quality_score": item.get("_best_of_quality_score"),
+                    "verdict": item.get("_verify", {}).get("verdict"),
+                    "retry_count": item.get("_retry_count", 0),
+                }
+                for item in candidates
+            ]
+            if errors:
+                result["_best_of_candidate_errors"] = errors
 
         save_json(out_path, result)
         return result
@@ -362,13 +462,88 @@ def _process_with_timing(json_path: Path) -> tuple[Path, dict | None, float]:
     return json_path, result, elapsed
 
 
+def _selected_per_category_limit() -> int | None:
+    raw_value = os.getenv("PIPELINE_SELECTED_PER_CATEGORY", "").strip()
+    if not raw_value:
+        return None
+    try:
+        value = int(raw_value)
+    except ValueError:
+        return None
+    return value if value > 0 else None
+
+
+def _category_for_scored_article(article_id: str, score_payload: dict) -> str:
+    for key in ("_source_category", "source_category", "primary_category", "category"):
+        value = score_payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+
+    article_path = JSON_DIR / f"{article_id}.json"
+    if article_path.exists():
+        try:
+            article = load_json(article_path)
+        except Exception:
+            article = {}
+        for key in ("source_category", "primary_category", "category"):
+            value = article.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return "uncategorized"
+
+
+def _top_scored_article_ids_per_category(limit: int) -> set[str]:
+    grouped: dict[str, list[tuple[int, str]]] = {}
+    for path in sorted(SCORED_DIR.glob("*.json")):
+        if path.name.endswith("_error.json"):
+            continue
+        try:
+            payload = load_json(path)
+        except Exception:
+            continue
+        score = payload.get("score")
+        if not isinstance(score, int | float):
+            continue
+        article_id = path.stem
+        category = _category_for_scored_article(article_id, payload)
+        grouped.setdefault(category, []).append((int(score), article_id))
+
+    selected: set[str] = set()
+    for candidates in grouped.values():
+        for _, article_id in sorted(candidates, key=lambda item: (-item[0], item[1]))[:limit]:
+            selected.add(article_id)
+    return selected
+
+
 def _input_json_files() -> list[Path]:
-    return sorted(f for f in JSON_DIR.glob("*.json") if not f.name.endswith("_error.json"))
+    json_files = sorted(f for f in JSON_DIR.glob("*.json") if not f.name.endswith("_error.json"))
+    limit = _selected_per_category_limit()
+    if limit is None:
+        return json_files
+
+    selected_ids = _top_scored_article_ids_per_category(limit)
+    if not selected_ids:
+        return json_files
+    return [path for path in json_files if path.stem in selected_ids]
+
+
+def _write_selection_manifest(json_files: list[Path], total_json_count: int) -> None:
+    limit = _selected_per_category_limit()
+    save_json(DATA_DIR / "summary_selection.json", {
+        "selected_article_ids": [path.stem for path in json_files],
+        "selected_count": len(json_files),
+        "total_json_count": total_json_count,
+        "selected_per_category": limit,
+        "best_of_n": _best_of_n_limit(),
+        "best_of_score_threshold": _best_of_score_threshold(),
+    })
 
 
 def main():
     SUMMARIZED_DIR.mkdir(parents=True, exist_ok=True)
+    total_json_count = len([f for f in JSON_DIR.glob("*.json") if not f.name.endswith("_error.json")])
     json_files = _input_json_files()
+    _write_selection_manifest(json_files, total_json_count)
     max_workers = max(1, int(os.getenv("PIPELINE_MAX_WORKERS", "1")))
 
     if not json_files:

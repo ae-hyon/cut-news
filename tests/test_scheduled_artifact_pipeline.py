@@ -53,6 +53,9 @@ class ScheduledArtifactPipelineTests(unittest.TestCase):
         self.assertEqual(env["HOME"], "/Users/reddit")
         self.assertEqual(env["DATABASE_URL"], "postgresql://example/db")
         self.assertEqual(env["NEWS_PIPELINE_MAX_ARTICLES"], "")
+        self.assertEqual(env["PIPELINE_SELECTED_PER_CATEGORY"], "")
+        self.assertEqual(env["PIPELINE_BEST_OF_N"], "")
+        self.assertEqual(env["PIPELINE_BEST_OF_SCORE_THRESHOLD"], "80")
         self.assertEqual(env["PIPELINE_LLM_BACKEND"], "codex_exec")
 
     def test_build_runtime_env_can_load_database_url_from_dotenv_without_overriding_env(self) -> None:

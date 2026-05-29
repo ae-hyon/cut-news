@@ -443,6 +443,54 @@ def test_load_summarized_articles_skips_summary_after_too_many_retries(tmp_path:
     assert load_summarized_articles(dataset) == []
 
 
+def test_load_summarized_articles_maps_medical_reproductive_health_to_lifestyle_health(tmp_path: Path):
+    dataset = tmp_path
+    write_json(dataset / 'json' / 'health-001.json', {
+        'title': '여성호르몬 노출 기간 짧을수록 폐경 후 심부전 위험↑',
+        'date': '2026-05-29',
+        'url': 'https://example.com/health-001',
+        'content': '폐경 여성 연구에서 여성호르몬 노출 기간과 심부전 위험의 연관성이 확인됐다.',
+        'source_category': 'global',
+        'source_query': '아시아',
+    })
+    write_json(dataset / 'summarized' / 'health-001.json', {
+        'headline_34': '여성호르몬 노출 짧을수록 심부전 위험 증가',
+        'headline_58': '폐경 여성 369만명 추적 결과 호르몬 노출 기간 짧을수록 심부전 위험 증가',
+        'headline_89': '폐경 여성 369만명 추적 분석에서 여성호르몬 노출 기간이 짧을수록 심부전 위험이 높아지는 경향이 확인됐다',
+        'summary': '폐경 여성 369만명을 약 10년 추적한 연구에서 여성호르몬 노출 기간이 짧을수록 심부전 위험이 높아졌습니다.',
+    })
+    write_json(dataset / 'verified' / 'health-001.json', {'verdict': 'clean', 'confidence': 96})
+
+    rows, report = load_summarized_articles_report(dataset)
+
+    assert len(rows) == 1
+    assert rows[0].primary_category == 'lifestyle'
+    assert rows[0].subcategory == 'lifestyle-health'
+    assert report['classification_source_counts'] == {'keyword_rule': 1}
+
+
+
+def test_load_summarized_articles_report_ignores_unselected_json_when_selection_manifest_exists(tmp_path: Path):
+    dataset = tmp_path
+    write_json(dataset / 'json' / 'selected.json', {'title': '시장 금리 하락에 증권주 강세', 'date': '2026-04-28', 'url': 'https://example.com/selected', 'content': '시장 금리 하락 영향으로 증권주가 강세를 보였다.'})
+    write_json(dataset / 'json' / 'unselected.json', {'title': '낮은 점수 기사', 'date': '2026-04-28', 'url': 'https://example.com/unselected', 'content': '낮은 점수 기사 본문'})
+    write_json(dataset / 'summary_selection.json', {'selected_article_ids': ['selected'], 'selected_count': 1, 'total_json_count': 2})
+    write_json(dataset / 'summarized' / 'selected.json', {
+        'headline_34': '시장 금리 하락에 증권주 강세',
+        'headline_58': '시장 금리 하락으로 증권주가 일제히 강세를 보였다',
+        'headline_89': '시장 금리 하락으로 증권주가 일제히 강세를 보였고 투자자들은 정책 변화를 주시하고 있다',
+        'summary': '시장 금리 하락 영향으로 증권주가 강세를 보였습니다.',
+    })
+    write_json(dataset / 'verified' / 'selected.json', {'verdict': 'clean', 'confidence': 96, '_article_id': 'selected', '_title': '시장 금리 하락에 증권주 강세'})
+    write_json(dataset / 'category_map.json', [{'article_id': 'selected', 'primary_category': '경제', 'subcategory': '증권'}])
+
+    rows, report = load_summarized_articles_report(dataset)
+
+    assert [row.id for row in rows] == ['SUM-selected']
+    assert report['drop_reason_counts'] == {}
+
+
+
 def test_load_summarized_articles_report_tracks_quality_gate_skips(tmp_path: Path):
     dataset = tmp_path
     write_json(

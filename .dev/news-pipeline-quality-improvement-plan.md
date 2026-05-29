@@ -253,6 +253,8 @@ Do not invent unsupported flags.
 
 ### Task 3.3: Record an effort policy
 
+**Status:** codified and disposable-run verified. Daily operation should stay on `PIPELINE_LLM_BACKEND=hermes_cli`, `PIPELINE_HERMES_PROFILE=cut-news-pipeline`, and `PIPELINE_MAX_WORKERS=3`. Cost/quality knobs are now explicit: `PIPELINE_SELECTED_PER_CATEGORY=3` for category-balanced summarization cost control, and `PIPELINE_BEST_OF_N=3` + `PIPELINE_BEST_OF_SCORE_THRESHOLD=80` for selective high-score best-of summaries. The 2026-05-29 disposable run showed threshold `85` was too high for the current Step 3 score scale, while `80` applied best-of to 3 of 9 selected summaries. Keep legacy Codex low/medium/high effort comparison blocked until OAuth is repaired.
+
 **Objective:** Codify the chosen daily setting.
 
 **Files:**
@@ -314,12 +316,11 @@ make ops-pipeline-from-github
 
 ## Next best implementation order
 
-1. Commit current `hermes_cli` backend support after tests/diff review.
-2. Fix product-date/feed visibility mismatch.
-3. Add classification quality fixtures and improve classifier source priority.
-4. Add classification quality warnings to report check.
-5. Evaluate effort/model settings on a fixed fixture set.
-6. Record final scheduler settings and then install the local Mac scheduler.
+1. Commit the verified candidate-first + selective best-of summarizer slice.
+2. If the user approves touching Neon, re-run the artifact import path against Neon with the `.env` defaults and confirm `drop_reason_counts={}` after the health-category mapping fix.
+3. Record the selected daily policy in the scheduler/cron secret store; keep `NEWS_PIPELINE_MAX_ARTICLES` empty for product-like runs.
+4. Install the local Mac scheduler only after the operator env is final and secrets stay outside git.
+5. Revisit Codex low/medium/high effort only after `HOME=/Users/reddit codex login --device-auth` succeeds; otherwise continue Hermes model/provider comparisons.
 
 ## Suggested first commands next session
 

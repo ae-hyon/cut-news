@@ -111,8 +111,18 @@ Recommended near-term operator settings while quality work continues:
 PIPELINE_LLM_BACKEND=hermes_cli
 PIPELINE_HERMES_PROFILE=cut-news-pipeline
 PIPELINE_MAX_WORKERS=3
+PIPELINE_SELECTED_PER_CATEGORY=3        # optional cost-control: summarize top-N scored articles per source category
+PIPELINE_BEST_OF_N=3                   # optional quality boost for high-score articles only
+PIPELINE_BEST_OF_SCORE_THRESHOLD=80    # default threshold for selective best-of candidates
 # keep NEWS_PIPELINE_MAX_ARTICLES empty for product-like runs
 ```
+
+Candidate-first / selective best-of controls:
+
+- `PIPELINE_SELECTED_PER_CATEGORY` limits Step 4 summarization to category-balanced top-N articles from Step 3 scoring. Leave empty to summarize every artifact article.
+- Step 3 preserves crawler metadata (`source_category`, `source_query`, `content_source`) into scored JSON so Step 4 can keep balanced category coverage before paying for full summaries.
+- `PIPELINE_BEST_OF_N` is disabled by default. When set above 1, Step 4 only generates multiple summary candidates for articles whose Step 3 `score` is at least `PIPELINE_BEST_OF_SCORE_THRESHOLD` (default `80`). Lower-score selected articles still use a single summary.
+- Best-of selection chooses among schema-valid candidates using verifier verdict, confidence, headline density, and retry count. It records `_best_of_n`, `_best_of_candidate_index`, `_best_of_quality_score`, and candidate summaries in the final summarized artifact for audit.
 
 Do not treat `effort` tuning as the first fix for category quality. Effort can improve summary/verification deliberation, but the observed misclassification was mostly caused by keyword-rule classification and weak taxonomy routing. The first code fix now prefers crawler `source_query`/`source_category` metadata before broad keyword rules; compare effort/model variants only on a fixed article fixture set after this routing layer is in place.
 
@@ -146,6 +156,23 @@ Fix:
 - `apps/summarizer/pipeline/common.py` now retries transient `codex_exec` failures/timeouts via `PIPELINE_CODEX_MAX_ATTEMPTS` while failing fast on non-retryable auth/config errors such as `401 Unauthorized` or missing Codex configuration.
 - Regression tests cover hash article ids through step3/4/5 and Codex retry/non-retry behavior.
 
+
+## 2026-05-29 candidate-first / selective best-of disposable run
+
+Command source: `.env` now carries the operator defaults (`PIPELINE_LLM_BACKEND=hermes_cli`, `PIPELINE_HERMES_PROFILE=cut-news-pipeline`, `PIPELINE_MAX_WORKERS=3`, `PIPELINE_SELECTED_PER_CATEGORY=3`, `PIPELINE_BEST_OF_N=3`, `PIPELINE_BEST_OF_SCORE_THRESHOLD=80`, `NEWS_PIPELINE_MAX_ARTICLES=`). The disposable run overrode only `DATABASE_URL` to `sqlite+pysqlite:///apps/backend/dev-quality-flow.db` and used `make ops-pipeline-from-github OPS_PIPELINE_ARGS='--load-dotenv'`.
+
+Result from `apps/summarizer/data/run_report.json`:
+
+- `status=success`, `failed_step=null`, `feed_date=2026-05-29`, `max_articles=null`.
+- Artifact input had 10 Step 3 scored JSON articles after category-balanced selection from the latest GitHub crawl artifact.
+- `summary_selection.json`: `selected_count=9`, `total_json_count=10`, `selected_per_category=3`, `best_of_n=3`, `best_of_score_threshold=80`.
+- Step 4 produced 9 summaries and 9 verifications. Best-of was applied to 3 high-score articles; the other 6 selected articles used a single summary.
+- Scheduled report gate passed: `failures=[]`, snapshots `attempted=3/generated=3/failed=0`.
+- Initial import report showed `drop_reason_counts={"category_unmapped": 1}` for a reproductive-health article whose crawler metadata said `global/아시아`. Follow-up code now maps medical/reproductive health terms (`심부전`, `폐경`, `호르몬`, `의료`) to `lifestyle/lifestyle-health`; reloading the same artifacts through `load_summarized_articles_report` yields 9 rows and `drop_reason_counts={}`.
+- Candidate-first manifest support prevents intentionally unselected low-score JSON files from surfacing as `missing_summary` drops during import.
+
+Operational implication: keep the default best-of threshold at `80` for the current Step 3 score scale. A threshold of `85` was too high for the latest artifact set and did not trigger best-of on any article.
+
 ## Preconditions
 
 - Repo checkout: `/Users/reddit/Project/cut-news`.
@@ -167,6 +194,9 @@ HOME=/Users/reddit \
 DATABASE_URL='<Neon pooled DATABASE_URL with sslmode=require>' \
 PIPELINE_LLM_BACKEND=hermes_cli \
 PIPELINE_HERMES_PROFILE=cut-news-pipeline \
+PIPELINE_SELECTED_PER_CATEGORY=3 \
+PIPELINE_BEST_OF_N=3 \
+PIPELINE_BEST_OF_SCORE_THRESHOLD=80 \
 make ops-pipeline-from-github
 ```
 

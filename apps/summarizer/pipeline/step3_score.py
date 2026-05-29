@@ -59,6 +59,10 @@ def process_file(json_path: Path) -> dict | None:
         result = parse_json_response(response)
         result["_article_id"] = article_id
         result["_title"] = article.get("title", "")
+        for field in ("source_category", "source_query", "content_source"):
+            value = article.get(field)
+            if value:
+                result[f"_{field}"] = value
         save_json(out_path, result)
         return result
     except Exception as e:

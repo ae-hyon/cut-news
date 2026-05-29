@@ -22,6 +22,52 @@
 
 ## Current completed slices
 
+### Candidate-first summarization and selective best-of slice
+
+Current working-tree slice after the Hermes/profile quality work:
+
+- Step 3 scoring now preserves crawler metadata in scored artifacts: `_source_category`, `_source_query`, and `_content_source`.
+- Step 4 can reduce full summarization volume with `PIPELINE_SELECTED_PER_CATEGORY=<N>` by selecting category-balanced top-N articles from Step 3 scores before calling the LLM summarizer. Empty/unset keeps the previous all-article behavior.
+- Step 4 can selectively apply best-of summaries with `PIPELINE_BEST_OF_N=<N>` and `PIPELINE_BEST_OF_SCORE_THRESHOLD=<score>`; default is single-summary. When enabled, only scored high-importance articles at/above the threshold generate multiple candidates, and lower-score articles remain single-call. The current empirically selected threshold is `80` because `85` did not trigger on the latest artifact set.
+- Best-of selection records audit metadata in summarized artifacts: `_best_of_n`, `_best_of_candidate_index`, `_best_of_quality_score`, `_best_of_candidates`, and candidate errors if any.
+- Operator/Make env propagation includes `PIPELINE_SELECTED_PER_CATEGORY`, `PIPELINE_BEST_OF_N`, and `PIPELINE_BEST_OF_SCORE_THRESHOLD`. Root `.env` is locally configured with the Hermes/profile/candidate-first defaults; it is gitignored and should not be committed.
+- Step 4 writes `apps/summarizer/data/summary_selection.json`; backend import reads it so intentionally unselected low-score JSON files are not counted as `missing_summary`.
+- Backend import now maps reproductive-health terms such as `심부전`, `폐경`, and `호르몬` to `lifestyle/lifestyle-health`, fixing the 2026-05-29 disposable run's single `category_unmapped` drop.
+- Docs updated: `.dev/news-pipeline-operations.md`, `.dev/news-pipeline-quality-improvement-plan.md`, and `BE_AI_ARCHITECTURE_NOTES.md`.
+
+Verified for this slice:
+
+```text
+PYTHONPATH=apps/summarizer .venv/bin/python -m pytest apps/summarizer/tests -q  # 23 passed
+cd apps/backend && PYTHONPATH=. uv run pytest tests/test_article_ingest_service.py -q  # 22 passed
+python3 -m unittest tests/test_scheduled_artifact_pipeline.py -q  # OK
+make test  # 131 passed
+git diff --check  # pass
+```
+
+Latest disposable quality evidence:
+
+- First run with threshold `85`: success but best-of did not trigger; import showed `missing_summary=1` because unselected JSON was still considered by import.
+- Follow-up code added `summary_selection.json` and backend import filtering for selected article ids.
+- Second run with `.env` threshold `80`: `status=success`, `feed_date=2026-05-29`, `selected_count=9/10`, Step 4 summarized 9 and verified 9, best-of applied to 3 articles, report gate `failures=[]`, snapshots `attempted=3/generated=3/failed=0`.
+- Re-loading the same artifacts after the health-category mapping fix yields 9 importable rows and `drop_reason_counts={}`.
+
+Suggested disposable quality run after tests pass:
+
+```bash
+HOME=/Users/reddit \
+DATABASE_URL="sqlite+pysqlite:///$PWD/apps/backend/dev-quality-flow.db" \
+SEED_ON_STARTUP=false \
+PIPELINE_LLM_BACKEND=hermes_cli \
+PIPELINE_HERMES_PROFILE=cut-news-pipeline \
+PIPELINE_MAX_WORKERS=3 \
+PIPELINE_SELECTED_PER_CATEGORY=3 \
+PIPELINE_BEST_OF_N=3 \
+PIPELINE_BEST_OF_SCORE_THRESHOLD=80 \
+NEWS_PIPELINE_MAX_ARTICLES= \
+make ops-pipeline-from-github
+```
+
 ### Production-like scheduled artifact pipeline
 
 Landed locally through current `HEAD` (`fix: align feed date and source-query classification`); `851fe59 fix: summarize hash-based article artifacts` is the source fix commit for hash-id summarizer processing.
@@ -184,12 +230,12 @@ Implemented in the working tree:
 
 ## Next best steps
 
-Current priority after the Hermes quality run:
-1. Review and commit the current `hermes_cli` backend support plus docs if the diff remains scoped.
-2. Fix product-date/feed visibility so the scheduler-generated `feed_date` is what `/v1/me/feed` serves.
-3. Add classification quality fixtures from the 2026-05-28 quality run and improve category routing before spending time on higher effort.
-4. Run a fixed-article effort/model comparison only after classification is observable; candidate axis: low vs medium/high effort, same artifact set, same output metrics.
-5. Install the local Mac scheduler only after the default backend/profile/worker/effort policy is recorded.
+Current priority after the candidate-first/best-of slice:
+1. Commit the verified working tree once the diff remains scoped to Step 3/4 summarizer selection/best-of behavior, operator env propagation, backend import filtering/classification, tests, and docs.
+2. If the user approves touching Neon, re-run the artifact import path against Neon with the `.env` defaults and confirm `drop_reason_counts={}` in the scheduled run report.
+3. Record the final scheduled env in the actual scheduler/cron secret store and keep DB/alert secrets outside git.
+4. Install the local Mac scheduler only after the operator env is final and secrets stay outside git.
+5. Codex low/medium/high effort comparison remains blocked until `HOME=/Users/reddit codex login --device-auth` succeeds; otherwise continue Hermes profile/model-provider evaluation.
 
 Historical verified steps:
 1. `crawl-naver.yml` manual workflow dispatch has been verified after GitHub CLI account switching was fixed. Run `26438030302` succeeded and uploaded the expected artifact files: `latest.json`, `crawl_report.json`, and `github_action_crawl_summary.json`. Artifact summary: `source=naver-all-categories`, `count=1`, `article_count=37`, `query_count=49`, `deduped_count=12`.

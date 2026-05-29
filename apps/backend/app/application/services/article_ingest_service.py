@@ -227,7 +227,7 @@ KEYWORD_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     ('global', 'global-us', ('미국', '워싱턴')),
     ('global', 'global-china', ('중국', '베이징')),
     ('global', 'global-europe', ('eu', '유럽')),
-    ('lifestyle', 'lifestyle-health', ('건강', '헬스케어', '웰니스')),
+    ('lifestyle', 'lifestyle-health', ('건강', '헬스케어', '웰니스', '의료', '심부전', '폐경', '호르몬')),
     ('lifestyle', 'lifestyle-travel', ('여행', '항공')),
     ('lifestyle', 'lifestyle-food', ('맛집', '식음료')),
 )
@@ -462,7 +462,15 @@ def load_summarized_articles_report(data_dir: Path) -> tuple[list[ArticleIngestR
     quality_gate_skip_counts: dict[str, int] = {}
     drop_reason_counts: dict[str, int] = {}
     classification_source_counts: dict[str, int] = {}
-    for article_path in sorted(json_dir.glob('*.json')):
+    article_paths = sorted(json_dir.glob('*.json'))
+    selection_manifest = data_dir / 'summary_selection.json'
+    if selection_manifest.exists():
+        payload = _read_json(selection_manifest)
+        selected_ids = payload.get('selected_article_ids') if isinstance(payload, dict) else None
+        if isinstance(selected_ids, list):
+            selected_id_set = {str(value) for value in selected_ids}
+            article_paths = [path for path in article_paths if path.stem in selected_id_set]
+    for article_path in article_paths:
         article_id = article_path.stem
         summary_path = summarized_dir / f'{article_id}.json'
         verification_path = verified_dir / f'{article_id}.json'

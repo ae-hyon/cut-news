@@ -96,6 +96,9 @@ def build_runtime_env(args: argparse.Namespace, base: Mapping[str, str] | None =
     env.setdefault("PIPELINE_HERMES_PROVIDER", "")
     env.setdefault("PYTHONUNBUFFERED", "1")
     env["NEWS_PIPELINE_MAX_ARTICLES"] = str(args.max_articles) if args.max_articles else ""
+    env.setdefault("PIPELINE_SELECTED_PER_CATEGORY", "")
+    env.setdefault("PIPELINE_BEST_OF_N", "")
+    env.setdefault("PIPELINE_BEST_OF_SCORE_THRESHOLD", "80")
     return env
 
 
