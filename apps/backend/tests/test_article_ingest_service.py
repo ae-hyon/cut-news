@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from app.application.services.article_ingest_service import (
+    _summary_topic_mismatch,
     load_summarized_articles,
     load_summarized_articles_report,
 )
@@ -83,6 +84,78 @@ def test_load_summarized_articles_uses_crawler_source_query_when_category_map_is
     assert rows[0].primary_category == 'stock'
     assert rows[0].subcategory == 'stock-domestic'
     assert report['classification_source_counts'] == {'crawler_source_query': 1}
+
+
+def test_load_summarized_articles_prefers_llm_editorial_category_over_keyword_rules(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / 'samsung-pay-001.json',
+        {
+            'title': '삼성전자 성과급 3년 131조 추산…주주 환원 잠식 우려 확대',
+            'date': '2026-05-29',
+            'url': 'https://example.com/economy/samsung-pay',
+            'content': '삼성전자 노사 성과급 합의 적용 시 지급 총액이 131조 원으로 예상되고 주주 환원 잠식 우려가 제기됐다.',
+            'source_category': 'economy',
+            'source_query': '거시경제',
+        },
+    )
+    write_json(
+        dataset / 'summarized' / 'samsung-pay-001.json',
+        {
+            'headline_34': '삼성전자 성과급 3년 131조 원 추산·주주환원 우려',
+            'summary': '삼성전자 성과급 합의가 주주 환원을 잠식할 수 있다는 우려가 제기됐습니다.',
+        },
+    )
+    write_json(dataset / 'verified' / 'samsung-pay-001.json', {'verdict': 'clean', 'confidence': 98})
+    write_json(
+        dataset / 'scored' / 'samsung-pay-001.json',
+        {
+            'score': 78,
+            '_article_id': 'samsung-pay-001',
+            'editorial_primary_category': 'economy',
+            'editorial_subcategory': 'economy-macro',
+            'editorial_category_confidence': 92,
+            'editorial_category_reason': '기업 임금·주주환원에 미치는 거시 경제 이슈',
+        },
+    )
+
+    rows, report = load_summarized_articles_report(dataset)
+
+    assert len(rows) == 1
+    assert rows[0].primary_category == 'economy'
+    assert rows[0].subcategory == 'economy-macro'
+    assert report['classification_source_counts'] == {'editorial_category': 1}
+
+
+def test_load_summarized_articles_ignores_low_confidence_editorial_category(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / 'ai-001.json',
+        {
+            'title': 'ETRI, K-피지컬 AI 전략 첫 공개·로봇지능 연구 집중',
+            'date': '2026-05-28',
+            'url': 'https://example.com/ai/1',
+            'content': 'ETRI는 피지컬 AI 시대 전략을 공개하고 AI 로봇 생태계를 핵심 전략으로 제시했다.',
+        },
+    )
+    write_json(dataset / 'summarized' / 'ai-001.json', {'headline_34': 'ETRI, K-피지컬 AI 전략 첫 공개', 'summary': 'ETRI가 피지컬 AI 전략을 공개했습니다.'})
+    write_json(dataset / 'verified' / 'ai-001.json', {'verdict': 'clean', 'confidence': 96})
+    write_json(
+        dataset / 'scored' / 'ai-001.json',
+        {
+            'score': 80,
+            'editorial_primary_category': 'global',
+            'editorial_subcategory': 'global-china',
+            'editorial_category_confidence': 40,
+        },
+    )
+
+    rows, report = load_summarized_articles_report(dataset)
+
+    assert len(rows) == 1
+    assert rows[0].primary_category == 'tech'
+    assert rows[0].subcategory == 'tech-ai'
+    assert report['classification_source_counts'] == {'keyword_rule': 1}
 
 
 def test_load_summarized_articles_prefers_text_signal_over_mismatched_crawler_source_query(tmp_path: Path):
@@ -491,6 +564,39 @@ def test_load_summarized_articles_report_ignores_unselected_json_when_selection_
 
 
 
+def test_summary_topic_mismatch_allows_korean_particle_and_compound_overlap():
+    assert not _summary_topic_mismatch(
+        {'title': '17세 소년병 잠든 세계 유일 유엔묘지…‘세계유산’ 없는 부산의 도전'},
+        {
+            'headline_34': '부산 피란수도 유산 11곳, 2030년 세계유산 등재 도전',
+            'headline_58': '부산 피란수도 유산 11곳이 2030년 세계유산 등재에 도전한다',
+            'headline_89': '부산 피란수도 유산 11곳은 예비평가를 거쳐 2030년 세계유산 등재를 목표로 한다',
+            'summary': '부산시는 유엔기념공원 등 한국전쟁기 피란수도 부산의 11개 유산을 유네스코 세계유산으로 등재하는 절차를 추진하고 있습니다.',
+        },
+    )
+    assert not _summary_topic_mismatch(
+        {'title': '"전국 축구 원로들 한자리에"…보은서 김용식배 축구대회'},
+        {
+            'headline_34': '보은 4개 축구장서 23회 김용식배…19개 시도 22팀 참가',
+            'headline_58': '보은군 4개 축구장에서 김용식배 축구대회가 열린다',
+            'headline_89': '보은군에서 김용식배 축구대회가 열리며 전국 시도 지회 22개 팀이 참가한다',
+            'summary': '30~31일 충북 보은군에서 23회 김용식배 축구대회가 공설운동장 등 4개 축구장에서 열립니다.',
+        },
+    )
+
+
+def test_summary_topic_mismatch_still_rejects_late_title_term_padding():
+    assert _summary_topic_mismatch(
+        {'title': '농구 허웅 전 연인 명예훼손 재판'},
+        {
+            'headline_34': '무인창고 현금 68억 은닉·허웅 명예훼손 재판',
+            'headline_58': '무인창고에서 현금 68억 원이 발견되며 자금 은닉 수사가 확대됐다',
+            'headline_89': '무인창고에서 현금 68억 원이 발견되며 자금 은닉 수사가 확대됐고 관계자 조사가 이어지고 있다',
+            'summary': '무인창고 현금 은닉 사건 수사가 확대됐다는 내용입니다.',
+        },
+    )
+
+
 def test_load_summarized_articles_report_tracks_quality_gate_skips(tmp_path: Path):
     dataset = tmp_path
     write_json(
@@ -542,7 +648,7 @@ def test_load_summarized_articles_report_tracks_quality_gate_skips(tmp_path: Pat
             'summary': '무인창고에서 현금 68억 원이 발견되며 자금 은닉 수사가 확대됐습니다.',
         },
     )
-    write_json(dataset / 'verified' / '003.json', {'verdict': 'clean', 'confidence': 97, '_article_id': '003', '_title': '농구 허웅 전 연인 명예훼손 재판'})
+    write_json(dataset / 'verified' / '003.json', {'verdict': 'suspicious', 'confidence': 97, 'hallucinations': ['요약문이 원문 제목의 허웅 재판이 아니라 무인창고 현금 은닉 사건을 중심으로 작성됨'], '_article_id': '003', '_title': '농구 허웅 전 연인 명예훼손 재판'})
     write_json(dataset / 'category_map.json', [
         {'article_id': '001', 'primary_category': '경제', 'subcategory': '증권'},
         {'article_id': '002', 'primary_category': '경제', 'subcategory': '일반'},
@@ -553,8 +659,51 @@ def test_load_summarized_articles_report_tracks_quality_gate_skips(tmp_path: Pat
 
     assert len(rows) == 1
     assert rows[0].id == 'SUM-002'
-    assert report['quality_gate_skip_counts'] == {'low_confidence': 1, 'topic_mismatch': 1}
-    assert report['drop_reason_counts']['quality_gate:topic_mismatch'] == 1
+    assert report['quality_gate_skip_counts'] == {'low_confidence': 1, 'verdict_not_clean': 1}
+    assert report['drop_reason_counts']['quality_gate:verdict_not_clean'] == 1
+
+
+def test_load_summarized_articles_does_not_hard_drop_clean_verifier_on_topic_overlap_heuristic(tmp_path: Path):
+    dataset = tmp_path
+    write_json(
+        dataset / 'json' / '003.json',
+        {
+            'title': '농구 허웅 전 연인 명예훼손 재판',
+            'date': '2026-04-28',
+            'url': 'https://example.com/3',
+            'content': '허웅 전 연인의 명예훼손 재판 절차를 다룬 기사 본문입니다.',
+        },
+    )
+    write_json(
+        dataset / 'summarized' / '003.json',
+        {
+            'headline_34': '무인창고 현금 68억 은닉·허웅 명예훼손 재판',
+            'headline_58': '무인창고에서 현금 68억 원이 발견되며 자금 은닉 수사가 확대됐다',
+            'headline_89': '무인창고에서 현금 68억 원이 발견되며 자금 은닉 수사가 확대됐고 관계자 조사가 이어지고 있다',
+            'summary': '무인창고에서 현금 68억 원이 발견되며 자금 은닉 수사가 확대됐습니다.',
+        },
+    )
+    write_json(dataset / 'verified' / '003.json', {'verdict': 'clean', 'confidence': 97, '_article_id': '003', '_title': '농구 허웅 전 연인 명예훼손 재판'})
+    write_json(
+        dataset / 'scored' / '003.json',
+        {
+            'score': 72,
+            'editorial_primary_category': 'sports',
+            'editorial_subcategory': 'sports-basketball',
+            'editorial_category_confidence': 90,
+            'editorial_category_reason': '농구 선수 관련 재판 기사',
+        },
+    )
+    write_json(dataset / 'category_map.json', [
+        {'article_id': '003', 'primary_category': '스포츠', 'subcategory': '농구'},
+    ])
+
+    rows, report = load_summarized_articles_report(dataset)
+
+    assert len(rows) == 1
+    assert rows[0].id == 'SUM-003'
+    assert report['quality_gate_skip_counts'] == {}
+    assert report['drop_reason_counts'] == {}
 
 
 

@@ -56,7 +56,10 @@ class ScheduledArtifactPipelineTests(unittest.TestCase):
         self.assertEqual(env["PIPELINE_SELECTED_PER_CATEGORY"], "")
         self.assertEqual(env["PIPELINE_BEST_OF_N"], "")
         self.assertEqual(env["PIPELINE_BEST_OF_SCORE_THRESHOLD"], "80")
-        self.assertEqual(env["PIPELINE_LLM_BACKEND"], "codex_exec")
+        self.assertEqual(env["PIPELINE_LLM_BACKEND"], "hermes_cli")
+        self.assertEqual(env["PIPELINE_HERMES_PROFILE"], "cut-news-pipeline")
+        self.assertEqual(env["PIPELINE_HERMES_PROVIDER"], "openai-codex")
+        self.assertEqual(env["PIPELINE_HERMES_REASONING_EFFORT"], "medium")
 
     def test_build_runtime_env_can_load_database_url_from_dotenv_without_overriding_env(self) -> None:
         module = load_runner()

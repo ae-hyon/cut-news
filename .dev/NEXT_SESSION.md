@@ -1,9 +1,9 @@
 # Next session handoff
 
 ## Current branch
-- `main`
-- Latest verified local commit: current `HEAD`; latest pushed baseline was `0ab84de`, with a new classifier/stale-artifact cleanup slice in progress.
-- Local branch may be ahead of `origin/main`; check `git status --short --branch` before continuing.
+- `fix/frontend-snapshot-read-context`
+- Latest verified local commit: current `HEAD`; current working tree has the Hermes/profile, evaluation, and LLM editorial category quality slice in progress.
+- Check `git status --short --branch` before continuing; do not assume `main`.
 
 ## Recently landed work
 - `601be69 feat: add daily feed snapshots`
@@ -111,20 +111,23 @@ Current working-tree slice:
 Implemented in the working tree after the initial quality run:
 - `/v1/me/feed` uses today's KST product feed date to match the scheduler-generated `feed_date`; snapshot generation now selects articles from the previous publication date for that product bucket (for example `feed_date=2026-05-29` uses `published_at=2026-05-28`).
 - Source-query classification fixtures cover broad keyword false positives and live-audit cases where crawler source queries were wrong (`global/중국` for ETRI AI, `realestate/청약` for a consumer fraud article, noisy stock/global links inside tax-policy content).
-- Import quality gate now also drops summary/article topic mismatches (`quality_gate:topic_mismatch`) when a generated headline/summary has no salient overlap with the original source title; this targets mixed-content cases such as the observed `허웅 재판` article being summarized as unrelated `무인창고 68억 은닉` content.
+- Import quality gate now relies on the LLM verifier for topic mismatch instead of hard-dropping verifier-clean summaries via the earlier token-overlap heuristic. The verifier prompts in Step 4 inline verification, Step 5, and `news_service.py` now include a hidden checklist and few-shot boundary examples: `허웅 재판` vs `무인창고 68억` is suspicious, while 부산 세계유산 and 보은 축구대회 wording variations remain clean.
 - Import classification now trusts crawler `source_query`/`source_category` only when title/summary contain supporting evidence, and broad keyword rules use title + generated summary instead of raw crawler body to avoid related-link/page chrome noise.
+- Step 3 now asks the LLM to emit an editorial taxonomy decision (`editorial_primary_category`, `editorial_subcategory`, confidence, reason) from the supported service taxonomy; backend import prefers valid high-confidence editorial categories before deterministic crawler/keyword fallbacks. This is the preferred path for cases like Samsung compensation/shareholder-return articles where company-name heuristics would over-route to tech.
+- Step 4 prompt guidance now bans source-meta narration such as "기사 제목/본문/원문이 전했다" in short bulletins; use only the event, number, or market state that should appear to the reader.
 - `apps/summarizer/run_pipeline.py` clears stale downstream artifacts at run start so old JSON/scored/summarized/verified files cannot be imported into the next completed run.
 - `make local-report-check` emits non-failing `quality_warnings` for all-keyword-rule classification runs.
-- Hermes backend supports optional `PIPELINE_HERMES_MODEL` and `PIPELINE_HERMES_PROVIDER`; reasoning effort remains a legacy Codex-only axis until Hermes CLI exposes a supported flag.
+- Hermes backend supports optional `PIPELINE_HERMES_MODEL`, `PIPELINE_HERMES_PROVIDER`, and `PIPELINE_HERMES_REASONING_EFFORT`; the pipeline applies reasoning effort by temporarily setting the selected profile's `agent.reasoning_effort` for the call.
 
 Remaining gap:
 - Codex legacy low/medium/high effort comparison is blocked by local Codex OAuth (`refresh_token_reused`/401). Re-run after `HOME=/Users/reddit codex login --device-auth` succeeds, or keep daily operation on Hermes model/provider variants.
 
 Fixed-variant eval:
-- `.dev/news-pipeline-fixed-variant-eval.json` compares Hermes default profile vs explicit `PIPELINE_HERMES_PROVIDER=openai-codex`, `PIPELINE_HERMES_MODEL=gpt-5.5` on 3 stable articles. Both variants returned parseable summaries with no headline length violations.
+- `.dev/news-pipeline-fixed-variant-eval.json` records the current winner: `PIPELINE_HERMES_PROVIDER=openai-codex`, `PIPELINE_HERMES_MODEL=gpt-5.5`, `PIPELINE_HERMES_REASONING_EFFORT=medium`. It completed 10 repeats across 2 fixed articles with no headline or summary length violations; sampled verifier checks were clean. `gpt-5.4-mini-low` was faster in the quick matrix but accumulated headline length violations in repeated checks.
 
-New planning doc:
+New planning/docs:
 - `.dev/news-pipeline-quality-improvement-plan.md` describes the next implementation order: land Hermes runner support, fix feed-date visibility, add classification fixtures, improve classifier routing, add quality warnings, then evaluate effort/model settings on a fixed article set.
+- `.dev/news-pipeline-quality-efforts.md` is the presentation-oriented record of quality-improvement efforts, evidence, before/after framing, and reusable slide bullets. Documentation-pass verification on 2026-05-30: summarizer quality contracts `22 passed`, backend ingest/run-job quality tests `36 passed`, scheduled/local-compose unittest `13 OK`, fixed-variant eval helper `4 passed`, `make local-report-check REPORT_CHECK_ARGS=--require-uncapped` `failures=[]`, and `git diff --check` passed. Fresh LLM product-like disposable rerun `run_2026-05-30T092850+0900.json` validated the new editorial category path; after fixing an over-strict Korean topic-mismatch heuristic discovered in that run, re-importing the same artifacts yielded `row_count=10`, `drop_reason_counts={}`, and `classification_source_counts={"editorial_category":10}`. Follow-up prompt-first quality pass on 2026-05-31 moved topic mismatch from import token heuristics into the LLM verifier using hidden checklist + few-shot boundary examples, then reran the product-like pipeline from the GitHub artifact: `run_2026-05-31T004555+0900.json`, `usable_imports=10`, `drop_reason_counts={}`, `quality_warnings=[]`, `classification_source_counts={"editorial_category":10}`, snapshots `3/3`, report-check `failures=[]`. Post-pass gates: summarizer prompt contracts `17 passed`, backend ingest/run-job tests `36 passed`, scheduled/fixed-variant tests `9 passed`, `make local-report-check REPORT_CHECK_ARGS=--require-uncapped` passed, `git diff --check` passed.
 
 ### Earlier local runtime and category-pipeline slices
 

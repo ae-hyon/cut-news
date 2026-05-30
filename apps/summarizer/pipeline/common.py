@@ -18,6 +18,7 @@ CODEX_REASONING_EFFORT = os.getenv("PIPELINE_CODEX_REASONING_EFFORT", "low")
 HERMES_PROFILE = os.getenv("PIPELINE_HERMES_PROFILE", "cut-news-pipeline")
 HERMES_MODEL = os.getenv("PIPELINE_HERMES_MODEL", "")
 HERMES_PROVIDER = os.getenv("PIPELINE_HERMES_PROVIDER", "")
+HERMES_REASONING_EFFORT = os.getenv("PIPELINE_HERMES_REASONING_EFFORT", "")
 HERMIT_API_KEY = None  # 최초 호출 시 ~/.hermit/settings.json에서 로드
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -150,6 +151,20 @@ def _clean_hermes_stdout(stdout: str) -> str:
     return "\n".join(content_lines).strip()
 
 
+def _set_hermes_reasoning_effort(effort: str, timeout: int) -> None:
+    proc = subprocess.run(
+        ["hermes", "--profile", HERMES_PROFILE, "config", "set", "agent.reasoning_effort", effort],
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+        cwd=str(Path(__file__).parent.parent),
+    )
+    if proc.returncode != 0:
+        stderr = (proc.stderr or "").strip()
+        stdout = (proc.stdout or "").strip()
+        raise RuntimeError(stderr or stdout or f"hermes config set failed: {proc.returncode}")
+
+
 def _call_hermes_cli(system: str, user: str, timeout: int) -> str:
     prompt = (
         "다음 system 지시와 user 입력을 따르세요.\n"
@@ -172,13 +187,19 @@ def _call_hermes_cli(system: str, user: str, timeout: int) -> str:
         cmd.extend(["--model", HERMES_MODEL])
     if HERMES_PROVIDER:
         cmd.extend(["--provider", HERMES_PROVIDER])
-    proc = subprocess.run(
-        cmd,
-        text=True,
-        capture_output=True,
-        timeout=timeout,
-        cwd=str(Path(__file__).parent.parent),
-    )
+    if HERMES_REASONING_EFFORT:
+        _set_hermes_reasoning_effort(HERMES_REASONING_EFFORT, timeout=timeout)
+    try:
+        proc = subprocess.run(
+            cmd,
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+            cwd=str(Path(__file__).parent.parent),
+        )
+    finally:
+        if HERMES_REASONING_EFFORT:
+            _set_hermes_reasoning_effort("", timeout=timeout)
     if proc.returncode != 0:
         stderr = (proc.stderr or "").strip()
         stdout = (proc.stdout or "").strip()

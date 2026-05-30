@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from pipeline.common import JSON_DIR, SCORED_DIR, call_llm, parse_json_response, save_json, load_json
 
-SYSTEM = """당신은 뉴스 기사의 독자 가치를 평가하는 전문 에디터입니다.
+SYSTEM = """당신은 뉴스 기사의 독자 가치와 서비스 카테고리를 평가하는 전문 에디터입니다.
 
 기사를 읽고 독자에게 얼마나 가치 있는지 0~100점으로 절대 평가합니다.
 다른 기사와 비교하지 말고, 이 기사 자체의 가치만 평가합니다.
@@ -22,6 +22,21 @@ SYSTEM = """당신은 뉴스 기사의 독자 가치를 평가하는 전문 에�
 - 정보 완결성 (25점): 기사가 충분한 정보를 전달하는가
 - 독자 관심도 (20점): 독자가 읽고 싶어할 가능성
 
+서비스 카테고리는 수집 쿼리나 회사명 하나에 끌려가지 말고, 기사 본문이 실제로 다루는 주제를 기준으로 고르세요.
+예: 삼성전자 성과급·노사·주주환원 이슈는 회사가 반도체 기업이어도 기사 초점이 기업재무/거시경제라면 economy 쪽이 더 적절할 수 있습니다.
+
+지원 카테고리/서브카테고리:
+- stock: stock-domestic, stock-overseas, stock-etf, stock-unlisted
+- crypto: crypto-bitcoin, crypto-altcoin, crypto-defi, crypto-nft
+- realestate: realestate-apt, realestate-subscription, realestate-lease, realestate-commercial
+- politics: politics-domestic, politics-diplomacy, politics-policy
+- economy: economy-macro, economy-finance, economy-trade
+- tech: tech-ai, tech-semiconductor, tech-startup, tech-bigtech
+- entertainment: entertainment-kpop, entertainment-drama, entertainment-movie
+- sports: sports-soccer, sports-baseball, sports-basketball, sports-esports
+- global: global-us, global-china, global-europe, global-asia
+- lifestyle: lifestyle-health, lifestyle-travel, lifestyle-food
+
 아래 JSON 형식으로만 응답하세요:
 {
   \"score\": 0~100 사이의 정수,
@@ -31,7 +46,11 @@ SYSTEM = """당신은 뉴스 기사의 독자 가치를 평가하는 전문 에�
     \"시의성\": 0~25,
     \"정보완결성\": 0~25,
     \"독자관심도\": 0~20
-  }
+  },
+  \"editorial_primary_category\": \"지원 primary category slug 중 하나\",
+  \"editorial_subcategory\": \"해당 primary에 속한 지원 subcategory slug 중 하나\",
+  \"editorial_category_confidence\": 0~100 사이의 정수,
+  \"editorial_category_reason\": \"기사 본문 기준 카테고리 판단 이유 60자 이내\"
 }"""
 
 

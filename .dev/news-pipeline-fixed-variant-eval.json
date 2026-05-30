@@ -1,120 +1,436 @@
 {
   "article_files": [
-    "05d506932773.json",
-    "15e31771bf18.json",
-    "5199e600904a.json"
+    "001.json",
+    "002.json"
   ],
+  "repeat_count": 10,
   "variants": [
     {
-      "name": "hermes-default-profile",
+      "name": "gpt-5.5-medium",
       "env": {
         "PIPELINE_LLM_BACKEND": "hermes_cli",
         "PIPELINE_HERMES_PROFILE": "cut-news-pipeline",
-        "PIPELINE_HERMES_MODEL": "",
-        "PIPELINE_HERMES_PROVIDER": ""
-      },
-      "returncode": 0,
-      "elapsed_seconds": 143.48,
-      "results": [
-        {
-          "article_id": "05d506932773",
-          "title": "갤러리아百, 루드·세인트미카엘 등 해외 브랜드 모자 소개",
-          "elapsed_seconds": 48.15,
-          "headline_lengths": {
-            "headline_34": 31,
-            "headline_58": 55,
-            "headline_89": 83
-          },
-          "violations": [],
-          "summary_chars": 123
-        },
-        {
-          "article_id": "15e31771bf18",
-          "title": "[정지열의 스테이블코인 돌아보기] (8) 가상자산 과세 잔혹사 ― ‘대혼란’ 예상 속 골든타임 놓치지 말아야",
-          "elapsed_seconds": 45.52,
-          "headline_lengths": {
-            "headline_34": 32,
-            "headline_58": 52,
-            "headline_89": 83
-          },
-          "violations": [],
-          "summary_chars": 128
-        },
-        {
-          "article_id": "5199e600904a",
-          "title": "하나금융 두나무 1조원 투자 결단, 이유 뜯어보니[엠블록레터]",
-          "elapsed_seconds": 48.49,
-          "headline_lengths": {
-            "headline_34": 34,
-            "headline_58": 50,
-            "headline_89": 83
-          },
-          "violations": [],
-          "summary_chars": 137
-        }
-      ]
-    },
-    {
-      "name": "hermes-explicit-current",
-      "env": {
-        "PIPELINE_LLM_BACKEND": "hermes_cli",
-        "PIPELINE_HERMES_PROFILE": "cut-news-pipeline",
+        "PIPELINE_HERMES_PROVIDER": "openai-codex",
         "PIPELINE_HERMES_MODEL": "gpt-5.5",
-        "PIPELINE_HERMES_PROVIDER": "openai-codex"
+        "PIPELINE_HERMES_REASONING_EFFORT": "medium"
       },
       "returncode": 0,
-      "elapsed_seconds": 134.53,
-      "results": [
+      "elapsed_seconds": 1673.79,
+      "runs": [
         {
-          "article_id": "05d506932773",
-          "title": "갤러리아百, 루드·세인트미카엘 등 해외 브랜드 모자 소개",
-          "elapsed_seconds": 43.28,
-          "headline_lengths": {
-            "headline_34": 32,
-            "headline_58": 53,
-            "headline_89": 83
-          },
-          "violations": [],
-          "summary_chars": 123
+          "returncode": 0,
+          "elapsed_seconds": 125.18,
+          "results": [
+            {
+              "article_id": "001",
+              "title": "靑 민정비서관·공직기강비서관, 이례적 보직 맞교대",
+              "elapsed_seconds": 60.02,
+              "headline_lengths": {
+                "headline_34": 32,
+                "headline_58": 52,
+                "headline_89": 82
+              },
+              "violations": [],
+              "headline_34": "청와대 민정·공직기강비서관 24일 이례적 보직 맞교대 확인",
+              "headline_58": "청와대 이태형 민정비서관·전치영 공직기강비서관, 24일부터 서로 보직 맞바꿔 근무 시작 확인돼",
+              "headline_89": "청와대 이태형 민정비서관·전치영 공직기강비서관이 24일부터 서로 보직을 맞바꿔 근무하고, 특별감찰반도 민정비서관실 산하로 직제 이동한 것으로 알려져",
+              "summary": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 바꿔 근무를 시작했습니다. 공직기강비서관실 산하 특별감찰반도 민정비서관실 산하로 직제를 옮긴 것으로 알려졌으며, 청와대는 이동 이유를 밝히지 않았습니다.",
+              "summary_chars": 126
+            },
+            {
+              "article_id": "002",
+              "title": "이진숙도 대구시장 불출마하나…내일 입장표명 예고(종합)",
+              "elapsed_seconds": 64.87,
+              "headline_lengths": {
+                "headline_34": 32,
+                "headline_58": 56,
+                "headline_89": 81
+              },
+              "violations": [],
+              "headline_34": "이진숙 25일 대구시당 현안 입장표명·대구시장 불출마 관측",
+              "headline_58": "이진숙 25일 국민의힘 대구시당 회견 예고…주호영 불출마 뒤 당 지도부 설득 속 대구시장 불출마 관측",
+              "headline_89": "이진숙 25일 국민의힘 대구시당 회견 예고…주호영 불출마 뒤 당 지도부와 이인선 의원 설득 이어지며 대구시장 불출마와 보선 출마 가능성 함께 거론",
+              "summary": "이진숙 전 방송통신위원장이 25일 국민의힘 대구시당에서 현안 관련 입장을 밝힐 예정입니다. 국민의힘 지도부와 이인선 의원은 무소속 출마 대신 보궐선거 출마를 설득한 것으로 전해졌고, 당내에서는 대구시장 불출마 관측이 제기됐습니다.",
+              "summary_chars": 128
+            }
+          ],
+          "repeat_index": 1
         },
         {
-          "article_id": "15e31771bf18",
-          "title": "[정지열의 스테이블코인 돌아보기] (8) 가상자산 과세 잔혹사 ― ‘대혼란’ 예상 속 골든타임 놓치지 말아야",
-          "elapsed_seconds": 47.34,
-          "headline_lengths": {
-            "headline_34": 34,
-            "headline_58": 56,
-            "headline_89": 85
-          },
-          "violations": [],
-          "summary_chars": 137
+          "returncode": 0,
+          "elapsed_seconds": 172.81,
+          "results": [
+            {
+              "article_id": "001",
+              "title": "靑 민정비서관·공직기강비서관, 이례적 보직 맞교대",
+              "elapsed_seconds": 76.01,
+              "headline_lengths": {
+                "headline_34": 32,
+                "headline_58": 53,
+                "headline_89": 81
+              },
+              "violations": [],
+              "headline_34": "청와대 민정·공직기강비서관 24일 이례적 보직 맞교대 확인",
+              "headline_58": "청와대 민정·공직기강비서관, 24일 서로 보직 맞바꾸고 근무 시작…같은 수석실 내 이례적 맞교대",
+              "headline_89": "청와대 이태형 민정·전치영 공직기강비서관이 24일 서로 보직을 맞바꾸고 근무를 시작했으며 특별감찰반도 민정비서관실 산하로 직제 이동, 이유 미공개",
+              "summary": "청와대는 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 바꿔 근무를 시작했다고 밝혔습니다. 공직기강비서관실 산하 특별감찰반도 민정비서관실 산하로 옮긴 것으로 알려졌으며, 청와대는 보직 이동 이유를 밝히지 않았습니다.",
+              "summary_chars": 131
+            },
+            {
+              "article_id": "002",
+              "title": "이진숙도 대구시장 불출마하나…내일 입장표명 예고(종합)",
+              "elapsed_seconds": 96.52,
+              "headline_lengths": {
+                "headline_34": 30,
+                "headline_58": 56,
+                "headline_89": 85
+              },
+              "violations": [],
+              "headline_34": "주호영 불출마 속 이진숙 25일 거취 표명…불출마 관측",
+              "headline_58": "주호영 불출마 속 이진숙 25일 대구시당 회견 예고…국민의힘 물밑 설득에 불출마 관측 확산되는 분위기",
+              "headline_89": "이진숙, 25일 대구시당서 현안 입장 표명…주호영 불출마 뒤 국민의힘 지도부·이인선 설득 속 대구시장 불출마와 보선 출마 가능성 거론되며 당내 기대 확산",
+              "summary": "이진숙 전 방송통신위원장이 25일 국민의힘 대구시당에서 현안 관련 입장을 밝히는 기자회견을 열기로 했습니다. 국민의힘 지도부와 이인선 의원은 무소속 대구시장 출마 대신 보궐선거 출마를 설득한 것으로 전해졌고, 당내에서는 불출마 공식화를 기대하는 분위기가 감지됐습니다.",
+              "summary_chars": 149
+            }
+          ],
+          "repeat_index": 2
         },
         {
-          "article_id": "5199e600904a",
-          "title": "하나금융 두나무 1조원 투자 결단, 이유 뜯어보니[엠블록레터]",
-          "elapsed_seconds": 43.53,
-          "headline_lengths": {
-            "headline_34": 31,
-            "headline_58": 53,
-            "headline_89": 82
-          },
-          "violations": [],
-          "summary_chars": 102
+          "returncode": 0,
+          "elapsed_seconds": 162.49,
+          "results": [
+            {
+              "article_id": "001",
+              "title": "靑 민정비서관·공직기강비서관, 이례적 보직 맞교대",
+              "elapsed_seconds": 84.97,
+              "headline_lengths": {
+                "headline_34": 32,
+                "headline_58": 58,
+                "headline_89": 88
+              },
+              "violations": [],
+              "headline_34": "청와대 민정·공직기강비서관 24일 이례적 보직 맞교대 확인",
+              "headline_58": "청와대 민정·공직기강비서관 24일 이례적 보직 맞교대…특별감찰반도 민정비서관실 산하로 이동, 이유 미공개",
+              "headline_89": "청와대 이태형 민정·전치영 공직기강비서관 24일 서로 보직 맞바꿔 근무 시작…특별감찰반도 민정비서관실 산하로 옮기고 같은 수석실 내 이례적 맞교대로 받아들여져",
+              "summary": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 바꿔 근무를 시작했습니다. 공직기강비서관실 산하 특별감찰반도 민정비서관실 산하로 직제를 옮긴 것으로 알려졌으며, 청와대는 보직 이동 이유를 밝히지 않았습니다.",
+              "summary_chars": 129
+            },
+            {
+              "article_id": "002",
+              "title": "이진숙도 대구시장 불출마하나…내일 입장표명 예고(종합)",
+              "elapsed_seconds": 77.23,
+              "headline_lengths": {
+                "headline_34": 32,
+                "headline_58": 53,
+                "headline_89": 78
+              },
+              "violations": [],
+              "headline_34": "이진숙 25일 대구시당 기자회견 예고·대구시장 불출마 관측",
+              "headline_58": "이진숙 25일 국민의힘 대구시당 기자회견 예고…주호영 불출마 뒤 보선 설득 속 불출마 관측 확산",
+              "headline_89": "이진숙 25일 국민의힘 대구시당 기자회견 예고…주호영 불출마 뒤 당 지도부와 이인선 설득 이어지며 대구시장 불출마·보선 출마 전환 관측 확산",
+              "summary": "이진숙 전 방송통신위원장이 25일 국민의힘 대구시당에서 현안 관련 입장을 밝히는 기자회견을 열기로 했습니다. 주호영 의원 불출마와 당 지도부의 보궐선거 출마 설득 속에 이 전 위원장의 대구시장 불출마 관측이 나옵니다.",
+              "summary_chars": 121
+            }
+          ],
+          "repeat_index": 3
+        },
+        {
+          "returncode": 0,
+          "elapsed_seconds": 162.82,
+          "results": [
+            {
+              "article_id": "001",
+              "title": "靑 민정비서관·공직기강비서관, 이례적 보직 맞교대",
+              "elapsed_seconds": 87.27,
+              "headline_lengths": {
+                "headline_34": 32,
+                "headline_58": 56,
+                "headline_89": 84
+              },
+              "violations": [],
+              "headline_34": "청와대 민정·공직기강비서관 24일 서로 이례적 보직 맞교대",
+              "headline_58": "청와대 이태형 민정비서관·전치영 공직기강비서관 24일 보직 맞교대…특별감찰반도 민정비서관실 산하 이동",
+              "headline_89": "청와대 이태형 민정비서관·전치영 공직기강비서관이 24일 이례적으로 보직을 맞바꾸고, 특별감찰반도 민정비서관실 산하로 직제 이동했으나 이동 이유는 미공개",
+              "summary": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 바꿔 근무를 시작했습니다. 공직기강비서관실 산하 특별감찰반도 민정비서관실 산하로 옮긴 것으로 알려졌으며, 청와대는 보직 이동 이유를 밝히지 않았습니다.",
+              "summary_chars": 125
+            },
+            {
+              "article_id": "002",
+              "title": "이진숙도 대구시장 불출마하나…내일 입장표명 예고(종합)",
+              "elapsed_seconds": 75.26,
+              "headline_lengths": {
+                "headline_34": 32,
+                "headline_58": 55,
+                "headline_89": 80
+              },
+              "violations": [],
+              "headline_34": "이진숙 25일 국민의힘 대구시당 입장표명…불출마 관측 제기",
+              "headline_58": "이진숙 전 방통위원장, 25일 국민의힘 대구시당서 기자회견 예고…당내 설득 속 대구시장 불출마 관측",
+              "headline_89": "이진숙 전 방송통신위원장, 25일 국민의힘 대구시당서 입장표명 예고…주호영 불출마 뒤 당내 설득 속 무소속 출마 접고 보궐선거 선회 가능성 거론",
+              "summary": "이진숙 전 방송통신위원장이 25일 국민의힘 대구시당에서 현안 관련 입장 표명을 위한 기자회견을 열기로 했습니다. 당 지도부와 이인선 의원은 무소속 대구시장 출마 대신 보궐선거 출마를 설득한 것으로 전해졌으며, 국민의힘 최종 후보는 26일 발표될 예정입니다.",
+              "summary_chars": 143
+            }
+          ],
+          "repeat_index": 4
+        },
+        {
+          "returncode": 0,
+          "elapsed_seconds": 209.17,
+          "results": [
+            {
+              "article_id": "001",
+              "title": "靑 민정비서관·공직기강비서관, 이례적 보직 맞교대",
+              "elapsed_seconds": 95.77,
+              "headline_lengths": {
+                "headline_34": 31,
+                "headline_58": 51,
+                "headline_89": 85
+              },
+              "violations": [],
+              "headline_34": "이태형·전치영 비서관 24일 보직 맞교대, 특감반도 이동",
+              "headline_58": "청와대 이태형·전치영 비서관 24일부터 보직 맞교대, 특감반도 민정비서관실 산하로 직제 이동",
+              "headline_89": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 맞바꿔 근무하고, 특별감찰반도 민정비서관실 산하로 직제를 이동한 것으로 알려졌다",
+              "summary": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 바꿔 근무를 시작했습니다. 공직기강비서관실 산하 특별감찰반도 민정비서관실 산하로 직제를 옮긴 것으로 알려졌으며, 청와대는 이동 이유를 밝히지 않았습니다.",
+              "summary_chars": 126
+            },
+            {
+              "article_id": "002",
+              "title": "이진숙도 대구시장 불출마하나…내일 입장표명 예고(종합)",
+              "elapsed_seconds": 113.11,
+              "headline_lengths": {
+                "headline_34": 32,
+                "headline_58": 58,
+                "headline_89": 88
+              },
+              "violations": [],
+              "headline_34": "이진숙 전 방송통신위원장 25일 회견…대구시장 불출마 관측",
+              "headline_58": "이진숙 전 방송통신위원장, 25일 대구시당 기자회견 예고…무소속 출마 시사 뒤 대구시장 불출마 관측 확산",
+              "headline_89": "이진숙 전 방송통신위원장, 25일 대구시당 기자회견 예고…주호영 불출마 뒤 국민의힘 물밑 설득과 보수 후보 분열 우려 속 대구시장 불출마·보선 선회 관측 확산",
+              "summary": "이진숙 전 방송통신위원장이 25일 국민의힘 대구시당에서 현안 관련 입장 표명 기자회견을 열기로 했습니다. 국민의힘 지도부와 대구시당의 설득 속에 대구시장 불출마를 선언할 수 있다는 관측이 나옵니다.",
+              "summary_chars": 110
+            }
+          ],
+          "repeat_index": 5
+        },
+        {
+          "returncode": 0,
+          "elapsed_seconds": 188.64,
+          "results": [
+            {
+              "article_id": "001",
+              "title": "靑 민정비서관·공직기강비서관, 이례적 보직 맞교대",
+              "elapsed_seconds": 94.66,
+              "headline_lengths": {
+                "headline_34": 32,
+                "headline_58": 53,
+                "headline_89": 87
+              },
+              "violations": [],
+              "headline_34": "청와대 민정비서관·공직기강비서관 24일 이례적 보직 맞교대",
+              "headline_58": "청와대 민정비서관·공직기강비서관 24일 이례적 보직 맞교대, 특별감찰반도 민정비서관실 산하 이동",
+              "headline_89": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일 보직을 맞바꾸고, 특별감찰반도 민정비서관실 산하로 직제를 옮긴 것으로 알려졌으나 이동 이유는 미공개",
+              "summary": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 바꿔 근무를 시작했습니다. 공직기강비서관실 산하 특별감찰반도 민정비서관실 산하로 직제를 옮긴 것으로 알려졌으며, 청와대는 보직 이동 이유를 밝히지 않았습니다.",
+              "summary_chars": 129
+            },
+            {
+              "article_id": "002",
+              "title": "이진숙도 대구시장 불출마하나…내일 입장표명 예고(종합)",
+              "elapsed_seconds": 93.69,
+              "headline_lengths": {
+                "headline_34": 34,
+                "headline_58": 57,
+                "headline_89": 85
+              },
+              "violations": [],
+              "headline_34": "이진숙 25일 대구시당 회견…대구시장 불출마 가능성 관측 확산",
+              "headline_58": "국민의힘 설득 속 이진숙 25일 대구시당 회견…대구시장 불출마·보선 전환 관측, 최종 후보 26일 발표",
+              "headline_89": "이진숙 전 방통위원장 25일 국민의힘 대구시당서 입장 표명…최종 후보 26일 발표 앞두고 당내 물밑 설득 속 대구시장 불출마와 보선 출마 전환 관측 확산",
+              "summary": "이진숙 전 방송통신위원장이 25일 오전 11시 국민의힘 대구시당에서 현안 관련 입장을 표명합니다. 국민의힘 지도부는 무소속 대구시장 출마 대신 보궐선거 출마 전환을 설득한 것으로 전해졌고, 당내에서는 불출마 관측이 나옵니다.",
+              "summary_chars": 125
+            }
+          ],
+          "repeat_index": 6
+        },
+        {
+          "returncode": 0,
+          "elapsed_seconds": 160.07,
+          "results": [
+            {
+              "article_id": "001",
+              "title": "靑 민정비서관·공직기강비서관, 이례적 보직 맞교대",
+              "elapsed_seconds": 57.99,
+              "headline_lengths": {
+                "headline_34": 34,
+                "headline_58": 51,
+                "headline_89": 81
+              },
+              "violations": [],
+              "headline_34": "청와대 이태형 민정·전치영 공직기강비서관 24일 이례적 맞교대",
+              "headline_58": "청와대 이태형 민정비서관·전치영 공직기강비서관, 24일부터 서로 보직 맞바꿔 근무 시작 확인",
+              "headline_89": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 맞바꿔 근무하고 특별감찰반도 공직기강비서관실에서 민정비서관실 산하로 이동",
+              "summary": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 바꿔 근무를 시작했습니다. 공직기강비서관실 산하 특별감찰반도 민정비서관실 산하로 옮겨졌으며, 청와대는 이동 이유를 밝히지 않았습니다.",
+              "summary_chars": 115
+            },
+            {
+              "article_id": "002",
+              "title": "이진숙도 대구시장 불출마하나…내일 입장표명 예고(종합)",
+              "elapsed_seconds": 101.73,
+              "headline_lengths": {
+                "headline_34": 30,
+                "headline_58": 57,
+                "headline_89": 85
+              },
+              "violations": [],
+              "headline_34": "이진숙 25일 대구시당 회견…대구시장 불출마 관측 제기",
+              "headline_58": "국민의힘 물밑 설득 속 이진숙, 25일 오전 대구시당 회견 예고…대구시장 불출마 관측 제기·보선 가능성",
+              "headline_89": "국민의힘 물밑 설득 속 이진숙 전 위원장이 25일 대구시당 회견을 예고하며 대구시장 불출마 관측이 제기되고, 추경호·유영하 최종 후보는 26일 발표 예정",
+              "summary": "이진숙 전 방송통신위원장이 25일 오전 11시 국민의힘 대구시당에서 현안 관련 입장을 밝히는 기자회견을 예고했습니다. 국민의힘 지도부가 무소속 대구시장 출마 철회와 보궐선거 출마를 설득한 것으로 전해지며 불출마 관측이 나옵니다.",
+              "summary_chars": 127
+            }
+          ],
+          "repeat_index": 7
+        },
+        {
+          "returncode": 0,
+          "elapsed_seconds": 183.33,
+          "results": [
+            {
+              "article_id": "001",
+              "title": "靑 민정비서관·공직기강비서관, 이례적 보직 맞교대",
+              "elapsed_seconds": 99.21,
+              "headline_lengths": {
+                "headline_34": 32,
+                "headline_58": 56,
+                "headline_89": 83
+              },
+              "violations": [],
+              "headline_34": "청와대 민정·공직기강비서관 24일 이례적 보직 맞교대 확인",
+              "headline_58": "청와대 이태형 민정비서관·전치영 공직기강비서관, 24일 같은 수석실 내 이례적 보직 맞교대 근무 시작",
+              "headline_89": "청와대 이태형 민정비서관·전치영 공직기강비서관이 24일 서로 보직을 맞바꿔 근무 시작…특별감찰반도 민정비서관실 산하로 직제 이동, 이유는 밝히지 않아",
+              "summary": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일 서로 보직을 바꿔 근무를 시작했습니다. 공직기강비서관실 산하 특별감찰반도 민정비서관실 산하로 옮긴 것으로 알려졌으며, 청와대는 이동 이유를 밝히지 않았습니다.",
+              "summary_chars": 120
+            },
+            {
+              "article_id": "002",
+              "title": "이진숙도 대구시장 불출마하나…내일 입장표명 예고(종합)",
+              "elapsed_seconds": 83.8,
+              "headline_lengths": {
+                "headline_34": 34,
+                "headline_58": 57,
+                "headline_89": 89
+              },
+              "violations": [],
+              "headline_34": "이진숙 25일 국민의힘 대구시당 입장표명…대구시장 불출마 관측",
+              "headline_58": "이진숙 전 방통위원장, 25일 국민의힘 대구시당서 현안 입장표명…주호영 불출마 뒤 대구시장 불출마 관측",
+              "headline_89": "이진숙 전 방송통신위원장이 25일 국민의힘 대구시당서 입장을 밝힐 예정인 가운데, 주호영 의원 불출마 뒤 보궐선거 출마 설득 속 대구시장 불출마 관측이 제기됐다",
+              "summary": "이진숙 전 방송통신위원장은 25일 국민의힘 대구시당에서 현안 관련 입장을 밝힐 예정입니다. 주호영 의원 불출마 뒤 당내 물밑 설득이 이어졌고, 대구시장 불출마 선언 가능성이 제기됐습니다. 국민의힘 최종 경선에는 추경호·유영하 의원이 경쟁 중입니다.",
+              "summary_chars": 138
+            }
+          ],
+          "repeat_index": 8
+        },
+        {
+          "returncode": 0,
+          "elapsed_seconds": 145.03,
+          "results": [
+            {
+              "article_id": "001",
+              "title": "靑 민정비서관·공직기강비서관, 이례적 보직 맞교대",
+              "elapsed_seconds": 58.35,
+              "headline_lengths": {
+                "headline_34": 31,
+                "headline_58": 53,
+                "headline_89": 79
+              },
+              "violations": [],
+              "headline_34": "청와대 민정·공직기강비서관 24일 서로 보직 맞교대 확인",
+              "headline_58": "청와대 이태형 민정·전치영 공직기강비서관, 24일부터 서로 보직 맞바꿔 근무 시작한 것으로 확인",
+              "headline_89": "청와대 이태형 민정비서관·전치영 공직기강비서관이 24일부터 보직을 맞바꿔 근무하고 특별감찰반도 민정비서관실 산하로 직제 이동한 것으로 알려졌다",
+              "summary": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 바꿔 근무를 시작했습니다. 공직기강비서관실 산하 특별감찰반도 민정비서관실 산하로 직제를 옮긴 것으로 알려졌으며, 청와대는 보직 이동 이유를 밝히지 않았습니다.",
+              "summary_chars": 129
+            },
+            {
+              "article_id": "002",
+              "title": "이진숙도 대구시장 불출마하나…내일 입장표명 예고(종합)",
+              "elapsed_seconds": 86.31,
+              "headline_lengths": {
+                "headline_34": 31,
+                "headline_58": 53,
+                "headline_89": 88
+              },
+              "violations": [],
+              "headline_34": "이진숙 전 방통위원장, 25일 대구시당 회견…불출마 관측",
+              "headline_58": "이진숙 전 방통위원장, 25일 오전 11시 국민의힘 대구시당 기자회견 예고…대구시장 불출마 관측",
+              "headline_89": "이진숙 전 방통위원장이 25일 오전 11시 국민의힘 대구시당 회견을 예고한 가운데, 당 지도부 설득 속 대구시장 불출마와 보궐선거 출마 가능성이 함께 거론됐다",
+              "summary": "이진숙 전 방송통신위원장이 25일 국민의힘 대구시당에서 현안 관련 입장을 밝히는 기자회견을 열기로 했습니다. 국민의힘 지도부와 대구시당은 무소속 대구시장 출마 대신 보궐선거 출마로 선회하도록 설득한 것으로 전해졌습니다.",
+              "summary_chars": 122
+            }
+          ],
+          "repeat_index": 9
+        },
+        {
+          "returncode": 0,
+          "elapsed_seconds": 164.25,
+          "results": [
+            {
+              "article_id": "001",
+              "title": "靑 민정비서관·공직기강비서관, 이례적 보직 맞교대",
+              "elapsed_seconds": 98.29,
+              "headline_lengths": {
+                "headline_34": 32,
+                "headline_58": 55,
+                "headline_89": 81
+              },
+              "violations": [],
+              "headline_34": "청와대 민정·공직기강비서관 24일 이례적 보직 맞교대 확인",
+              "headline_58": "이태형 민정·전치영 공직기강비서관, 24일부터 서로 보직 맞교대…특별감찰반도 민정 산하로 직제 이동",
+              "headline_89": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 맞바꿔 근무…특별감찰반도 민정비서관실 산하로 직제 이동하고 이유는 미공개",
+              "summary": "청와대 이태형 민정비서관과 전치영 공직기강비서관이 24일부터 서로 보직을 바꿔 근무를 시작했습니다. 공직기강비서관실 산하 특별감찰반도 민정비서관실 산하로 직제를 옮긴 것으로 알려졌으며, 청와대는 보직 이동 이유를 밝히지 않았습니다.",
+              "summary_chars": 129
+            },
+            {
+              "article_id": "002",
+              "title": "이진숙도 대구시장 불출마하나…내일 입장표명 예고(종합)",
+              "elapsed_seconds": 65.62,
+              "headline_lengths": {
+                "headline_34": 34,
+                "headline_58": 55,
+                "headline_89": 86
+              },
+              "violations": [],
+              "headline_34": "이진숙 25일 회견 예고…대구시장 불출마·보선 선회 관측 제기",
+              "headline_58": "이진숙 25일 국민의힘 대구시당서 현안 회견…컷오프 반발·무소속 출마 시사 뒤 대구시장 불출마 관측",
+              "headline_89": "이진숙 25일 국민의힘 대구시당서 현안 회견…주호영 불출마 뒤 당내 물밑 교통정리 속 대구시장 불출마와 보선 출마 선회 가능성 관측, 후보 분열 우려 증폭",
+              "summary": "이진숙 전 방송통신위원장이 25일 국민의힘 대구시당에서 현안 관련 기자회견을 열고 입장을 밝힙니다. 당 지도부는 무소속 대구시장 출마 대신 보궐선거 출마를 설득한 것으로 전해졌고, 당내에서는 최종 후보 발표 전 불출마 공식화를 기대하는 분위기가 감지됐습니다.",
+              "summary_chars": 144
+            }
+          ],
+          "repeat_index": 10
         }
-      ]
-    },
+      ],
+      "aggregate": {
+        "run_count": 10,
+        "success_count": 10,
+        "success_rate": 1.0,
+        "article_result_count": 20,
+        "length_violation_count": 0,
+        "summary_length_penalty_count": 0,
+        "avg_elapsed_seconds": 167.38,
+        "score": 97.2103
+      }
+    }
+  ],
+  "ranking": [
     {
-      "name": "codex-low-auth-smoke",
-      "env": {
-        "PIPELINE_LLM_BACKEND": "codex_exec",
-        "PIPELINE_MODEL": "gpt-5.4-mini",
-        "PIPELINE_CODEX_REASONING_EFFORT": "low",
-        "PIPELINE_CODEX_MAX_ATTEMPTS": "1"
-      },
-      "returncode": 1,
-      "elapsed_seconds": 5.22,
-      "stdout_tail": "",
-      "stderr_tail": "om/backend-api/codex/responses\n2026-05-28T11:18:47.184577Z ERROR codex_login::auth::manager: Failed to refresh token: 401 Unauthorized: {\n  \"error\": {\n    \"message\": \"Your refresh token has already been used to generate a new access token. Please try signing in again.\",\n    \"type\": \"invalid_request_error\",\n    \"param\": null,\n    \"code\": \"refresh_token_reused\"\n  }\n}\n2026-05-28T11:18:48.015851Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 401 Unauthorized, url: wss://chatgpt.com/backend-api/codex/responses\n2026-05-28T11:18:48.418357Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 401 Unauthorized, url: wss://chatgpt.com/backend-api/codex/responses\nERROR: Your access token could not be refreshed because your refresh token was already used. Please log out and sign in again.\nERROR: Your access token could not be refreshed because your refresh token was already used. Please log out and sign in again.\n"
+      "name": "gpt-5.5-medium",
+      "run_count": 10,
+      "success_count": 10,
+      "success_rate": 1.0,
+      "article_result_count": 20,
+      "length_violation_count": 0,
+      "summary_length_penalty_count": 0,
+      "avg_elapsed_seconds": 167.38,
+      "score": 97.2103
     }
   ]
 }

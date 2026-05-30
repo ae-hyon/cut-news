@@ -134,7 +134,7 @@ def test_call_hermes_cli_uses_profile_and_strips_session_id(monkeypatch):
     assert kwargs['timeout'] == 10
 
 
-def test_call_hermes_cli_adds_optional_model_and_provider(monkeypatch):
+def test_call_hermes_cli_adds_optional_model_provider_and_reasoning(monkeypatch):
     calls = []
 
     def fake_run(cmd, **kwargs):
@@ -142,14 +142,17 @@ def test_call_hermes_cli_adds_optional_model_and_provider(monkeypatch):
         return _Proc(returncode=0, stdout='{"ok": true}\n')
 
     monkeypatch.setattr(common, 'HERMES_PROFILE', 'cut-news-pipeline')
-    monkeypatch.setattr(common, 'HERMES_MODEL', 'openai/gpt-5.5')
+    monkeypatch.setattr(common, 'HERMES_MODEL', 'gpt-5.5')
     monkeypatch.setattr(common, 'HERMES_PROVIDER', 'openai-codex')
+    monkeypatch.setattr(common, 'HERMES_REASONING_EFFORT', 'high')
     monkeypatch.setattr(common.subprocess, 'run', fake_run)
 
     assert common._call_hermes_cli('system', 'user', timeout=10) == '{"ok": true}'
-    cmd = calls[0]
-    assert cmd[cmd.index('--model') + 1] == 'openai/gpt-5.5'
-    assert cmd[cmd.index('--provider') + 1] == 'openai-codex'
+    assert calls[0] == ['hermes', '--profile', 'cut-news-pipeline', 'config', 'set', 'agent.reasoning_effort', 'high']
+    chat_cmd = calls[1]
+    assert chat_cmd[chat_cmd.index('--model') + 1] == 'gpt-5.5'
+    assert chat_cmd[chat_cmd.index('--provider') + 1] == 'openai-codex'
+    assert calls[2] == ['hermes', '--profile', 'cut-news-pipeline', 'config', 'set', 'agent.reasoning_effort', '']
 
 
 def test_call_hermes_cli_fails_on_empty_clean_output(monkeypatch):

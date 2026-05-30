@@ -88,12 +88,13 @@ def build_runtime_env(args: argparse.Namespace, base: Mapping[str, str] | None =
         raise SystemExit("DATABASE_URL is required; export it explicitly or pass --load-dotenv/--database-url")
 
     env["HOME"] = args.home
-    env.setdefault("PIPELINE_LLM_BACKEND", "codex_exec")
+    env.setdefault("PIPELINE_LLM_BACKEND", "hermes_cli")
     env.setdefault("PIPELINE_MODEL", "gpt-5.4-mini")
     env.setdefault("PIPELINE_CODEX_REASONING_EFFORT", "low")
     env.setdefault("PIPELINE_HERMES_PROFILE", "cut-news-pipeline")
-    env.setdefault("PIPELINE_HERMES_MODEL", "")
-    env.setdefault("PIPELINE_HERMES_PROVIDER", "")
+    env.setdefault("PIPELINE_HERMES_MODEL", "gpt-5.5")
+    env.setdefault("PIPELINE_HERMES_PROVIDER", "openai-codex")
+    env.setdefault("PIPELINE_HERMES_REASONING_EFFORT", "medium")
     env.setdefault("PYTHONUNBUFFERED", "1")
     env["NEWS_PIPELINE_MAX_ARTICLES"] = str(args.max_articles) if args.max_articles else ""
     env.setdefault("PIPELINE_SELECTED_PER_CATEGORY", "")

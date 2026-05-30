@@ -110,6 +110,9 @@ Recommended near-term operator settings while quality work continues:
 ```bash
 PIPELINE_LLM_BACKEND=hermes_cli
 PIPELINE_HERMES_PROFILE=cut-news-pipeline
+PIPELINE_HERMES_PROVIDER=openai-codex
+PIPELINE_HERMES_MODEL=gpt-5.5
+PIPELINE_HERMES_REASONING_EFFORT=medium
 PIPELINE_MAX_WORKERS=3
 PIPELINE_SELECTED_PER_CATEGORY=3        # optional cost-control: summarize top-N scored articles per source category
 PIPELINE_BEST_OF_N=3                   # optional quality boost for high-score articles only
@@ -132,7 +135,7 @@ Follow-up implementation status after the plan started:
 - Classification fixtures were added for crawler source-query precedence over broad keyword rules.
 - Import classification now reports `crawler_source_query` when source query maps cleanly to a supported subcategory.
 - `scripts/check-pipeline-report.py` now keeps product-like runs passing but emits `quality_warnings=["all_classifications_from_keyword_rule"]` when every usable import came from broad keyword rules.
-- Hermes CLI supports optional `PIPELINE_HERMES_MODEL` and `PIPELINE_HERMES_PROVIDER`. `hermes chat --help` does not expose a reasoning-effort flag, so low/medium/high effort comparison is currently a legacy Codex-axis experiment (`PIPELINE_CODEX_REASONING_EFFORT`) or a model/provider comparison for Hermes.
+- Hermes CLI supports optional `PIPELINE_HERMES_MODEL` and `PIPELINE_HERMES_PROVIDER`. The pipeline applies `PIPELINE_HERMES_REASONING_EFFORT` by temporarily setting the selected Hermes profile's `agent.reasoning_effort` for the call and restoring it afterward.
 
 Follow-up verification after the classifier routing fix:
 
@@ -140,7 +143,8 @@ Follow-up verification after the classifier routing fix:
 - Disposable API smoke confirmed `/v1/me/feed` and `/v1/me/archive/2026-05-28` read the same `feed_date=2026-05-28`; persisted snapshot item counts were 3/5/5 across the three preference users.
 - Real Neon run used the same Hermes path and explicit `postgresql+psycopg` URL conversion: `status=success`, `import_inserted=0`, `import_updated=11`, `usable_imports=11`, `drop_reason_counts={}`, `classification_source_counts={"crawler_source_query": 11}`, snapshots `attempted=3/generated=3/failed=0`, `quality_warnings=[]`.
 - Neon post-run counts: `articles=11`, `daily_feed_snapshots=7`, `daily_feed_snapshot_items=11`; snapshot dates included `2026-05-28` with 3 snapshots.
-- Fixed-article variant eval is recorded in `.dev/news-pipeline-fixed-variant-eval.json`. Hermes default profile and explicit `openai-codex/gpt-5.5` both passed headline length contracts on 3 fixed articles; legacy Codex low-effort smoke failed with OAuth `refresh_token_reused`, so Codex low/medium/high comparison is blocked until re-login.
+- Fixed-article variant eval is recorded in `.dev/news-pipeline-fixed-variant-eval.json`. Current winner is `openai-codex/gpt-5.5` with `PIPELINE_HERMES_REASONING_EFFORT=medium`: 10 repeats × 2 fixed articles, `success_rate=1.0`, `length_violation_count=0`, `summary_length_penalty_count=0`, and sampled verifier verdicts clean. A quick `gpt-5.4-mini-low` repeated check was faster but accumulated headline length violations, so it is not the default. Legacy Codex low-effort smoke failed with OAuth `refresh_token_reused`, so direct Codex comparison is blocked until re-login.
+- 2026-05-30 disposable rerun with the same defaults inserted 9 usable rows, `drop_reason_counts={}`, verifier clean for all 9, and `failures=[]`. Snapshot attempted count was 0 because the disposable DB had no user preferences. Quality review found one short market bulletin using source-meta phrasing ("기사 제목과 본문...") and one category issue where a Samsung Electronics compensation/shareholder-return article was better treated as economy than tech. Follow-up code now asks Step 3 to emit an LLM editorial category from the supported taxonomy and import prefers high-confidence `editorial_category` before deterministic crawler/keyword fallbacks; Step 4 also bans source-meta narration in short bulletins.
 
 ### 2026-05-28 hash-id summarizer fix
 

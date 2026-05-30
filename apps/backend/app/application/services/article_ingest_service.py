@@ -178,6 +178,7 @@ SOURCE_CATEGORIES_REQUIRING_ECONOMIC_TITLE_SIGNAL = {'정치', '사회', '문화
 MIN_VERIFICATION_CONFIDENCE = 80
 MIN_DESCRIPTION_SOURCE_VERIFICATION_CONFIDENCE = 90
 MAX_SUMMARY_RETRY_COUNT = 2
+MIN_EDITORIAL_CATEGORY_CONFIDENCE = 70
 TOPIC_TOKEN_PATTERN = re.compile(r'[0-9A-Za-z가-힣]+')
 TITLE_TOPIC_STOPWORDS = {
     '단독', '속보', '종합', '오늘', '내일', '어제', '이번', '관련', '기자', '뉴스', '보도', '사진',
@@ -295,10 +296,23 @@ def _published_at(article_payload: dict) -> str:
     return str(article_payload.get('date') or '').strip()[:10]
 
 
+def _normalise_topic_token(token: str) -> str:
+    normalised = token.strip().lower()
+    for suffix in ('에서', '으로', '에게', '까지', '부터', '보다', '처럼', '으로서', '으로써'):
+        if normalised.endswith(suffix) and len(normalised) - len(suffix) >= 2:
+            normalised = normalised[: -len(suffix)]
+            break
+    for suffix in ('은', '는', '이', '가', '을', '를', '의', '에', '서'):
+        if normalised.endswith(suffix) and len(normalised) - len(suffix) >= 2:
+            normalised = normalised[: -len(suffix)]
+            break
+    return normalised
+
+
 def _topic_token_list(text: str) -> list[str]:
     tokens: list[str] = []
     for raw_token in TOPIC_TOKEN_PATTERN.findall(text.lower()):
-        token = raw_token.strip()
+        token = _normalise_topic_token(raw_token)
         if len(token) < 2 or token in TITLE_TOPIC_STOPWORDS:
             continue
         tokens.append(token)
@@ -307,6 +321,18 @@ def _topic_token_list(text: str) -> list[str]:
 
 def _topic_tokens(text: str) -> set[str]:
     return set(_topic_token_list(text))
+
+
+def _topic_tokens_compatible(left: str, right: str) -> bool:
+    if left == right:
+        return True
+    if len(left) >= 2 and len(right) >= 2:
+        return left in right or right in left
+    return False
+
+
+def _has_topic_overlap(title_tokens: set[str], summary_tokens: set[str]) -> bool:
+    return any(_topic_tokens_compatible(title, summary) for title in title_tokens for summary in summary_tokens)
 
 
 def _summary_topic_mismatch(article_payload: dict, summary_payload: dict) -> bool:
@@ -320,12 +346,15 @@ def _summary_topic_mismatch(article_payload: dict, summary_payload: dict) -> boo
         for field in ('headline_34', 'headline_58', 'headline_89', 'summary')
     )
     summary_tokens = _topic_tokens(summary_text)
-    overlap = title_tokens.intersection(summary_tokens)
-    if not overlap:
+    if not _has_topic_overlap(title_tokens, summary_tokens):
         return True
 
     headline_tokens = _topic_token_list(str(summary_payload.get('headline_34') or ''))
-    title_overlap_positions = [index for index, token in enumerate(headline_tokens) if token in title_tokens]
+    title_overlap_positions = [
+        index
+        for index, token in enumerate(headline_tokens)
+        if any(_topic_tokens_compatible(token, title_token) for title_token in title_tokens)
+    ]
     if title_overlap_positions and min(title_overlap_positions) >= 4:
         return True
 
@@ -351,9 +380,6 @@ def _quality_gate_failure_reason(article_payload: dict, summary_payload: dict, v
     violations = summary_payload.get('_violations')
     if isinstance(violations, list) and any(str(item).strip() for item in violations):
         return 'violations'
-
-    if _summary_topic_mismatch(article_payload, summary_payload):
-        return 'topic_mismatch'
 
     retry_count = summary_payload.get('_retry_count')
     if isinstance(retry_count, int | float) and int(retry_count) > MAX_SUMMARY_RETRY_COUNT:
@@ -405,10 +431,38 @@ def _classify_from_crawler_source(article_payload: dict, summary: str) -> Articl
     return None
 
 
-def _derive_categories(article_payload: dict, category_payload: dict, summary: str = '') -> ArticleDerivedCategory | None:
+def _classify_from_editorial_category(score_payload: dict) -> ArticleDerivedCategory | None:
+    primary = str(score_payload.get('editorial_primary_category') or '').strip()
+    subcategory = str(score_payload.get('editorial_subcategory') or '').strip()
+    confidence = score_payload.get('editorial_category_confidence')
+    if not isinstance(confidence, int | float):
+        return None
+    if float(confidence) < MIN_EDITORIAL_CATEGORY_CONFIDENCE:
+        return None
+    if primary not in SUPPORTED_SUBCATEGORIES:
+        return None
+    if subcategory not in SUPPORTED_SUBCATEGORIES[primary]:
+        return None
+    return ArticleDerivedCategory(
+        primary_category=primary,
+        subcategory=subcategory,
+        classification_source='editorial_category',
+    )
+
+
+def _derive_categories(
+    article_payload: dict,
+    category_payload: dict,
+    summary: str = '',
+    score_payload: dict | None = None,
+) -> ArticleDerivedCategory | None:
     title = str(article_payload.get('title') or '')
     raw_primary = str(category_payload.get('primary_category') or '')
     raw_subcategory = str(category_payload.get('subcategory') or '')
+
+    editorial_classified = _classify_from_editorial_category(score_payload or {})
+    if editorial_classified is not None:
+        return editorial_classified
 
     if raw_primary in SOURCE_CATEGORIES_REQUIRING_ECONOMIC_TITLE_SIGNAL and not _has_economic_title_signal(title):
         return None
@@ -515,6 +569,7 @@ def load_summarized_articles_report(data_dir: Path) -> tuple[list[ArticleIngestR
             article_payload,
             category_payload,
             summary,
+            scores.get(article_id, {}),
         )
         if derived is None:
             _increment(drop_reason_counts, 'category_unmapped')

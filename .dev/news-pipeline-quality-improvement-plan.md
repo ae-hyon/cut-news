@@ -160,7 +160,7 @@ Expected: at least the current misclassified cases fail.
 
 ### Task 2.2: Use crawler metadata only when the article text supports it
 
-**Status:** tightened after live DB audit. `_derive_categories` now uses stronger exact source subcategory, then crawler metadata only when title/summary contain supporting evidence for the source query/category, and only then broad keyword rules. Keyword matching now uses title + generated summary rather than raw crawler body, because raw pages can include related-link noise such as unrelated `청약`, `주가`, `미국`, or `농구` text. Import quality gates also reject source-title/generated-summary topic mismatches as `quality_gate:topic_mismatch`, covering mixed-content extraction/summarization failures like the observed `허웅 재판` title paired with an unrelated `무인창고 68억 은닉` summary.
+**Status:** tightened after live DB audit, then shifted further toward LLM-first quality judgment. `_derive_categories` now first accepts a high-confidence LLM editorial category emitted by Step 3 scoring (`editorial_primary_category`, `editorial_subcategory`, `editorial_category_confidence`) when it matches the supported taxonomy. This avoids hard-coding company-name/category overrides and lets the model choose the article's actual product topic from the text. If no valid editorial category is present, the fallback remains: stronger exact source subcategory, crawler metadata only when title/summary contain supporting evidence for the source query/category, and finally broad keyword rules. Keyword matching uses title + generated summary rather than raw crawler body, because raw pages can include related-link noise such as unrelated `청약`, `주가`, `미국`, or `농구` text. The earlier hard import-side source-title/generated-summary `topic_mismatch` token gate was downgraded after false positives; mixed-content cases such as `허웅 재판` summarized as `무인창고 68억 은닉` are now pushed into the LLM verifier prompt with checklist-style instructions and few-shot boundary examples, so valid verifier-clean summaries are not dropped solely by token overlap heuristics.
 
 **Objective:** Reduce false positives where generic words like `AI`, `미국`, `농구`, `청약`, or `주가` inside unrelated crawler page content push the article to the wrong category.
 
@@ -169,10 +169,11 @@ Expected: at least the current misclassified cases fail.
 - Test: `apps/backend/tests/test_article_ingest_service.py`
 
 **Implementation direction:**
-1. If the summarizer JSON contains `source_category` plus `source_query`, use `CRAWLER_SOURCE_QUERY_SUBCATEGORY_ALIASES` only when title/summary support the query.
-2. Fall back to `crawler_source_category` only when title/summary support the broad source category.
-3. Use broad `KEYWORD_RULES` only after stronger source metadata and exact source subcategory checks fail.
-4. Keep observability via `classification_source`: `crawler_source_query`, `crawler_source_category`, `source_subcategory`, `keyword_rule`.
+1. If Step 3 scoring emits a valid high-confidence editorial category, use it first so LLM text judgment can override brittle company-name or crawler-query heuristics.
+2. If the summarizer JSON contains `source_category` plus `source_query`, use `CRAWLER_SOURCE_QUERY_SUBCATEGORY_ALIASES` only when title/summary support the query.
+3. Fall back to `crawler_source_category` only when title/summary support the broad source category.
+4. Use broad `KEYWORD_RULES` only after stronger source metadata and exact source subcategory checks fail.
+5. Keep observability via `classification_source`: `editorial_category`, `crawler_source_query`, `crawler_source_category`, `source_subcategory`, `keyword_rule`.
 
 **Verification:**
 ```bash
@@ -200,7 +201,7 @@ make test
 
 ### Task 3.1: Add explicit Hermes effort/model env names
 
-**Status:** partially implemented for supported Hermes CLI flags. `PIPELINE_HERMES_MODEL` and `PIPELINE_HERMES_PROVIDER` are available. `hermes chat --help` does not expose a reasoning-effort flag, so do not add `PIPELINE_HERMES_REASONING_EFFORT` unless the CLI gains a supported option.
+**Status:** implemented for Hermes CLI through `PIPELINE_HERMES_MODEL`, `PIPELINE_HERMES_PROVIDER`, and `PIPELINE_HERMES_REASONING_EFFORT`. Daily/local defaults now prefer `PIPELINE_LLM_BACKEND=hermes_cli`, `PIPELINE_HERMES_PROFILE=cut-news-pipeline`, `PIPELINE_HERMES_PROVIDER=openai-codex`, `PIPELINE_HERMES_MODEL=gpt-5.5`, `PIPELINE_HERMES_REASONING_EFFORT=medium`. Direct `codex_exec` remains a legacy fallback only because it can fail independently on Codex CLI OAuth refresh-token state.
 
 **Objective:** Make effort tunable for Hermes CLI as well as legacy Codex.
 
@@ -214,6 +215,7 @@ make test
 PIPELINE_HERMES_PROFILE=cut-news-pipeline
 PIPELINE_HERMES_MODEL=<optional model override; passed as hermes chat --model>
 PIPELINE_HERMES_PROVIDER=<optional provider override; passed as hermes chat --provider>
+PIPELINE_HERMES_REASONING_EFFORT=minimal|low|medium|high|xhigh  # Hermes profile config is set for the call and restored to blank afterward
 PIPELINE_CODEX_REASONING_EFFORT=low|medium|high  # legacy codex_exec only
 ```
 
@@ -225,9 +227,9 @@ Do not invent unsupported flags.
 
 ### Task 3.2: Build a fixed-article evaluation command
 
-**Status:** implemented as `scripts/evaluate-fixed-summary-variants.py`; latest output is `.dev/news-pipeline-fixed-variant-eval.json`.
+**Status:** implemented as `scripts/evaluate-fixed-summary-variants.py`; latest output is `.dev/news-pipeline-fixed-variant-eval.json`. The script now supports `EVAL_REPEAT_COUNT=<N>` for repeated trials and `EVAL_VARIANTS_JSON` for an explicit Hermes `openai-codex` model/reasoning matrix. Default variants use Hermes CLI, not direct `codex_exec`.
 
-**Current result:** Hermes default profile and explicit `PIPELINE_HERMES_PROVIDER=openai-codex` / `PIPELINE_HERMES_MODEL=gpt-5.5` both passed 3 fixed articles with no headline length violations. Legacy Codex `PIPELINE_CODEX_REASONING_EFFORT=low` failed before evaluation because local Codex OAuth returned `refresh_token_reused`/401; low/medium/high effort remains blocked until re-login.
+**Current result:** `gpt-5.5` + `medium` won the current fixed-article comparison. A quick 1-article matrix found `gpt-5.4-mini-low` fastest, but a 2-article repeated check showed mini-low accumulating headline length violations. `gpt-5.5-medium` completed 10 repeats across 2 fixed articles with `success_rate=1.0`, `length_violation_count=0`, `summary_length_penalty_count=0`, `avg_elapsed_seconds=167.38`, and sampled verifier results `clean` for both articles. Legacy Codex `PIPELINE_CODEX_REASONING_EFFORT=low` failed before evaluation because local Codex OAuth returned `refresh_token_reused`/401; direct Codex remains blocked until re-login.
 
 **Objective:** Compare supported Hermes model/provider settings and legacy Codex low/medium/high effort on the exact same article set.
 
@@ -253,7 +255,7 @@ Do not invent unsupported flags.
 
 ### Task 3.3: Record an effort policy
 
-**Status:** codified and disposable-run verified. Daily operation should stay on `PIPELINE_LLM_BACKEND=hermes_cli`, `PIPELINE_HERMES_PROFILE=cut-news-pipeline`, and `PIPELINE_MAX_WORKERS=3`. Cost/quality knobs are now explicit: `PIPELINE_SELECTED_PER_CATEGORY=3` for category-balanced summarization cost control, and `PIPELINE_BEST_OF_N=3` + `PIPELINE_BEST_OF_SCORE_THRESHOLD=80` for selective high-score best-of summaries. The 2026-05-29 disposable run showed threshold `85` was too high for the current Step 3 score scale, while `80` applied best-of to 3 of 9 selected summaries. Keep legacy Codex low/medium/high effort comparison blocked until OAuth is repaired.
+**Status:** codified and disposable-run verified. Daily operation should stay on `PIPELINE_LLM_BACKEND=hermes_cli`, `PIPELINE_HERMES_PROFILE=cut-news-pipeline`, `PIPELINE_HERMES_PROVIDER=openai-codex`, `PIPELINE_HERMES_MODEL=gpt-5.5`, `PIPELINE_HERMES_REASONING_EFFORT=medium`, and `PIPELINE_MAX_WORKERS=3`. Cost/quality knobs are now explicit: `PIPELINE_SELECTED_PER_CATEGORY=3` for category-balanced summarization cost control, and `PIPELINE_BEST_OF_N=3` + `PIPELINE_BEST_OF_SCORE_THRESHOLD=80` for selective high-score best-of summaries. The 2026-05-29 disposable run showed threshold `85` was too high for the current Step 3 score scale, while `80` applied best-of to 3 of 9 selected summaries. Keep legacy Codex low/medium/high effort comparison blocked until OAuth is repaired.
 
 **Objective:** Codify the chosen daily setting.
 

@@ -65,6 +65,18 @@ def test_initial_prompt_adds_directional_fact_guard_for_market_articles():
     assert "기자 이름이나 '기자' 표현을 headline/summary에 넣지 마세요" in prompt
 
 
+def test_initial_prompt_bans_source_text_meta_narration_for_short_bulletins():
+    article = {
+        "title": "[속보] 코스피 , 2.43% 오른 8384.31 시작…코스닥은 1112.15",
+        "content": "코스피, 2.43% 오른 8384.31 시작…코스닥은 1112.15",
+    }
+
+    prompt = _build_initial_prompt(article)
+
+    assert "기사 제목·본문·원문이 전했다" in prompt
+    assert "독자에게 전달할 사건·수치·상황만" in prompt
+
+
 def test_retry_prompt_adds_directional_fact_fix_guidance_for_hallucination_feedback():
     article = {
         "title": "[뉴욕유가] 美·이란 2주만에 다시 협상 테이블로…WTI 5일만에 하락",

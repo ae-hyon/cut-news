@@ -131,12 +131,13 @@ def _pipeline_steps(
     summarize_env = {
         **os.environ,
         'PYTHONUNBUFFERED': '1',
-        'PIPELINE_LLM_BACKEND': os.environ.get('PIPELINE_LLM_BACKEND', 'codex_exec'),
+        'PIPELINE_LLM_BACKEND': os.environ.get('PIPELINE_LLM_BACKEND', 'hermes_cli'),
         'PIPELINE_MODEL': os.environ.get('PIPELINE_MODEL', 'gpt-5.4-mini'),
         'PIPELINE_CODEX_REASONING_EFFORT': os.environ.get('PIPELINE_CODEX_REASONING_EFFORT', 'low'),
         'PIPELINE_HERMES_PROFILE': os.environ.get('PIPELINE_HERMES_PROFILE', 'cut-news-pipeline'),
-        'PIPELINE_HERMES_MODEL': os.environ.get('PIPELINE_HERMES_MODEL', ''),
-        'PIPELINE_HERMES_PROVIDER': os.environ.get('PIPELINE_HERMES_PROVIDER', ''),
+        'PIPELINE_HERMES_MODEL': os.environ.get('PIPELINE_HERMES_MODEL', 'gpt-5.5'),
+        'PIPELINE_HERMES_PROVIDER': os.environ.get('PIPELINE_HERMES_PROVIDER', 'openai-codex'),
+        'PIPELINE_HERMES_REASONING_EFFORT': os.environ.get('PIPELINE_HERMES_REASONING_EFFORT', 'medium'),
     }
     import_env = {
         **os.environ,
