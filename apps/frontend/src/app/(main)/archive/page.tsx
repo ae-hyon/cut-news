@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import NewsBlock from '@/components/NewsBlock';
+import Spinner from '@/components/Spinner';
+import HomeNewsCard from '@/components/HomeNewsCard';
 import {
   getMyArchiveDate,
   getMyArchiveMonth,
   mapArticleToNewsItem,
 } from '@/services/contentApi';
+import { getCardColor } from '@/constants/card-colors';
 import type { ArchiveDay } from '@/lib/types';
 import type { NewsItem } from '@/types';
 
@@ -31,6 +33,7 @@ export default function ArchivePage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dateLoading, setDateLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const monthKey = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
@@ -73,6 +76,7 @@ export default function ArchivePage() {
     }
 
     setSelectedDate(date);
+    setDateLoading(true);
     try {
       const response = await getMyArchiveDate(date);
       setSelectedNews(
@@ -84,6 +88,8 @@ export default function ArchivePage() {
     } catch (err) {
       setSelectedNews([]);
       setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDateLoading(false);
     }
   };
 
@@ -190,38 +196,95 @@ export default function ArchivePage() {
         })}
       </div>
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {selectedDate && (
           <motion.div
             key={selectedDate}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.25 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[900] flex flex-col backdrop-blur-[20px] bg-black/80"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-text-primary">
-                {selectedDate.replace(/-/g, '.')}
-              </h3>
-              <span className="text-xs text-text-tertiary">
-                {selectedNews.length}개 기사
-              </span>
-            </div>
-            <div className="columns-2 gap-3">
-              {selectedNews.map((item, i) => (
-                <NewsBlock
-                  key={item.id}
-                  news={item}
-                  index={i}
-                  onClick={(id, snapshotId) =>
-                    router.push(
-                      snapshotId
-                        ? `/news/${id}?snapshot_id=${snapshotId}`
-                        : `/news/${id}`,
-                    )
-                  }
-                />
-              ))}
+            <div className="flex-1 flex flex-col max-w-lg mx-auto w-full px-5 pt-[22px] pb-6 gap-6">
+              <div className="flex items-center shrink-0">
+                <p className="flex-1 text-lg font-bold opacity-80">
+                  {selectedDate.replace(/-/g, '.')}
+                </p>
+                <button
+                  onClick={() => {
+                    setSelectedDate(null);
+                    setSelectedNews([]);
+                  }}
+                  className="size-6 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+              {dateLoading ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <Spinner />
+                </div>
+              ) : (
+                (() => {
+                  const leftColumn = selectedNews.filter(
+                    (_, i) => i % 2 === 0,
+                  );
+                  const rightColumn = selectedNews.filter(
+                    (_, i) => i % 2 !== 0,
+                  );
+                  return (
+                    <div className="flex gap-[2px]">
+                      <div className="flex-1 flex flex-col gap-[2px] min-w-0">
+                        {leftColumn.map((item, i) => (
+                          <HomeNewsCard
+                            key={item.id}
+                            news={item}
+                            index={i * 2}
+                            color={getCardColor(i * 2)}
+                            onClick={(id) =>
+                              router.push(
+                                item.snapshotId
+                                  ? `/news/${id}?snapshot_id=${item.snapshotId}`
+                                  : `/news/${id}`,
+                              )
+                            }
+                          />
+                        ))}
+                      </div>
+                      <div className="flex-1 flex flex-col gap-[2px] min-w-0">
+                        {rightColumn.map((item, i) => (
+                          <HomeNewsCard
+                            key={item.id}
+                            news={item}
+                            index={i * 2 + 1}
+                            color={getCardColor(i * 2 + 1)}
+                            onClick={(id) =>
+                              router.push(
+                                item.snapshotId
+                                  ? `/news/${id}?snapshot_id=${item.snapshotId}`
+                                  : `/news/${id}`,
+                              )
+                            }
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
             </div>
           </motion.div>
         )}
