@@ -173,7 +173,7 @@ make local-down     # 중지
 - frontend: `http://127.0.0.1:3030`
 - backend API: `http://127.0.0.1:8030`
 - crawler API: `http://127.0.0.1:8001`
-- local scheduler: 매일 `08:30` Asia/Seoul 기준으로 crawler -> summarizer -> backend import 실행
+- local scheduler: 매일 `08:30` Asia/Seoul 기준으로 crawler -> summarizer -> backend import 실행. 홈 피드는 서버가 `09:00`~다음날 `02:59` KST 발행 window에서만 노출하며, `03:00`~`08:59`에는 `/v1/me/feed`가 `425 Too Early`를 반환합니다.
 
 로그와 pid는 `.local/compose/` 아래에 저장됩니다. 기본 DB는 Docker 없이 `apps/backend/dev-ui-test.db` SQLite를 사용합니다. 루트 `.env`와 `apps/backend/.env`가 있으면 자동으로 읽습니다.
 
@@ -203,7 +203,7 @@ make full-up
 - frontend: `http://127.0.0.1:3030`
 - backend API: `http://127.0.0.1:8030`
 - crawler API: `http://127.0.0.1:8001`
-- news scheduler: 매일 `08:30` Asia/Seoul 기준으로 crawler -> summarizer -> backend import 실행
+- news scheduler: 매일 `08:30` Asia/Seoul 기준으로 crawler -> summarizer -> backend import 실행. 홈 피드는 서버가 `09:00`~다음날 `02:59` KST 발행 window에서만 노출하며, `03:00`~`08:59`에는 `/v1/me/feed`가 `425 Too Early`를 반환합니다.
   - 실패 시 기본 2회까지 재시도합니다. (`PIPELINE_MAX_ATTEMPTS`, `PIPELINE_RETRY_DELAY_SECONDS`)
   - 최신 실행 결과는 `apps/summarizer/data/run_report.json`, 실행별 archive는 `apps/summarizer/data/run_reports/run_*.json`에 저장됩니다.
   - 실행 결과에는 `import_stats`, `quality_gate_skip_counts`, `drop_reason_counts`, `classification_source_counts`가 포함되어 몇 건이 어떤 검증/분류 단계에서 제외됐는지 확인할 수 있습니다.

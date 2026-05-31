@@ -128,7 +128,7 @@ Internal:
 - `GET /v1/me`는 앱 부팅용 세션 스냅샷이며 `preference`에 현재 관심 카테고리 요약(`mode`, `primary_categories`, `subcategories`)을 함께 내려줍니다. 비로그인 상태는 `preference: null`입니다.
 - `session_state`는 `anonymous`, `authenticated`, `onboarded` 중 하나입니다.
 - 기사 상세, feed, archive, scraps는 로그인된 현재 사용자 기준으로 동작합니다.
-- `GET /v1/me/feed`는 Asia/Seoul 기준 오늘의 daily feed snapshot을 lazy 생성/조회한 뒤 viewed/check-in 처리하고, `snapshot_id`, `feed_date`, `status`, `read_count`, `total_count`, `mode`, `blocks`를 반환합니다. `blocks[].articles` 카드 shape는 기존 프론트 호환을 유지합니다.
+- `GET /v1/me/feed`는 서버의 Asia/Seoul 발행 window를 기준으로 daily feed snapshot을 lazy 생성/조회한 뒤 viewed/check-in 처리하고, `snapshot_id`, `feed_date`, `status`, `read_count`, `total_count`, `mode`, `blocks`를 반환합니다. 발행 전 window(`03:00:00`~`08:59:59` KST)에는 snapshot을 생성/열람 처리하지 않고 `425 Too Early`와 `publication_status`, `feed_date`, `next_publish_at` detail을 반환합니다. `blocks[].articles` 카드 shape는 기존 프론트 호환을 유지합니다.
 - `GET /v1/me/archive?month=YYYY-MM`는 저장된 snapshot day metadata만 반환합니다. 월간 달력용 응답이며 `days[].items`는 포함하지 않습니다.
 - `GET /v1/me/archive/{YYYY-MM-DD}`는 해당 날짜의 저장된 snapshot item을 snapshot sort order대로 반환하고, 열람 시 viewed/check-in 처리합니다.
 - `GET /v1/articles/{article_id}`와 `GET /v1/me/articles/{article_id}`는 성공한 상세 열람을 read로 기록합니다. feed/archive에서 상세로 이동할 때 `?snapshot_id={snapshot_id}`를 넘기면 해당 snapshot의 `read_count`/`completed` 계산에 반영됩니다. snapshot 없이 열람하면 기사 단위 read만 저장됩니다.
@@ -144,12 +144,12 @@ Internal:
 
 ### `GET /v1/me/feed`
 
-홈 피드는 현재 preference로 매번 재계산하지 않고 daily feed snapshot을 기준으로 응답합니다. 오늘 snapshot이 없으면 API가 현재 사용자에 대해 lazy 생성하고, 응답 전 `first_viewed_at`을 최초 1회 기록합니다.
+홈 피드는 현재 preference로 매번 재계산하지 않고 daily feed snapshot을 기준으로 응답합니다. 서버가 Asia/Seoul 기준 발행 window를 계산합니다. `09:00:00`~다음날 `02:59:59`에는 해당 product `feed_date` snapshot을 lazy 생성하고, 응답 전 `first_viewed_at`을 최초 1회 기록합니다. `03:00:00`~`08:59:59`에는 아직 발행 전으로 보고 `425 Too Early`를 반환하며 snapshot 생성/열람 상태를 바꾸지 않습니다.
 
 주요 필드:
 - `user_id`: 현재 사용자 id
 - `snapshot_id`: 오늘 daily feed snapshot id. article detail 이동 시 `snapshot_id` query로 전달합니다.
-- `feed_date`: `YYYY-MM-DD`, Asia/Seoul 기준 오늘 날짜
+- `feed_date`: `YYYY-MM-DD`, 서버 발행 window 기준 product feed bucket 날짜. `00:00:00`~`02:59:59` KST에는 전날, `09:00:00` 이후에는 오늘입니다.
 - `status`: `generated` | `viewed` | `completed`
 - `read_count`: 이 snapshot에서 read 처리된 article 수
 - `total_count`: snapshot item 수

@@ -10,6 +10,18 @@ interface ApiOptions extends RequestInit {
   retryOnUnauthorized?: boolean;
 }
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly data: unknown;
+
+  constructor(status: number, data: unknown) {
+    super(errorMessage(data));
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
 async function request(path: string, options: RequestInit = {}) {
   return fetch(`${getApiBase()}${path}`, {
     credentials: 'include',
@@ -69,7 +81,7 @@ export async function api<T>(
   const data = await parseResponse(response);
 
   if (!response.ok) {
-    throw new Error(errorMessage(data));
+    throw new ApiError(response.status, data);
   }
 
   return data as T;

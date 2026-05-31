@@ -1,4 +1,5 @@
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,14 +23,55 @@ router = APIRouter(tags=['me'])
 AUTH_REQUIRED = {401: {'description': 'Authentication required'}}
 
 
-def _current_feed_date() -> str:
-    """Return the KST product feed date served by the home feed.
+@dataclass(frozen=True)
+class HomeFeedWindow:
+    publication_status: str
+    feed_date: str
+    next_publish_at: str
 
-    The scheduled 08:30 KST news pipeline writes same-day daily feed
-    snapshots, so the home feed must request the same date instead of
-    looking up the previous day's bucket.
+
+PUBLISH_START = time(9, 0, 0)
+PRE_PUBLICATION_START = time(3, 0, 0)
+KST = ZoneInfo('Asia/Seoul')
+
+
+def resolve_home_feed_window(now: datetime) -> HomeFeedWindow:
+    """Resolve the server-owned home feed publication window.
+
+    Home feed is visible from 09:00:00 KST through next-day 02:59:59 KST.
+    From 03:00:00 through 08:59:59 KST, today's feed is explicitly before publication.
     """
-    return datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat()
+    now_kst = now.astimezone(KST) if now.tzinfo is not None else now.replace(tzinfo=KST)
+    today = now_kst.date()
+    current_time = now_kst.time().replace(microsecond=0)
+    today_publish_at = datetime.combine(today, PUBLISH_START, tzinfo=KST)
+
+    if current_time < PRE_PUBLICATION_START:
+        return HomeFeedWindow(
+            publication_status='published',
+            feed_date=(today - timedelta(days=1)).isoformat(),
+            next_publish_at=today_publish_at.isoformat(),
+        )
+    if current_time < PUBLISH_START:
+        return HomeFeedWindow(
+            publication_status='before_publication',
+            feed_date=today.isoformat(),
+            next_publish_at=today_publish_at.isoformat(),
+        )
+    return HomeFeedWindow(
+        publication_status='published',
+        feed_date=today.isoformat(),
+        next_publish_at=(today_publish_at + timedelta(days=1)).isoformat(),
+    )
+
+
+def _current_home_feed_window() -> HomeFeedWindow:
+    return resolve_home_feed_window(datetime.now(KST))
+
+
+def _current_feed_date() -> str:
+    """Return the KST product feed date served by the home feed."""
+    return _current_home_feed_window().feed_date
 
 
 @router.get(
@@ -109,7 +151,10 @@ def _update_my_preference(
         'is_scrapped so frontend can render saved state without an additional scraps lookup. Opening the feed '
         'marks the snapshot viewed for check-in tracking.'
     ),
-    responses=AUTH_REQUIRED,
+    responses={
+        **AUTH_REQUIRED,
+        425: {'description': 'Daily home feed has not reached the 09:00 KST publication window'},
+    },
 )
 def get_my_feed(
     session: AuthSession = Depends(require_current_user),
@@ -117,7 +162,17 @@ def get_my_feed(
     snapshot_service: DailyFeedSnapshotService = Depends(get_daily_feed_snapshot_service),
 ):
     assert session.user_id is not None
-    feed_date = _current_feed_date()
+    window = _current_home_feed_window()
+    if window.publication_status == 'before_publication':
+        raise HTTPException(
+            status_code=425,
+            detail={
+                'publication_status': window.publication_status,
+                'feed_date': window.feed_date,
+                'next_publish_at': window.next_publish_at,
+            },
+        )
+    feed_date = window.feed_date
     try:
         snapshot = snapshot_service.generate_for_user_date(
             session.user_id,

@@ -91,6 +91,16 @@ export interface FeedResponse {
   blocks: FeedBlock[];
 }
 
+export interface FeedBeforePublicationDetail {
+  publication_status: 'before_publication';
+  feed_date: string;
+  next_publish_at: string;
+}
+
+export interface FeedBeforePublicationError {
+  detail: FeedBeforePublicationDetail;
+}
+
 export interface ScrapResponse {
   user_id: string;
   items: ArticleCard[];

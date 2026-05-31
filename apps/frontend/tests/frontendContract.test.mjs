@@ -82,4 +82,19 @@ describe('real frontend backend contract', () => {
     assert.match(detailSource, /useSearchParams/);
     assert.match(detailSource, /getMyArticle\(id, snapshotId\)/);
   });
+
+  it('renders the backend-managed before-publication feed window as an empty-state notice', () => {
+    const apiSource = read('src/lib/api.ts');
+    const typesSource = read('src/lib/types.ts');
+    const homeSource = read('src/app/(main)/page.tsx');
+
+    assert.match(apiSource, /class ApiError extends Error/);
+    assert.match(apiSource, /this\.status = status/);
+    assert.match(typesSource, /FeedBeforePublicationDetail/);
+    assert.match(typesSource, /publication_status:\s*'before_publication'/);
+    assert.match(homeSource, /isBeforePublicationError/);
+    assert.match(homeSource, /err\.data\.detail/);
+    assert.match(homeSource, /formatPublishTime\(beforePublication\.next_publish_at\)/);
+    assert.match(homeSource, /너무 일찍 오셨네요!/);
+  });
 });

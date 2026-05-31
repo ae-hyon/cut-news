@@ -125,11 +125,13 @@ Implementation notes:
 ## Schedule / archive behavior reference
 
 - AI news generation 기준 시간: every morning at `08:30:00` Asia/Seoul (`AI_NEWS_GENERATION_TIME=08:30:00`).
-- News publication/access reference from the product note:
-  - `03:08:59` is before publication.
-  - `09:02:59(+1)` is considered published for the next-day window.
-  - If the user has not accessed during `09:03:00(+1)`, the news archive is not generated for that user.
-- Current backend snapshot model generates/imports the daily feed snapshot after successful pipeline import for onboarded users; archive/check-in behavior must preserve the above product timing when future frontend/scheduler logic is adjusted.
+- Home-feed publication/access window is server-owned, not frontend-clock-owned:
+  - `00:00:00` through `02:59:59` KST shows the previous day's `feed_date`.
+  - `03:00:00` through `08:59:59` KST is `before_publication`; `GET /v1/me/feed` returns `425 Too Early` with `publication_status`, `feed_date`, and `next_publish_at` instead of generating/viewing a snapshot.
+  - `09:00:00` through `23:59:59` KST shows today's `feed_date`.
+  - The visible window for a product feed date is therefore `09:00:00` KST through next-day `02:59:59` KST.
+- Archive endpoints remain date-addressed and read explicit persisted snapshot dates; the home-feed publication window does not hide archive access.
+- Current backend snapshot model generates/imports the daily feed snapshot after successful pipeline import for onboarded users. The home feed only exposes the generated product bucket during the publication window above.
 
 ## Operator commands
 

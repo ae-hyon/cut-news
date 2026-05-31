@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from app.domain.entities import Article, AuthSession, DailyFeedSnapshot, DailyFeedSnapshotItem
 from app.domain.enums import PreferenceMode
 from app.presentation.api.dependencies import get_current_session, get_daily_feed_snapshot_service, get_feed_service
+from app.presentation.api.routes import users
 from app.presentation.api.routes.users import router
 
 
@@ -135,8 +136,18 @@ def build_client(session: AuthSession = CURRENT_SESSION, snapshot_service: StubD
     return TestClient(app)
 
 
-def test_me_feed_returns_current_users_snapshot_feed():
-    feed_date = datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat()
+class FixedDateTime(datetime):
+    fixed_now: datetime
+
+    @classmethod
+    def now(cls, tz=None):
+        return cls.fixed_now.astimezone(tz) if tz is not None else cls.fixed_now
+
+
+def test_me_feed_returns_current_users_snapshot_feed(monkeypatch):
+    FixedDateTime.fixed_now = datetime(2026, 5, 31, 9, 0, 0, tzinfo=ZoneInfo('Asia/Seoul'))
+    monkeypatch.setattr(users, 'datetime', FixedDateTime)
+    feed_date = '2026-05-31'
     snapshot_service = StubDailyFeedSnapshotService()
     client = build_client(snapshot_service=snapshot_service)
 
