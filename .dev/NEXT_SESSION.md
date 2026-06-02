@@ -237,8 +237,8 @@ Implemented in the working tree:
 
 Current priority after the candidate-first/best-of slice:
 1. Commit and push the Neon backfill/repair documentation and evidence files.
-2. Record the final scheduled env in the actual local/server scheduler or cron secret store and keep DB/alert secrets outside git.
-3. Install the local Mac/server post-crawl scheduler only after the operator env is final and secrets stay outside git. This is separate from the GitHub Actions crawler schedule, which remains crawl-only.
+2. Local Hermes cron scheduler is installed for the post-crawl summarizer/import/snapshot runner: job `75b5dc783415`, `40 8 * * *`, script `~/.hermes/profiles/school/scripts/cut-news-ops-pipeline.sh`. This is separate from the GitHub Actions crawler schedule, which remains crawl-only.
+3. Next ops hardening is alert routing: configure `PIPELINE_ALERT_COMMAND` or `PIPELINE_ALERT_WEBHOOK_URL` in the scheduler/secret environment if operator notifications are needed.
 4. Codex low/medium/high effort comparison remains blocked until `HOME=/Users/reddit codex login --device-auth` succeeds; otherwise continue Hermes profile/model-provider evaluation.
 
 Historical verified steps:

@@ -280,6 +280,19 @@ PIPELINE_HERMES_PROFILE=cut-news-pipeline \
 make ops-pipeline-from-github OPS_PIPELINE_ARGS='--dry-run'
 ```
 
+## Installed local scheduler
+
+This is not the GitHub Actions scheduler. GitHub Actions remains crawl-only at 08:00 Asia/Seoul. The post-crawl summarizer/import/snapshot runner is installed as a local Hermes cron job on this Mac/server:
+
+- job id: `75b5dc783415`
+- name: `cut-news daily artifact pipeline`
+- schedule: `40 8 * * *` Asia/Seoul local time
+- script: `~/.hermes/profiles/school/scripts/cut-news-ops-pipeline.sh`
+- workdir: `/Users/reddit/Project/cut-news`
+- profile: `school`
+
+The script runs `HOME=/Users/reddit make ops-pipeline-from-github OPS_PIPELINE_ARGS="--load-dotenv"`, appends full output to `.local/compose/logs/ops-pipeline.log`, and stays silent on success. On failure, it prints the log path and the tail of the failing output for alert delivery.
+
 ## Alert hooks
 
 The wrapper can notify on failure through either or both of these env vars:
