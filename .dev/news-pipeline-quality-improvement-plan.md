@@ -183,9 +183,9 @@ make test
 
 ### Task 2.3: Add a report gate for suspicious classification source mix
 
-**Status:** implemented as a non-failing warning. `make local-report-check` now includes `quality_warnings`, and current historical run reports with all `keyword_rule` imports emit `all_classifications_from_keyword_rule` while keeping `failures=[]`.
+**Status:** expanded as non-failing warnings. `make local-report-check` now includes `quality_warnings`; all-`keyword_rule` runs emit `all_classifications_from_keyword_rule`, mixed runs with any keyword fallback emit `keyword_rule_classifications_present`, and otherwise successful runs with drop reasons emit `drop_reasons_present`, while keeping `failures=[]`.
 
-**Objective:** Surface runs where all articles are classified by weak keyword rules.
+**Objective:** Surface runs where articles are classified by weak keyword rules or where the verifier/import gate had to drop articles.
 
 **Files:**
 - Modify: `scripts/check-pipeline-report.py`

@@ -1,0 +1,115 @@
+{
+  "status": "success",
+  "failed_step": null,
+  "started_at": "2026-06-01T21:40:54+0900",
+  "finished_at": "2026-06-01T21:54:05+0900",
+  "source": "naver-search",
+  "query": "경제",
+  "count": 20,
+  "max_articles": null,
+  "crawl_input_path": "/Users/reddit/Project/cut-news/apps/crawler/output/github-actions/latest.json",
+  "crawl_report_path": "/Users/reddit/Project/cut-news/apps/crawler/output/github-actions/crawl_report.json",
+  "feed_date": "2026-06-01",
+  "schedule": {
+    "timezone": "Asia/Seoul",
+    "ai_news_generation_time": "08:30:00"
+  },
+  "steps": [
+    {
+      "name": "export_raw",
+      "status": "success",
+      "command": "/Users/reddit/Project/cut-news/.venv/bin/python3 -m crawler.export_raw --input /Users/reddit/Project/cut-news/apps/crawler/output/github-actions/latest.json --output-dir ../../apps/summarizer/data/raw --clear --clear-derived-dir ../../apps/summarizer/data/json --clear-derived-dir ../../apps/summarizer/data/scored --clear-derived-dir ../../apps/summarizer/data/summarized --clear-derived-dir ../../apps/summarizer/data/verified",
+      "cwd": "/Users/reddit/Project/cut-news/apps/crawler",
+      "duration_seconds": 1.393,
+      "returncode": 0
+    },
+    {
+      "name": "summarize",
+      "status": "success",
+      "command": "/Users/reddit/Project/cut-news/.venv/bin/python3 run_pipeline.py --from 2",
+      "cwd": "/Users/reddit/Project/cut-news/apps/summarizer",
+      "duration_seconds": 771.667,
+      "returncode": 0
+    },
+    {
+      "name": "import",
+      "status": "success",
+      "command": "/Users/reddit/Project/cut-news/.venv/bin/python3 -m app.scripts.import_articles_from_summarizer",
+      "cwd": "/Users/reddit/Project/cut-news/apps/backend",
+      "duration_seconds": 11.475,
+      "returncode": 0
+    }
+  ],
+  "import_stats": {
+    "inserted": 8,
+    "updated": 0,
+    "deleted": 21,
+    "skipped": 0
+  },
+  "crawler_category_stats": {
+    "query_count": 49,
+    "count_per_query": 1,
+    "collected_count": 38,
+    "deduped_count": 11,
+    "by_category": {
+      "stock": {
+        "requested_count": 7,
+        "collected_count": 6
+      },
+      "crypto": {
+        "requested_count": 5,
+        "collected_count": 4
+      },
+      "realestate": {
+        "requested_count": 5,
+        "collected_count": 4
+      },
+      "politics": {
+        "requested_count": 6,
+        "collected_count": 5
+      },
+      "economy": {
+        "requested_count": 6,
+        "collected_count": 5
+      },
+      "tech": {
+        "requested_count": 4,
+        "collected_count": 2
+      },
+      "entertainment": {
+        "requested_count": 3,
+        "collected_count": 3
+      },
+      "sports": {
+        "requested_count": 5,
+        "collected_count": 5
+      },
+      "global": {
+        "requested_count": 5,
+        "collected_count": 1
+      },
+      "lifestyle": {
+        "requested_count": 3,
+        "collected_count": 3
+      }
+    }
+  },
+  "quality_gate_skip_counts": {
+    "verdict_not_clean": 1
+  },
+  "drop_reason_counts": {
+    "quality_gate:verdict_not_clean": 1
+  },
+  "classification_source_counts": {
+    "editorial_category": 7,
+    "keyword_rule": 1
+  },
+  "snapshot_generation": {
+    "attempted_user_count": 3,
+    "generated_count": 3,
+    "skipped_viewed_count": 0,
+    "failed_count": 0
+  },
+  "report_path": "/Users/reddit/Project/cut-news/apps/summarizer/data/run_report.json",
+  "archive_report_path": "/Users/reddit/Project/cut-news/apps/summarizer/data/run_reports/run_2026-06-01T214054+0900.json"
+}

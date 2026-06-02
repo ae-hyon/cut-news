@@ -134,8 +134,9 @@ Follow-up implementation status after the plan started:
 - `GET /v1/me/feed` now uses today's KST product feed date, matching the 08:30 scheduler's `feed_date` bucket.
 - Classification fixtures were added for crawler source-query precedence over broad keyword rules.
 - Import classification now reports `crawler_source_query` when source query maps cleanly to a supported subcategory.
-- `scripts/check-pipeline-report.py` now keeps product-like runs passing but emits `quality_warnings=["all_classifications_from_keyword_rule"]` when every usable import came from broad keyword rules.
+- `scripts/check-pipeline-report.py` now keeps product-like runs passing but emits `quality_warnings` for weak/observable quality signals: `all_classifications_from_keyword_rule`, `keyword_rule_classifications_present`, and `drop_reasons_present`.
 - Hermes CLI supports optional `PIPELINE_HERMES_MODEL` and `PIPELINE_HERMES_PROVIDER`. The pipeline applies `PIPELINE_HERMES_REASONING_EFFORT` by temporarily setting the selected Hermes profile's `agent.reasoning_effort` for the call and restoring it afterward.
+- For quality-improvement trials, `cut-news-pipeline-xhigh` exists as a clone of `cut-news-pipeline` with `agent.reasoning_effort=xhigh`. Use it explicitly with `PIPELINE_HERMES_PROFILE=cut-news-pipeline-xhigh PIPELINE_HERMES_REASONING_EFFORT=xhigh`; keep daily scheduled defaults on the evaluated medium profile until an xhigh product-like run proves better quality/cost tradeoff.
 
 Follow-up verification after the classifier routing fix:
 

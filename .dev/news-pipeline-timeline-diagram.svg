@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980" role="img">
+<defs>
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.7"/></pattern>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#94a3b8"/></marker>
+  <marker id="arrowCyan" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#22d3ee"/></marker>
+  <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#34d399"/></marker>
+  <marker id="arrowAmber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#fbbf24"/></marker>
+  <marker id="arrowRose" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#fb7185"/></marker>
+  <filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <style>
+  .bg{fill:#020617}.grid{fill:url(#grid)}
+  .title{font:800 34px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#f8fafc;letter-spacing:-.6px}
+  .subtitle{font:600 16px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#94a3b8}
+  .section{font:800 18px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#e2e8f0}
+  .note{font:600 12px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#94a3b8}
+  .boxTitle{font:800 17px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#f8fafc}
+  .boxText{font:600 13px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#cbd5e1}
+  .boxSmall{font:600 11px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#94a3b8}
+  .mono{font:700 11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#a5f3fc}
+  .tagText{font:800 11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#020617}
+  .lane{fill:rgba(15,23,42,.55);stroke:#334155;stroke-width:1.4;rx:20}
+  .external{fill:rgba(30,41,59,.60);stroke:#94a3b8;stroke-width:1.8;rx:13}
+  .cloud{fill:rgba(120,53,15,.30);stroke:#fbbf24;stroke-width:1.8;rx:13}
+  .artifact{fill:rgba(251,146,60,.26);stroke:#fb923c;stroke-width:1.8;rx:13}
+  .ai{fill:rgba(8,51,68,.44);stroke:#22d3ee;stroke-width:1.8;rx:13}
+  .backend{fill:rgba(6,78,59,.40);stroke:#34d399;stroke-width:1.8;rx:13}
+  .db{fill:rgba(76,29,149,.40);stroke:#a78bfa;stroke-width:1.8;rx:13}
+  .gate{fill:rgba(136,19,55,.38);stroke:#fb7185;stroke-width:1.8;rx:13}
+  .arrow{stroke:#94a3b8;stroke-width:2.5;fill:none;marker-end:url(#arrow)}
+  .cyanArrow{stroke:#22d3ee;stroke-width:2.7;fill:none;marker-end:url(#arrowCyan)}
+  .greenArrow{stroke:#34d399;stroke-width:2.7;fill:none;marker-end:url(#arrowGreen)}
+  .amberArrow{stroke:#fbbf24;stroke-width:2.7;fill:none;marker-end:url(#arrowAmber)}
+  .roseArrow{stroke:#fb7185;stroke-width:2.5;fill:none;marker-end:url(#arrowRose)}
+  .dash{stroke-dasharray:8 7}.thin{stroke-width:1.6}.ok{fill:#34d399}.cyan{fill:#22d3ee}.amber{fill:#fbbf24}.rose{fill:#fb7185}.violet{fill:#a78bfa}.orange{fill:#fb923c}
+</style>
+</defs>
+<rect width="1600" height="980" class="bg"/><rect width="1600" height="980" class="grid" opacity=".55"/>
+<circle cx="56" cy="54" r="9" class="ok" filter="url(#glow)"/><text x="78" y="65" class="title">Cut News 뉴스 생성 파이프라인 타임라인</text>
+<text x="80" y="94" class="subtitle">크롤링 → 후보 선별 → AI 요약/검증 → 백엔드 import → 사용자별 데일리 피드 생성</text>
+<rect x="1316" y="46" width="162" height="32" rx="16" fill="#34d399"/><text x="1340" y="67" class="tagText">MAIN MERGED</text><rect x="1316" y="84" width="162" height="32" rx="16" fill="#22d3ee"/><text x="1344" y="105" class="tagText">운영안 확정</text>
+<rect x="40" y="126" width="1520" height="176" class="lane"/><text x="66" y="158" class="section">1. 뉴스 수집 / 아티팩트</text><text x="66" y="180" class="note">GitHub Actions 또는 로컬 fresh crawl이 네이버 기사를 넓게 수집하고, 결과를 artifact로 넘깁니다.</text>
+<rect x="92" y="204" width="205" height="68" class="external"/>
+<text x="114" y="235" class="boxTitle">매일 08:00 KST</text>
+<text x="114" y="259" class="boxText">크롤링 트리거</text>
+<text x="114" y="279" class="boxSmall">crawl-naver.yml</text>
+<rect x="355" y="194" width="230" height="88" class="cloud"/>
+<text x="377" y="225" class="boxTitle">네이버 전체 카테고리</text>
+<text x="377" y="249" class="boxText">49개 검색 쿼리</text>
+<text x="377" y="269" class="boxSmall">정치·경제·주식·부동산·테크·라이프 등</text>
+<rect x="650" y="194" width="230" height="88" class="artifact"/>
+<text x="672" y="225" class="boxTitle">크롤링 아티팩트</text>
+<text x="672" y="249" class="boxText">latest.json / crawl_report</text>
+<text x="672" y="269" class="boxSmall">GitHub artifact 또는 local output</text>
+<rect x="945" y="194" width="250" height="88" class="artifact"/>
+<text x="967" y="225" class="boxTitle">원문 export</text>
+<text x="967" y="249" class="boxText">raw → json 입력 준비</text>
+<text x="967" y="269" class="boxSmall">hash id 파일도 누락 없이 처리</text>
+<line x1="297" y1="238" x2="353" y2="238" class="amberArrow"/><line x1="585" y1="238" x2="648" y2="238" class="amberArrow"/><line x1="880" y1="238" x2="943" y2="238" class="amberArrow"/>
+<rect x="40" y="330" width="1520" height="302" class="lane"/><text x="66" y="362" class="section">2. 신뢰 실행기 / AI 처리</text><text x="66" y="384" class="note">OAuth가 살아있는 로컬 Mac/서버에서 Hermes profile로 LLM을 호출합니다. 컨테이너 안에 AI 인증을 억지로 넣지 않습니다.</text>
+<rect x="92" y="416" width="210" height="88" class="ai"/>
+<text x="114" y="447" class="boxTitle">Step 2. 구조화</text>
+<text x="114" y="471" class="boxText">제목·날짜·본문 정리</text>
+<text x="114" y="491" class="boxSmall">기자명은 메타데이터로 분리</text>
+<rect x="360" y="416" width="250" height="88" class="ai"/>
+<text x="382" y="447" class="boxTitle">Step 3. 점수+분류</text>
+<text x="382" y="471" class="boxText">본문 기준 editorial 분류</text>
+<text x="382" y="491" class="boxSmall">confidence와 판단 이유 기록</text>
+<rect x="668" y="416" width="250" height="88" class="ai"/>
+<text x="690" y="447" class="boxTitle">후보 선별</text>
+<text x="690" y="471" class="boxText">카테고리 균형 top-K</text>
+<text x="690" y="488" class="boxSmall">PIPELINE_SELECTED</text><text x="690" y="502" class="boxSmall">PER_CATEGORY=3</text>
+<rect x="976" y="416" width="250" height="88" class="ai"/>
+<text x="998" y="447" class="boxTitle">Step 4. 요약 생성</text>
+<text x="998" y="471" class="boxText">gpt-5.5 / medium</text>
+<text x="998" y="491" class="boxSmall">길이·수치·본문 사실 계약 준수</text>
+<rect x="1284" y="416" width="220" height="88" class="ai"/>
+<text x="1306" y="447" class="boxTitle">Best-of 선택</text>
+<text x="1306" y="471" class="boxText">고득점 기사만 3개 후보</text>
+<text x="1306" y="491" class="boxSmall">threshold=80</text>
+<path d="M1195 282 C1195 312 1518 310 1518 360 L1518 408 L197 408 L197 414" class="cyanArrow dash"/><line x1="302" y1="460" x2="358" y2="460" class="cyanArrow"/><line x1="610" y1="460" x2="666" y2="460" class="cyanArrow"/><line x1="918" y1="460" x2="974" y2="460" class="cyanArrow"/><line x1="1226" y1="460" x2="1282" y2="460" class="cyanArrow"/>
+<rect x="290" y="540" width="260" height="66" class="gate"/>
+<text x="312" y="571" class="boxTitle">Step 5. 검증기</text>
+<text x="312" y="595" class="boxText">환각·길이·의미 불일치 검사</text>
+<rect x="632" y="540" width="280" height="66" class="gate"/>
+<text x="654" y="571" class="boxTitle">품질 계약</text>
+<text x="654" y="595" class="boxText">verdict=clean만 통과</text>
+<rect x="995" y="532" width="315" height="80" class="gate"/>
+<text x="1017" y="562" class="boxTitle">최종 카테고리 우선순위</text>
+<text x="1017" y="586" class="boxText">editorial → source</text>
+<text x="1017" y="606" class="boxText">crawler → keyword</text>
+<path d="M1394 504 C1394 528 1518 522 1518 528 C1518 538 420 520 420 538" class="cyanArrow"/><line x1="550" y1="574" x2="630" y2="574" class="greenArrow"/><line x1="912" y1="574" x2="993" y2="574" class="greenArrow"/>
+<rect x="40" y="658" width="1520" height="188" class="lane"/><text x="66" y="690" class="section">3. 백엔드 import / 제품 제공</text><text x="66" y="712" class="note">깨끗한 기사만 DB에 저장하고, 온보딩 완료 사용자별 데일리 피드 스냅샷을 생성합니다.</text>
+<rect x="100" y="746" width="238" height="76" class="backend"/>
+<text x="122" y="777" class="boxTitle">백엔드 Import</text>
+<text x="122" y="797" class="boxText">articles insert/update</text>
+<text x="122" y="815" class="boxSmall">drop_reason_counts 기록</text>
+<rect x="410" y="746" width="250" height="76" class="db"/>
+<text x="432" y="777" class="boxTitle">운영 DB</text>
+<text x="432" y="797" class="boxText">Neon/Postgres</text>
+<text x="432" y="815" class="boxSmall">DATABASE_URL 명시 필수</text>
+<rect x="732" y="746" width="270" height="76" class="backend"/>
+<text x="754" y="777" class="boxTitle">데일리 피드 스냅샷</text>
+<text x="754" y="797" class="boxText">사용자별 feed_date 생성</text>
+<text x="754" y="815" class="boxSmall">이미 본 snapshot 보호</text>
+<rect x="1072" y="746" width="240" height="76" class="backend"/>
+<text x="1094" y="777" class="boxTitle">API 제공</text>
+<text x="1094" y="797" class="boxText">/v1/me/feed, archive</text>
+<text x="1094" y="815" class="boxSmall">snapshot_id 읽음 처리</text>
+<rect x="1356" y="740" width="164" height="88" class="gate"/>
+<text x="1378" y="771" class="boxTitle">리포트 Gate</text>
+<text x="1378" y="795" class="boxText">failures=[]</text>
+<text x="1378" y="815" class="boxSmall">uncapped 필수</text>
+<path d="M1152 612 L1152 638" class="greenArrow"/><path d="M219 716 L219 744" class="greenArrow"/><line x1="338" y1="784" x2="408" y2="784" class="greenArrow"/><line x1="660" y1="784" x2="730" y2="784" class="greenArrow"/><line x1="1002" y1="784" x2="1070" y2="784" class="greenArrow"/><line x1="1312" y1="784" x2="1354" y2="784" class="greenArrow dash"/>
+<rect x="76" y="880" width="340" height="70" rx="14" fill="rgba(6,78,59,.32)" stroke="#34d399"/><circle cx="102" cy="908" r="6" class="ok"/><text x="122" y="912" class="boxTitle">최신 Fresh Crawl</text><text x="102" y="934" class="boxSmall">42건 수집 → 10건 import, verifier 10/10 clean</text>
+<rect x="456" y="880" width="340" height="70" rx="14" fill="rgba(8,51,68,.34)" stroke="#22d3ee"/><circle cx="482" cy="908" r="6" class="cyan"/><text x="502" y="908" class="boxTitle">분류 품질</text><text x="482" y="930" class="boxSmall">editorial_category 10/10</text><text x="482" y="944" class="boxSmall">source metadata 오류 보정</text>
+<rect x="836" y="880" width="340" height="70" rx="14" fill="rgba(136,19,55,.28)" stroke="#fb7185"/><circle cx="862" cy="908" r="6" class="rose"/><text x="882" y="912" class="boxTitle">Import Gate</text><text x="862" y="934" class="boxSmall">drop_reason_counts = {}, quality_warnings = []</text>
+<rect x="1216" y="880" width="300" height="70" rx="14" fill="rgba(76,29,149,.30)" stroke="#a78bfa"/><circle cx="1242" cy="908" r="6" class="violet"/><text x="1262" y="908" class="boxTitle">운영 명령</text><text x="1242" y="928" class="boxSmall">make ops-pipeline-from-github</text><text x="1242" y="942" class="boxSmall">+ local-report-check</text>
+</svg>

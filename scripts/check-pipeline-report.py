@@ -65,6 +65,10 @@ def evaluate_report(payload: dict[str, Any], *, require_uncapped: bool) -> tuple
         failures.append(f"max_articles={payload.get('max_articles')!r}")
     if usable_imports > 0 and keyword_rule_classifications == usable_imports:
         quality_warnings.append("all_classifications_from_keyword_rule")
+    elif keyword_rule_classifications > 0:
+        quality_warnings.append("keyword_rule_classifications_present")
+    if _has_positive_counter(payload, "drop_reason_counts"):
+        quality_warnings.append("drop_reasons_present")
 
     summary = {
         "status": payload.get("status"),

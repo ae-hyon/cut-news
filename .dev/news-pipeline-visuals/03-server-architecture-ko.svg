@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980" role="img">
+<defs>
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.7"/></pattern>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#94a3b8"/></marker>
+  <marker id="arrowCyan" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#22d3ee"/></marker>
+  <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#34d399"/></marker>
+  <marker id="arrowAmber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#fbbf24"/></marker>
+  <marker id="arrowRose" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#fb7185"/></marker>
+  <filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <style>
+  .bg{fill:#020617}.grid{fill:url(#grid)}
+  .title{font:800 34px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#f8fafc;letter-spacing:-.6px}
+  .subtitle{font:600 16px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#94a3b8}
+  .section{font:800 18px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#e2e8f0}
+  .note{font:600 12px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#94a3b8}
+  .boxTitle{font:800 17px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#f8fafc}
+  .boxText{font:600 13px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#cbd5e1}
+  .boxSmall{font:600 11px -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;fill:#94a3b8}
+  .mono{font:700 11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#a5f3fc}
+  .tagText{font:800 11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#020617}
+  .lane{fill:rgba(15,23,42,.55);stroke:#334155;stroke-width:1.4;rx:20}
+  .external{fill:rgba(30,41,59,.60);stroke:#94a3b8;stroke-width:1.8;rx:13}
+  .cloud{fill:rgba(120,53,15,.30);stroke:#fbbf24;stroke-width:1.8;rx:13}
+  .artifact{fill:rgba(251,146,60,.26);stroke:#fb923c;stroke-width:1.8;rx:13}
+  .ai{fill:rgba(8,51,68,.44);stroke:#22d3ee;stroke-width:1.8;rx:13}
+  .backend{fill:rgba(6,78,59,.40);stroke:#34d399;stroke-width:1.8;rx:13}
+  .db{fill:rgba(76,29,149,.40);stroke:#a78bfa;stroke-width:1.8;rx:13}
+  .gate{fill:rgba(136,19,55,.38);stroke:#fb7185;stroke-width:1.8;rx:13}
+  .arrow{stroke:#94a3b8;stroke-width:2.5;fill:none;marker-end:url(#arrow)}
+  .cyanArrow{stroke:#22d3ee;stroke-width:2.7;fill:none;marker-end:url(#arrowCyan)}
+  .greenArrow{stroke:#34d399;stroke-width:2.7;fill:none;marker-end:url(#arrowGreen)}
+  .amberArrow{stroke:#fbbf24;stroke-width:2.7;fill:none;marker-end:url(#arrowAmber)}
+  .roseArrow{stroke:#fb7185;stroke-width:2.5;fill:none;marker-end:url(#arrowRose)}
+  .dash{stroke-dasharray:8 7}.thin{stroke-width:1.6}.ok{fill:#34d399}.cyan{fill:#22d3ee}.amber{fill:#fbbf24}.rose{fill:#fb7185}.violet{fill:#a78bfa}.orange{fill:#fb923c}
+</style>
+</defs>
+<rect width="1600" height="980" class="bg"/><rect width="1600" height="980" class="grid" opacity=".55"/>
+<circle cx="56" cy="54" r="9" class="ok" filter="url(#glow)"/><text x="78" y="65" class="title">Cut News 서버 아키텍처</text>
+<text x="80" y="94" class="subtitle">사용자 서비스 경로와 뉴스 생성/운영 경로를 분리한 구조</text>
+<rect x="60" y="140" width="690" height="700" class="lane"/><text x="90" y="176" class="section">사용자 서비스 경로</text><text x="90" y="198" class="note">브라우저 → Next.js → FastAPI → DB. 피드는 미리 생성된 snapshot을 읽습니다.</text>
+<rect x="110" y="250" width="250" height="92" class="external"/>
+<text x="132" y="281" class="boxTitle">사용자 브라우저</text>
+<text x="132" y="305" class="boxText">카카오 로그인 / 홈 피드</text>
+<text x="132" y="325" class="boxSmall">localhost:3030 또는 배포 URL</text>
+<rect x="430" y="250" width="250" height="92" class="backend"/>
+<text x="452" y="281" class="boxTitle">Next.js Frontend</text>
+<text x="452" y="305" class="boxText">앱 UI / 라우팅</text>
+<text x="452" y="325" class="boxSmall">local port 3030</text>
+<rect x="430" y="420" width="250" height="92" class="backend"/>
+<text x="452" y="451" class="boxTitle">FastAPI Backend</text>
+<text x="452" y="475" class="boxText">인증·피드·아카이브 API</text>
+<text x="452" y="495" class="boxSmall">local port 8030</text>
+<rect x="110" y="420" width="250" height="92" class="db"/>
+<text x="132" y="451" class="boxTitle">Runtime DB</text>
+<text x="132" y="475" class="boxText">Neon 또는 Postgres</text>
+<text x="132" y="495" class="boxSmall">articles, users, snapshots</text>
+<line x1="360" y1="296" x2="428" y2="296" class="greenArrow"/><line x1="555" y1="342" x2="555" y2="418" class="greenArrow"/><line x1="430" y1="466" x2="362" y2="466" class="greenArrow"/>
+<text x="114" y="580" class="boxTitle">주요 API</text><text x="114" y="610" class="boxText">GET /v1/me/feed</text><text x="114" y="636" class="boxText">GET /v1/me/archive?month=YYYY-MM</text><text x="114" y="662" class="boxText">GET /v1/me/archive/YYYY-MM-DD</text><text x="114" y="688" class="boxText">GET /v1/me/articles/:id</text><text x="132" y="712" class="boxSmall">?snapshot_id=...</text>
+<rect x="810" y="140" width="730" height="700" class="lane"/><text x="840" y="176" class="section">뉴스 생성 / 운영 경로</text><text x="840" y="198" class="note">크롤링과 AI 처리는 서비스 요청과 분리되어 비동기로 실행됩니다.</text>
+<rect x="860" y="250" width="230" height="92" class="cloud"/>
+<text x="882" y="281" class="boxTitle">네이버 검색/뉴스</text>
+<text x="882" y="305" class="boxText">기사 수집 대상</text>
+<text x="882" y="325" class="boxSmall">Developers Search API</text>
+<rect x="1160" y="250" width="270" height="92" class="artifact"/>
+<text x="1182" y="281" class="boxTitle">GitHub Actions</text>
+<text x="1182" y="305" class="boxText">crawl-naver.yml</text>
+<text x="1182" y="325" class="boxSmall">크롤링 artifact 저장</text>
+<rect x="860" y="420" width="270" height="100" class="ai"/>
+<text x="882" y="451" class="boxTitle">Trusted Runner</text>
+<text x="882" y="475" class="boxText">로컬 Mac/서버</text>
+<text x="882" y="495" class="boxSmall">HOME=/Users/reddit</text>
+<text x="882" y="513" class="boxSmall">OAuth/Hermes 세션 보유</text>
+<rect x="1160" y="420" width="270" height="100" class="ai"/>
+<text x="1182" y="451" class="boxTitle">Summarizer</text>
+<text x="1182" y="475" class="boxText">Step 2~5 실행</text>
+<text x="1182" y="495" class="boxSmall">score → select → summarize → verify</text>
+<rect x="860" y="610" width="270" height="100" class="backend"/>
+<text x="882" y="641" class="boxTitle">Backend Job</text>
+<text x="882" y="665" class="boxText">run_news_pipeline_job</text>
+<text x="882" y="685" class="boxSmall">import + snapshot 생성</text>
+<rect x="1160" y="610" width="270" height="100" class="gate"/>
+<text x="1182" y="641" class="boxTitle">Report Check</text>
+<text x="1182" y="665" class="boxText">운영 품질 게이트</text>
+<text x="1182" y="685" class="boxSmall">--require-uncapped</text>
+<line x1="1090" y1="296" x2="1158" y2="296" class="amberArrow"/><path d="M1295 342 C1295 380 995 380 995 418" class="amberArrow"/><line x1="1130" y1="470" x2="1158" y2="470" class="cyanArrow"/><path d="M1295 520 C1295 570 995 560 995 608" class="cyanArrow"/><line x1="1130" y1="660" x2="1158" y2="660" class="roseArrow dash"/>
+<rect x="608" y="604" width="196" height="24" rx="12" fill="#020617" stroke="#334155" opacity=".95"/><text x="626" y="620" class="boxSmall">articles / snapshots 저장</text><path d="M860 660 C760 704 520 704 360 512" class="greenArrow dash"/>
+<rect x="105" y="872" width="338" height="64" rx="14" fill="rgba(6,78,59,.32)" stroke="#34d399"/><text x="130" y="910" class="boxTitle">서비스와 AI 작업 분리</text>
+<rect x="482" y="872" width="338" height="64" rx="14" fill="rgba(8,51,68,.34)" stroke="#22d3ee"/><text x="507" y="902" class="boxTitle">OAuth AI</text><text x="507" y="924" class="boxSmall">trusted runner에서 실행</text>
+<rect x="859" y="872" width="338" height="64" rx="14" fill="rgba(76,29,149,.30)" stroke="#a78bfa"/><text x="884" y="910" class="boxTitle">DB는 명시적 DATABASE_URL</text>
+<rect x="1236" y="872" width="260" height="64" rx="14" fill="rgba(136,19,55,.28)" stroke="#fb7185"/><text x="1261" y="910" class="boxTitle">Report Gate로 실패 감지</text>
+</svg>

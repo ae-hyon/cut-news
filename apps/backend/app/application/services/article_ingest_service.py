@@ -211,7 +211,11 @@ KEYWORD_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     ('realestate', 'realestate-apt', ('부동산', '아파트', '주택')),
     ('economy', 'economy-trade', ('원유', '유가', '정유', '에너지', '무역', '수출', '수입', '공급망', '관세', 'opec')),
     ('economy', 'economy-finance', ('환율', '달러-원', '달러원', '금리', '국채', '물가', '인플레', 'cpi', 'fomc', '금융')),
-    ('economy', 'economy-macro', ('gdp', '성장률', '거시', '경기')),
+    (
+        'economy',
+        'economy-macro',
+        ('gdp', '성장률', '거시', '경기 침체', '경기 회복', '경기 둔화', '경기 전망', '경기 부양', '경기 사이클'),
+    ),
     ('politics', 'politics-policy', ('정부', '기재부', '예산', '추경', '세제', '세금', '소득세', '과세', '국세청', '재정', '규제', '법안', '정책')),
     ('politics', 'politics-domestic', ('국회', '대통령', '정당', '청와대')),
     ('politics', 'politics-diplomacy', ('외교', '정상회담', '안보')),

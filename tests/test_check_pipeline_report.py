@@ -95,6 +95,42 @@ class CheckPipelineReportTests(unittest.TestCase):
         self.assertEqual(failures, [])
         self.assertEqual(summary["quality_warnings"], ["all_classifications_from_keyword_rule"])
 
+    def test_partial_keyword_rule_classifications_emit_quality_warning_not_failure(self) -> None:
+        module = load_check_pipeline_report()
+        failures, summary = module.evaluate_report(
+            {
+                "status": "success",
+                "failed_step": None,
+                "max_articles": None,
+                "import_stats": {"inserted": 8, "updated": 0, "deleted": 0, "skipped": 0},
+                "drop_reason_counts": {},
+                "classification_source_counts": {"editorial_category": 7, "keyword_rule": 1},
+                "snapshot_generation": {"failed_count": 0},
+            },
+            require_uncapped=True,
+        )
+
+        self.assertEqual(failures, [])
+        self.assertIn("keyword_rule_classifications_present", summary["quality_warnings"])
+
+    def test_drop_reasons_emit_quality_warning_even_when_report_passes(self) -> None:
+        module = load_check_pipeline_report()
+        failures, summary = module.evaluate_report(
+            {
+                "status": "success",
+                "failed_step": None,
+                "max_articles": None,
+                "import_stats": {"inserted": 8, "updated": 0, "deleted": 1, "skipped": 0},
+                "drop_reason_counts": {"quality_gate:verdict_not_clean": 1},
+                "classification_source_counts": {"editorial_category": 8},
+                "snapshot_generation": {"failed_count": 0},
+            },
+            require_uncapped=True,
+        )
+
+        self.assertEqual(failures, [])
+        self.assertIn("drop_reasons_present", summary["quality_warnings"])
+
 
 if __name__ == "__main__":
     unittest.main()
