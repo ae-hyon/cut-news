@@ -201,6 +201,31 @@ Second Neon run (`run_2026-05-29T220733+0900.json`) passed cleanly:
 
 This is the current best evidence that the candidate-first + selective best-of policy is safe for the scheduled operator path.
 
+## 2026-06-03 Neon snapshot backfill and repair verification
+
+Backfilled/repaired Neon daily feed snapshots for the two active Kakao users over `2026-05-28` through `2026-06-02` and recorded the evidence in:
+
+- `.dev/neon-feed-backfill-before-20260602.json`
+- `.dev/neon-feed-backfill-run-reports-20260602.json`
+- `.dev/neon-feed-repair-no-prune-run-reports-20260603.json`
+- `.dev/neon-feed-repair-2026-06-02-no-prune-run-report-20260603.json`
+- `.dev/neon-feed-backfill-final-verification-20260603.json`
+
+Final verified snapshot item counts:
+
+| feed_date | user-kakao-4869299071 | user-kakao-4895490130 |
+| --- | ---: | ---: |
+| 2026-05-28 | 5 | 3 |
+| 2026-05-29 | 6 | 3 |
+| 2026-05-30 | 5 | 3 |
+| 2026-05-31 | 3 | 3 |
+| 2026-06-01 | 6 | 6 |
+| 2026-06-02 | 5 | 5 |
+
+Operational pitfall found during backfill: running sequential historical imports with `run_manifest.complete=true` can make the importer treat earlier `SUM-*` articles as stale and delete them. Because snapshot items have FK cascade behavior, that can zero out previously generated snapshot items. Historical repair runs must force `run_manifest.complete=false` immediately before import when the intent is to add/regenerate snapshots without pruning older summarized articles.
+
+Date pitfall: product `feed_date` maps to the previous article `published_at` bucket for the morning digest. For example, repairing `feed_date=2026-06-02` required the artifact whose article publication date was `2026-06-01` (`26728229298` in this verification), not the current latest artifact for `2026-06-02` publication data.
+
 ## Preconditions
 
 - Repo checkout: `/Users/reddit/Project/cut-news`.

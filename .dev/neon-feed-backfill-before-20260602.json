@@ -1,0 +1,61 @@
+{
+  "captured_at": "2026-06-02T13:53:09.132650+00:00",
+  "rows": [
+    {
+      "user_id": "user-kakao-4869299071",
+      "feed_date": "2026-05-28",
+      "snapshot_id": 9,
+      "status": "viewed",
+      "first_viewed_at": "2026-05-28 11:28:40.632019+00:00",
+      "item_count": 0
+    },
+    {
+      "user_id": "user-kakao-4869299071",
+      "feed_date": "2026-05-29",
+      "snapshot_id": 14,
+      "status": "generated",
+      "first_viewed_at": null,
+      "item_count": 0
+    },
+    {
+      "user_id": "user-kakao-4869299071",
+      "feed_date": "2026-06-01",
+      "snapshot_id": 19,
+      "status": "generated",
+      "first_viewed_at": null,
+      "item_count": 0
+    },
+    {
+      "user_id": "user-kakao-4895490130",
+      "feed_date": "2026-05-28",
+      "snapshot_id": 10,
+      "status": "viewed",
+      "first_viewed_at": "2026-05-28 12:38:50.648204+00:00",
+      "item_count": 0
+    },
+    {
+      "user_id": "user-kakao-4895490130",
+      "feed_date": "2026-05-29",
+      "snapshot_id": 15,
+      "status": "generated",
+      "first_viewed_at": null,
+      "item_count": 0
+    },
+    {
+      "user_id": "user-kakao-4895490130",
+      "feed_date": "2026-05-30",
+      "snapshot_id": 17,
+      "status": "viewed",
+      "first_viewed_at": "2026-05-29 16:11:56.966883+00:00",
+      "item_count": 0
+    },
+    {
+      "user_id": "user-kakao-4895490130",
+      "feed_date": "2026-06-01",
+      "snapshot_id": 20,
+      "status": "viewed",
+      "first_viewed_at": "2026-06-01 13:18:28.200054+00:00",
+      "item_count": 5
+    }
+  ]
+}

@@ -236,9 +236,9 @@ Implemented in the working tree:
 ## Next best steps
 
 Current priority after the candidate-first/best-of slice:
-1. Commit and push the reporter-metadata prompt hardening plus Neon run documentation.
-2. Record the final scheduled env in the actual scheduler/cron secret store and keep DB/alert secrets outside git.
-3. Install the local Mac scheduler only after the operator env is final and secrets stay outside git.
+1. Commit and push the Neon backfill/repair documentation and evidence files.
+2. Record the final scheduled env in the actual local/server scheduler or cron secret store and keep DB/alert secrets outside git.
+3. Install the local Mac/server post-crawl scheduler only after the operator env is final and secrets stay outside git. This is separate from the GitHub Actions crawler schedule, which remains crawl-only.
 4. Codex low/medium/high effort comparison remains blocked until `HOME=/Users/reddit codex login --device-auth` succeeds; otherwise continue Hermes profile/model-provider evaluation.
 
 Historical verified steps:
@@ -251,6 +251,7 @@ Historical verified steps:
 7. Neon target smoke passed with the root `.env` `DATABASE_URL` explicitly exported: URL points to Neon pooler host `ep-twilight-dream-aokoffyt-pooler.c-2.ap-southeast-1.aws.neon.tech`, `sslmode=require`, backend settings normalize it to `postgresql+psycopg`, Alembic reports `0006_daily_feed_snapshots (head)`, and the DB currently has 14 articles / 1 daily snapshot / 8 snapshot items / 10 categories. `make local-up SERVICES="backend"` with the same explicit Neon URL served `/health` and `/v1/categories` successfully.
 8. Added operational report validation for the post-crawl summarizer/import runner: `make local-report-check` wraps `scripts/check-pipeline-report.py` and fails on non-success status, `failed_step`, zero inserted+updated imports, `snapshot_generation.failed_count > 0`, and `--require-uncapped` product-like runs that accidentally set `NEWS_PIPELINE_MAX_ARTICLES`.
 9. Remaining product work is deployment wiring: schedule the post-crawl summarizer/import runner after the 08:00 GitHub crawl artifact exists, ensure it always runs with `HOME=/Users/reddit` and explicit `DATABASE_URL`, and route non-zero `make local-report-check REPORT_CHECK_ARGS=--require-uncapped` output to the operator alert channel.
+10. Neon snapshot backfill/repair has been verified for the two active Kakao users from `2026-05-28` through `2026-06-02`; see `.dev/neon-feed-backfill-final-verification-20260603.json` and `.dev/news-pipeline-operations.md`. Historical repair pitfall: force `run_manifest.complete=false` before import when regenerating old snapshots so stale `SUM-*` article pruning does not cascade-delete snapshot items.
 
 ## Notes
 - Neon runtime should use the pooled connection string and include `sslmode=require` when Neon does not append it. Plain `postgresql://` URLs are accepted and normalized by backend settings.

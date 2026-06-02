@@ -1,0 +1,41 @@
+{
+  "verified_at": "2026-06-03T01:46:00+09:00",
+  "target_users": [
+    "user-kakao-4869299071",
+    "user-kakao-4895490130"
+  ],
+  "snapshot_item_counts": [
+    {"feed_date": "2026-05-28", "user_id": "user-kakao-4869299071", "item_count": 5, "status": "generated", "generation_source": "manual:neon-backfill-existing-articles"},
+    {"feed_date": "2026-05-28", "user_id": "user-kakao-4895490130", "item_count": 3, "status": "generated", "generation_source": "manual:neon-backfill-existing-articles"},
+    {"feed_date": "2026-05-29", "user_id": "user-kakao-4869299071", "item_count": 6, "status": "generated", "generation_source": "news-pipeline"},
+    {"feed_date": "2026-05-29", "user_id": "user-kakao-4895490130", "item_count": 3, "status": "generated", "generation_source": "news-pipeline"},
+    {"feed_date": "2026-05-30", "user_id": "user-kakao-4869299071", "item_count": 5, "status": "generated", "generation_source": "news-pipeline"},
+    {"feed_date": "2026-05-30", "user_id": "user-kakao-4895490130", "item_count": 3, "status": "generated", "generation_source": "news-pipeline"},
+    {"feed_date": "2026-05-31", "user_id": "user-kakao-4869299071", "item_count": 3, "status": "generated", "generation_source": "news-pipeline"},
+    {"feed_date": "2026-05-31", "user_id": "user-kakao-4895490130", "item_count": 3, "status": "generated", "generation_source": "news-pipeline"},
+    {"feed_date": "2026-06-01", "user_id": "user-kakao-4869299071", "item_count": 6, "status": "generated", "generation_source": "news-pipeline"},
+    {"feed_date": "2026-06-01", "user_id": "user-kakao-4895490130", "item_count": 6, "status": "generated", "generation_source": "news-pipeline"},
+    {"feed_date": "2026-06-02", "user_id": "user-kakao-4869299071", "item_count": 5, "status": "generated", "generation_source": "news-pipeline"},
+    {"feed_date": "2026-06-02", "user_id": "user-kakao-4895490130", "item_count": 5, "status": "generated", "generation_source": "news-pipeline"}
+  ],
+  "article_counts_by_published_at": {
+    "2026-05-27": 8,
+    "2026-05-28": 8,
+    "2026-05-29": 9,
+    "2026-05-30": 8,
+    "2026-05-31": 11,
+    "2026-06-01": 8,
+    "2026-06-02": 17
+  },
+  "notes": [
+    "Initial sequential backfill pruned earlier SUM-* articles because run_manifest.complete=true caused stale article deletion; snapshot items cascaded to zero for some dates.",
+    "Repair runs forced run_manifest.complete=false before import to prevent stale SUM-* pruning and regenerated affected snapshots.",
+    "The final 2026-06-02 repair used artifact run 26728229298 because feed_date 2026-06-02 uses publication_date 2026-06-01. The current latest/GitHub output was publication_date 2026-06-02 and was not the correct source for that feed date."
+  ],
+  "reports": [
+    ".dev/neon-feed-backfill-before-20260602.json",
+    ".dev/neon-feed-backfill-run-reports-20260602.json",
+    ".dev/neon-feed-repair-no-prune-run-reports-20260603.json",
+    ".dev/neon-feed-repair-2026-06-02-no-prune-run-report-20260603.json"
+  ]
+}
