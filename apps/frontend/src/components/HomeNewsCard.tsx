@@ -24,7 +24,7 @@ export default function HomeNewsCard({
       whileTap={{ scale: 0.98 }}
       onClick={() => onClick(news.id)}
       style={{ backgroundColor: color }}
-      className="w-full text-left p-[24px] rounded-[24px] overflow-hidden"
+      className="w-full flex-1 text-left p-[24px] rounded-[24px] overflow-hidden flex flex-col items-start justify-start"
     >
       <p className="font-semibold text-base leading-[1.5] text-[#101010] break-words">
         {news.title}
