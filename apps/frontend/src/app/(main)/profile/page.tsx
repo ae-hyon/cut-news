@@ -249,8 +249,8 @@ export default function ProfilePage() {
                     <p className="font-bold text-[14px] leading-[17px]">
                       {cat.name}
                     </p>
-                    <p className="font-normal text-[11px] leading-[13px] opacity-70">
-                      {cat.description}
+                    <p className="font-normal text-[11px] leading-[13px] opacity-70 whitespace-pre-line">
+                      {cat.description.replace(/ 등 /, '\n')}
                     </p>
                   </button>
                 );
