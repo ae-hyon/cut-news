@@ -31,10 +31,6 @@ export default function OnboardingHeader() {
           className="object-contain h-auto"
           priority
         />
-        <div className="flex items-center gap-2 text-[16px] font-medium text-white/80 px-1">
-          <span>스크랩</span>
-          <span>아카이브</span>
-        </div>
       </div>
       <div className="px-1">
         <button

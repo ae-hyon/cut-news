@@ -130,8 +130,13 @@ export default function NewsHome() {
     );
   }
 
-  const leftColumn = news.filter((_, i) => i % 2 === 0);
-  const rightColumn = news.filter((_, i) => i % 2 !== 0);
+  const sorted = [...news].sort((a, b) => a.title.length - b.title.length);
+  const leftColumn: NewsItem[] = [];
+  const rightColumn: NewsItem[] = [];
+  sorted.forEach((item, i) => {
+    if (i % 2 === 0) leftColumn.push(item);
+    else rightColumn.push(item);
+  });
 
   const today = new Date()
     .toLocaleDateString('ko-KR', {
@@ -143,9 +148,9 @@ export default function NewsHome() {
     .replace(/\.$/, '');
 
   return (
-    <div className="px-5 pt-[10px] pb-10">
+    <div className="flex-1 flex flex-col px-5 pt-[10px] pb-10">
       <p className="text-sm font-bold opacity-80 mb-4">{today}</p>
-      <div className="flex gap-[2px]">
+      <div className="flex flex-1 gap-[2px]">
         <div className="flex-1 flex flex-col gap-[2px] min-w-0">
           {leftColumn.map((item, i) => (
             <HomeNewsCard

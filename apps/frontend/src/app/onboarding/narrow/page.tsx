@@ -190,8 +190,8 @@ function CategoryCard({
       }`}
     >
       <p className="font-bold text-[16px] leading-[19px] w-full">{cat.name}</p>
-      <p className="font-normal text-[12px] leading-[14px] w-full">
-        {cat.description}
+      <p className="font-normal text-[12px] leading-[14px] w-full whitespace-pre-line">
+        {cat.description.replace(/ 등 /, '\n')}
       </p>
     </motion.button>
   );

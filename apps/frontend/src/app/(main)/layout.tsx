@@ -47,7 +47,7 @@ export default function MainLayout({
     <div className="min-h-dvh flex flex-col max-w-lg mx-auto">
       <Toast />
       <Header userName={userId ? '사용자' : undefined} />
-      <main className="flex-1 pb-[72px]">{children}</main>
+      <main className="flex-1 flex flex-col pb-[72px]">{children}</main>
       <TabBar />
     </div>
   );

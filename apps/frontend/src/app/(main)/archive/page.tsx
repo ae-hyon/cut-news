@@ -239,14 +239,17 @@ export default function ArchivePage() {
                 </div>
               ) : (
                 (() => {
-                  const leftColumn = selectedNews.filter(
-                    (_, i) => i % 2 === 0,
+                  const sorted = [...selectedNews].sort(
+                    (a, b) => a.title.length - b.title.length,
                   );
-                  const rightColumn = selectedNews.filter(
-                    (_, i) => i % 2 !== 0,
-                  );
+                  const leftColumn: NewsItem[] = [];
+                  const rightColumn: NewsItem[] = [];
+                  sorted.forEach((item, i) => {
+                    if (i % 2 === 0) leftColumn.push(item);
+                    else rightColumn.push(item);
+                  });
                   return (
-                    <div className="flex gap-[2px]">
+                    <div className="flex flex-1 gap-[2px]">
                       <div className="flex-1 flex flex-col gap-[2px] min-w-0">
                         {leftColumn.map((item, i) => (
                           <HomeNewsCard
